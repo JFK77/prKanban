@@ -65,6 +65,68 @@
             pointer-events: none !important;
         }
 
+        /* --- Resizable Side Panel --- */
+        #details-resizer {
+            width: 8px;
+            cursor: col-resize;
+            background-color: #1e293b; /* slate-800 */
+            z-index: 45;
+            transition: background-color 0.2s;
+        }
+        #details-resizer:hover {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .card-selected {
+            box-shadow: 0 0 0 3px #3b82f6 !important; /* blue-500 */
+            border-color: #3b82f6 !important;
+        }
+        /* Prevent text selection during resize */
+        .is-resizing * {
+            user-select: none;
+        }
+
+        /* --- Custom Combobox/Dropdown --- */
+        .combobox-container {
+            position: relative;
+        }
+        .combobox-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 60; /* Higher than modal z-index */
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #1e293b; /* slate-800 */
+            border: 1px solid #334155; /* slate-700 */
+            border-radius: 0 0 0.5rem 0.5rem;
+            margin-top: -1px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        .combobox-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+
+        /* --- Archived Card Styling --- */
+        .card-archived {
+            opacity: 0.6;
+            background-color: #1e293b !important; /* slate-800 */
+        }
+        .card-archived:hover {
+            opacity: 0.8;
+        }
+        /* --- Simple Rich Text Editor --- */
+        #modal-description {
+            min-height: 120px;
+            outline: none;
+        }
+        .toolbar-btn {
+            @apply px-3 py-1.5 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors;
+        }
+        .toolbar-btn.active {
+            @apply bg-blue-600 text-white;
+        }
         /* Toast notification */
         #toast {
             visibility: hidden;
@@ -171,6 +233,19 @@
             </div>
         </div>
 
+        <!-- View Options -->
+        <div class="flex-1 min-w-[240px]">
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-eye mr-1.5"></i>Ansicht
+            </h3>
+            <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5">
+                <input id="filter-archived" type="checkbox" class="h-4 w-4 rounded bg-slate-700 border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-800">
+                <label for="filter-archived" class="ml-3 block text-sm font-medium text-slate-200">
+                    Archivierte Tasks anzeigen
+                </label>
+            </div>
+        </div>
+
         <!-- Action Panel Buttons -->
         <div class="w-full sm:w-auto flex flex-wrap gap-2">
             <button onclick="openTagsModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
@@ -186,84 +261,118 @@
     </section>
 
     <!-- Board Area -->
-    <main class="flex-1 p-6 overflow-y-auto" id="board-container">
-        <!-- Rendered Dynamically inside JavaScript -->
-    </main>
+    <div class="flex flex-1 overflow-hidden">
+        <main class="flex-1 p-6 overflow-y-auto" id="board-container">
+            <!-- Rendered Dynamically inside JavaScript -->
+        </main>
 
+        <!-- Resizer Handle -->
+        <div id="details-resizer" class="hidden"></div>
+
+        <!-- Task Details Side Panel (replaces modal) -->
+        <aside id="task-details-panel" class="hidden bg-slate-900 border-l border-slate-800 flex-col" style="width: 450px;">
+            <!-- Panel content will be injected here, similar to the old modal -->
+            <div class="flex justify-between items-center p-4 border-b border-slate-800">
+                <h3 id="panel-heading" class="text-base font-bold text-white flex items-center gap-2">
+                    <!-- Heading set by JS -->
+                </h3>
+                <button onclick="closeDetailsPanel()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="modal-task-id">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Titel der Aufgabe</label>
+                        <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Task Typ</label>
+                            <select id="modal-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- Filled dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                        <label class="block text-xs text-slate-400 mb-1">Owner</label>
+                        <div id="modal-owner-container" class="combobox-container">
+                            <div class="relative">
+                                <input type="text" id="modal-owner" list="owner-list" required placeholder="Owner auswählen oder neu erstellen" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div id="owner-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white cursor-pointer">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                            <datalist id="owner-list"></datalist>
+                            <div id="owner-custom-dropdown" class="combobox-dropdown hidden"></div>
+                        </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Kunde</label>
+                        <div id="modal-customer-container" class="combobox-container">
+                            <div class="relative">
+                                <input type="text" id="modal-customer" list="customer-list" required placeholder="Kunden auswählen oder neu erstellen" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div id="customer-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white cursor-pointer">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                            <datalist id="customer-list">
+                                <!-- Dynamisch gefüllt für Autocomplete -->
+                            </datalist>
+                            <div id="customer-custom-dropdown" class="combobox-dropdown hidden"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Beschreibung</label>
+                        <div class="bg-slate-800 border border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
+                            <div id="description-toolbar" class="flex items-center border-b border-slate-700 divide-x divide-slate-700">
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('bold')" title="Fett"><i class="fa-solid fa-bold"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('italic')" title="Kursiv"><i class="fa-solid fa-italic"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('underline')" title="Unterstrichen"><i class="fa-solid fa-underline"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('removeFormat')" title="Formatierung entfernen"><i class="fa-solid fa-text-slash"></i></button>
+                            </div>
+                            <div id="modal-description" contenteditable="true" class="w-full p-3 text-sm text-white"></div>
+                        </div>
+                    </div>
+                    <!-- Integration Links (D365 & Zeiterfassung) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-400 mr-1"></i> D365 Task Link</label>
+                            <input type="url" id="modal-d365-link" placeholder="https://dynamics.microsoft.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i> Zeiterfassung Link</label>
+                            <input type="url" id="modal-time-link" placeholder="https://zeiterfassung.local/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
+                        <div id="modal-tags-selection" class="flex flex-wrap gap-2 p-3 bg-slate-850 border border-slate-700 rounded-lg max-h-[120px] overflow-y-auto">
+                            <!-- Clickable tags dynamically populated here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 border-t border-slate-800">
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" onclick="closeDetailsPanel()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                        Schließen
+                    </button>
+                    <button type="submit" form="task-form" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
+                        Speichern
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
     <!-- Footer -->
     <footer class="bg-slate-950 border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
         Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits & Collapsible Swimlanes implementiert.
     </footer>
 
     <!-- Task Add / Edit Modal -->
-    <div id="task-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-5">
-                <h3 id="modal-heading" class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-square-plus text-blue-500"></i> Neuen Task erstellen
-                </h3>
-                <button onclick="closeAddTaskModal()" class="text-slate-400 hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
-                <input type="hidden" id="modal-task-id">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Titel der Aufgabe</label>
-                    <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Task Typ</label>
-                        <select id="modal-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <!-- Filled dynamically -->
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Owner</label>
-                        <select id="modal-owner" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="Max">Max</option>
-                            <option value="Julia">Julia</option>
-                            <option value="Ben">Ben</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Kunde</label>
-                    <select id="modal-customer" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="Acme Corp">Acme Corp</option>
-                        <option value="Globex">Globex</option>
-                        <option value="Initech">Initech</option>
-                    </select>
-                </div>
-                <!-- Integration Links (D365 & Zeiterfassung) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-400 mr-1"></i> D365 Task Link</label>
-                        <input type="url" id="modal-d365-link" placeholder="https://dynamics.microsoft.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i> Zeiterfassung Link</label>
-                        <input type="url" id="modal-time-link" placeholder="https://zeiterfassung.local/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
-                    <div id="modal-tags-selection" class="flex flex-wrap gap-2 p-3 bg-slate-850 border border-slate-700 rounded-lg max-h-[120px] overflow-y-auto">
-                        <!-- Clickable tags dynamically populated here -->
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3 pt-2">
-                    <button type="button" onclick="closeAddTaskModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
-                        Abbrechen
-                    </button>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
-                        Speichern
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <div id="task-modal" class="hidden"></div> <!-- Old modal is now obsolete, but we keep the div to not break old references if any -->
 
     <!-- Tags Management Modal -->
     <div id="tags-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -404,6 +513,7 @@
                     cloudTasks.push({ ...docSnapshot.data(), id: docSnapshot.id });
                 });
 
+                updateDynamicListsFromTasks(cloudTasks);
                 console.log("Tasks successfully loaded from Firestore:", cloudTasks);
                 tasks = cloudTasks; // Overwrite global tasks array with cloud data
                 
@@ -411,11 +521,13 @@
                     console.log("No tasks found in Firestore. The board will be empty.");
                 }
 
+                updateAllDropdowns();
                 renderBoard(); // Re-render the entire board with the new data
             } catch (error) {
                 console.error("Error loading tasks from Firestore:", error);
                 showToast("Error: Could not load data from the cloud.");
                 tasks = loadFromStorage('kanban_tasks', []);
+                updateAllDropdowns();
                 renderBoard();
             }
         }
@@ -457,8 +569,11 @@
         let tasks = [];
         let selectedModalTags = [];
         let draggedTaskId = null;
+        let selectedTaskId = null;
         const collapsedSwimlanes = new Set();
 
+        let owners = [];
+        let customers = [];
         let tagsConfig = loadFromStorage('kanban_tagsConfig', {
             "Prio A": "#ef4444", "Database": "#3b82f6", "Konzept": "#a855f7",
             "Hardware": "#f97316", "Network": "#06b6d4", "Freigabe": "#10b981",
@@ -689,8 +804,13 @@
 
         function createCard(task) {
             const card = document.createElement('div');
-            card.className = "bg-slate-800/90 border border-slate-700/60 rounded-lg p-3 shadow-md hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
-            card.setAttribute('draggable', 'true');
+            let cardClasses = "bg-slate-800/90 border border-slate-700/60 rounded-lg p-3 shadow-md hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
+            if (task.isArchived) {
+                cardClasses += " card-archived";
+            }
+            card.className = cardClasses;
+            card.setAttribute('draggable', !task.isArchived); // Disable drag for archived cards
+            card.setAttribute('data-task-id', task.id);
             
             // Use the centrally defined color for the task type
             const typeColor = workflowPaths[task.taskType]?.color || '#64748b'; // Default to gray
@@ -698,17 +818,25 @@
 
             card.addEventListener('dragstart', (e) => handleDragStart(e, task.id));
             card.addEventListener('dragend', handleDragEnd);
-            card.addEventListener('click', (e) => openEditTaskModal(task.id, e));
+            card.addEventListener('click', (e) => selectTask(task.id, e));
 
-            const allowedCols = workflowPaths[task.taskType]?.path || [];
-            const moveOptions = [];
-            allowedCols.forEach(col => {
-                ["Doing", "Done"].forEach(subCol => {
-                    if (!(task.column === col && task.subColumn === subCol)) {
-                        moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors">${getColLabel(col)} (${subCol})</button>`);
-                    }
+            let moveOptionsHtml = '';
+            if (!task.isArchived) {
+                const allowedCols = workflowPaths[task.taskType]?.path || [];
+                const moveOptions = [];
+                allowedCols.forEach(col => {
+                    ["Doing", "Done"].forEach(subCol => {
+                        if (!(task.column === col && task.subColumn === subCol)) {
+                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors">${getColLabel(col)} (${subCol})</button>`);
+                        }
+                    });
                 });
-            });
+                moveOptionsHtml = `<div class="text-[9px] px-3 py-1 text-slate-500 uppercase font-semibold">Verschieben nach:</div>${moveOptions.join('')}`;
+            }
+
+            const archiveButtonHtml = task.isArchived
+                ? `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', false)" class="w-full text-left px-3 py-1.5 hover:bg-blue-500/20 text-blue-400 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-open w-4 mr-1"></i> Wiederherstellen</button>`
+                : `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', true)" class="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-archive w-4 mr-1"></i> Archivieren</button>`;
 
             let tagsHtml = '';
             if (task.tags && task.tags.length > 0) {
@@ -716,6 +844,12 @@
                     const colHex = tagsConfig[t] || "#475569";
                     return `<span class="border text-[9px] px-1.5 py-0.5 rounded font-bold" style="background-color: ${colHex}20; color: ${colHex}; border-color: ${colHex}40">${t}</span>`;
                 }).join('')}</div>`;
+            }
+
+            let descriptionIconHtml = '';
+            // Check for description content beyond empty tags
+            if (task.description && task.description.replace(/<[^>]*>/g, '').trim().length > 0) {
+                descriptionIconHtml = `<i class="fa-solid fa-align-left text-slate-500" title="Diese Aufgabe hat eine Beschreibung"></i>`;
             }
 
             let linksHtml = '';
@@ -730,13 +864,21 @@
                 <div class="flex justify-between items-start gap-1 mb-1.5">
                     <div class="flex items-center gap-1.5">
                         <span class="text-[10px] text-slate-400 font-bold bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">${task.id.slice(0,8)}...</span>
-                        <div class="flex items-center gap-2">${linksHtml}</div>
+                        <div class="flex items-center gap-2">
+                            ${descriptionIconHtml}
+                            ${linksHtml}
+                        </div>
                     </div>
                     <div class="relative inline-block text-left opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onclick="toggleCardDropdown(event, '${task.id}')" class="text-slate-400 hover:text-white px-1"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>
                         <div id="drop-${task.id}" class="hidden absolute right-0 mt-1 w-40 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1">
-                            <div class="text-[9px] px-3 py-1 text-slate-500 uppercase font-semibold">Verschieben nach:</div>
-                            ${moveOptions.join('')}
+                            ${moveOptionsHtml}
+                            <div class="border-t border-slate-700/50 my-1"></div>
+                            ${archiveButtonHtml}
+                            <div class="border-t border-slate-700/50 my-1"></div>
+                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 text-red-400 text-[11px] font-medium transition-colors">
+                                <i class="fa-solid fa-trash-can w-4 mr-1"></i> Endgültig Löschen
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -751,12 +893,22 @@
             return card;
         }
 
+        function highlightSelectedCard() {
+            document.querySelectorAll('.card-selected').forEach(c => c.classList.remove('card-selected'));
+            if (selectedTaskId) {
+                const card = document.querySelector(`[data-task-id="${selectedTaskId}"]`);
+                if (card) card.classList.add('card-selected');
+            }
+        }
+
         function getFilteredTasks() {
+            const showArchived = document.getElementById('filter-archived').checked;
             return tasks.filter(task => {
                 const oMatch = filterOwner.value === 'ALL' || task.owner === filterOwner.value;
                 const cMatch = filterCustomer.value === 'ALL' || task.customer === filterCustomer.value;
                 const tMatch = filterType.value === 'ALL' || task.taskType === filterType.value;
-                return oMatch && cMatch && tMatch;
+                const archiveMatch = showArchived ? task.isArchived === true : task.isArchived !== true;
+                return oMatch && cMatch && tMatch && archiveMatch;
             });
         }
 
@@ -806,6 +958,19 @@
             return true;
         }
 
+        window.toggleArchiveTask = async function(taskId, shouldArchive) {
+            const taskTitle = tasks.find(t => t.id === taskId)?.title || 'diesen Task';
+            const actionText = shouldArchive ? 'archivieren' : 'wiederherstellen';
+
+            if (confirm(`Möchten Sie "${taskTitle}" wirklich ${actionText}?`)) {
+                if (selectedTaskId === taskId) {
+                    closeDetailsPanel();
+                }
+                await updateTaskInCloud(taskId, { isArchived: shouldArchive });
+                showToast(`Task wurde ${actionText}.`);
+                await loadTasksFromCloud();
+            }
+        }
         // Drag & Drop Handlers
         function handleDragStart(e, taskId) {
             draggedTaskId = taskId;
@@ -883,6 +1048,7 @@
                 customer: form.querySelector('#modal-customer').value,
                 d365Link: form.querySelector('#modal-d365-link').value,
                 timeLink: form.querySelector('#modal-time-link').value,
+                description: form.querySelector('#modal-description').innerHTML,
                 tags: [...selectedModalTags]
             };
 
@@ -905,6 +1071,7 @@
                     }
                 }
                 taskData.column = "ToDo";
+                taskData.isArchived = false;
                 taskData.subColumn = "Doing";
                 const newId = await addTaskToCloud(taskData);
                 if (newId) showToast(`Task ${newId.slice(0,8)}... wurde im To Do erstellt.`);
@@ -915,21 +1082,25 @@
         }
 
         window.openAddTaskModal = function() {
-            document.getElementById('modal-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> Neuen Task erstellen`;
+            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> Neuen Task erstellen`;
             document.getElementById('task-form').reset();
             document.getElementById('modal-task-id').value = "";
+            selectedTaskId = null;
+            document.getElementById('modal-description').innerHTML = "";
             selectedModalTags = [];
-            updateConfiguredDropdowns();
+            updateAllDropdowns();
+            setupOwnerCombobox();
+            setupCustomerCombobox();
             renderModalTagsSelection();
-            document.getElementById('task-modal').classList.remove('hidden');
+            openDetailsPanel();
         }
 
         window.openEditTaskModal = function(taskId, event) {
-            if (event.target.closest('button, a')) return;
+            if (event && event.target.closest('button, a')) return;
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
 
-            document.getElementById('modal-heading').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500"></i> Task bearbeiten (${task.id.slice(0,8)}...)`;
+            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500"></i> Task bearbeiten (${task.id.slice(0,8)}...)`;
             const form = document.getElementById('task-form');
             form.querySelector('#modal-task-id').value = task.id;
             form.querySelector('#modal-title').value = task.title;
@@ -938,15 +1109,46 @@
             form.querySelector('#modal-customer').value = task.customer;
             form.querySelector('#modal-d365-link').value = task.d365Link || "";
             form.querySelector('#modal-time-link').value = task.timeLink || "";
+            form.querySelector('#modal-description').innerHTML = task.description || "";
             
             selectedModalTags = task.tags ? [...task.tags] : [];
-            updateConfiguredDropdowns();
+            updateAllDropdowns();
+            setupOwnerCombobox();
+            setupCustomerCombobox();
             renderModalTagsSelection();
-            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        window.selectTask = function(taskId, event) {
+            if (event && event.target.closest('button, a')) return;
+            
+            selectedTaskId = taskId;
+            highlightSelectedCard();
+            openEditTaskModal(taskId, event); // Re-use the logic to fill the form
+            openDetailsPanel();
+        }
+
+        function openDetailsPanel() {
+            document.getElementById('task-details-panel').classList.remove('hidden');
+            document.getElementById('task-details-panel').classList.add('flex');
+            document.getElementById('details-resizer').classList.remove('hidden');
+            highlightSelectedCard();
+        }
+
+        window.closeDetailsPanel = function() {
+            document.getElementById('task-details-panel').classList.add('hidden');
+            document.getElementById('task-details-panel').classList.remove('flex');
+            document.getElementById('details-resizer').classList.add('hidden');
+            selectedTaskId = null;
+            highlightSelectedCard();
         }
 
         window.closeAddTaskModal = function() {
-            document.getElementById('task-modal').classList.add('hidden');
+            // This function now closes the panel
+            closeDetailsPanel();
+        }
+
+        window.formatDoc = function(command, value = null) {
+            document.execCommand(command, false, value);
         }
 
         // Tag & Type Config Modals
@@ -1020,7 +1222,8 @@
             });
             await Promise.all(updatePromises);
             saveAllState();
-            renderTagsManagerList();
+            renderTagsManagerList(); // Visuelle Liste im Modal
+            // loadTasksFromCloud wird die Dropdowns nach dem Neuladen der Daten aktualisieren
             await loadTasksFromCloud();
         }
 
@@ -1080,7 +1283,7 @@
             await Promise.all(tasksToDelete.map(task => deleteTaskFromCloud(task.id)));
             delete workflowPaths[type];
             saveAllState();
-            updateConfiguredDropdowns();
+            updateAllDropdowns();
             renderTypesManagerList();
             await loadTasksFromCloud();
         }
@@ -1110,6 +1313,121 @@
             });
         }
 
+        function updateDynamicListsFromTasks(currentTasks) {
+            // Leitet die Listen für Owner und Kunden direkt aus den vorhandenen Aufgaben ab.
+            const ownerSet = new Set();
+            const customerSet = new Set();
+            currentTasks.forEach(task => {
+                if (task.owner) ownerSet.add(task.owner);
+                if (task.customer) customerSet.add(task.customer);
+            });
+            owners = [...ownerSet].sort();
+            customers = [...customerSet].sort();
+        }
+
+        function updateOwnerDropdowns() {
+            const filterOwnerSelect = document.getElementById('filter-owner');
+            const modalOwnerDatalist = document.getElementById('owner-list');
+            
+            const savedFilterValue = filterOwnerSelect.value;
+
+            // Filter-Dropdown aktualisieren
+            filterOwnerSelect.innerHTML = `<option value="ALL">Alle Owner</option>`;
+            owners.forEach(owner => {
+                filterOwnerSelect.innerHTML += `<option value="${owner}">${owner}</option>`;
+            });
+            filterOwnerSelect.value = savedFilterValue;
+
+            // Datalist im Modal aktualisieren
+            modalOwnerDatalist.innerHTML = '';
+            owners.forEach(owner => {
+                modalOwnerDatalist.innerHTML += `<option value="${owner}"></option>`;
+            });
+        }
+
+        function updateCustomerDropdowns() {
+            const filterCustomerSelect = document.getElementById('filter-customer');
+            const modalCustomerDatalist = document.getElementById('customer-list');
+            
+            const savedFilterValue = filterCustomerSelect.value;
+
+            // Filter-Dropdown aktualisieren
+            filterCustomerSelect.innerHTML = `<option value="ALL">Alle Kunden</option>`;
+            customers.forEach(customer => {
+                filterCustomerSelect.innerHTML += `<option value="${customer}">${customer}</option>`;
+            });
+            filterCustomerSelect.value = savedFilterValue;
+
+            // Datalist im Modal aktualisieren
+            modalCustomerDatalist.innerHTML = '';
+            customers.forEach(customer => {
+                modalCustomerDatalist.innerHTML += `<option value="${customer}"></option>`;
+            });
+        }
+
+        function updateAllDropdowns() {
+            updateConfiguredDropdowns(); // For Task Types
+            updateOwnerDropdowns();
+            updateCustomerDropdowns();
+        }
+
+        function setupCombobox(containerSelector, inputId, dropdownId, arrowId, dataArray) {
+            const container = document.querySelector(containerSelector);
+            if (!container) return; // Guard against missing elements
+            const input = document.getElementById(inputId);
+            const customDropdown = document.getElementById(dropdownId);
+            const arrow = document.getElementById(arrowId);
+
+            const renderItems = (filter = '') => {
+                const filteredItems = dataArray.filter(item => item.toLowerCase().includes(filter.toLowerCase()));
+                if (filteredItems.length === 0) {
+                    customDropdown.classList.add('hidden');
+                    return;
+                }
+                customDropdown.innerHTML = filteredItems.map(item => 
+                    `<div class="combobox-item text-sm text-slate-200 hover:bg-blue-600" data-value="${item}">${item}</div>`
+                ).join('');
+                customDropdown.classList.remove('hidden');
+            };
+
+            const toggleDropdown = () => {
+                if (customDropdown.classList.contains('hidden')) {
+                    renderItems(input.value);
+                } else {
+                    customDropdown.classList.add('hidden');
+                }
+            };
+
+            input.addEventListener('focus', () => renderItems(''));
+            input.addEventListener('input', () => renderItems(input.value));
+            arrow.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDropdown();
+                input.focus();
+            });
+
+            customDropdown.addEventListener('click', (e) => {
+                if (e.target.classList.contains('combobox-item')) {
+                    input.value = e.target.dataset.value;
+                    customDropdown.classList.add('hidden');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    customDropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        function setupCustomerCombobox() {
+            setupCombobox('#modal-customer-container', 'modal-customer', 'customer-custom-dropdown', 'customer-dropdown-arrow', customers);
+        }
+
+        function setupOwnerCombobox() {
+            setupCombobox('#modal-owner-container', 'modal-owner', 'owner-custom-dropdown', 'owner-dropdown-arrow', owners);
+        }
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             // Add event listeners for controls
@@ -1130,14 +1448,51 @@
             filterOwner.addEventListener('change', renderBoard);
             filterCustomer.addEventListener('change', renderBoard);
             filterType.addEventListener('change', renderBoard);
+            document.getElementById('filter-archived').addEventListener('change', renderBoard);
             window.addEventListener('click', () => {
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
             });
 
-            // Initial data load and render_nice
-            updateConfiguredDropdowns();
+            // Initial data load and render
+            updateAllDropdowns();
+            setupOwnerCombobox();
+            setupCustomerCombobox(); // Initial setup for event listeners
             loadTasksFromCloud();
         });
+
+        // --- Resizable Panel Logic ---
+        const resizer = document.getElementById('details-resizer');
+        const panel = document.getElementById('task-details-panel');
+        let isResizing = false;
+
+        // Load saved panel width
+        const savedWidth = localStorage.getItem('kanban_panel_width');
+        if (savedWidth) {
+            panel.style.width = `${savedWidth}px`;
+        }
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.classList.add('is-resizing');
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', stopResize);
+        });
+
+        function handleMouseMove(e) {
+            if (!isResizing) return;
+            const newWidth = window.innerWidth - e.clientX;
+            if (newWidth > 350 && newWidth < 800) { // Min and max width
+                panel.style.width = `${newWidth}px`;
+            }
+        }
+
+        function stopResize() {
+            isResizing = false;
+            document.body.classList.remove('is-resizing');
+            localStorage.setItem('kanban_panel_width', panel.offsetWidth);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', stopResize);
+        }
     </script>
 </body>
 </html>
