@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="de">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Multi-Level Kanban Board</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f1f5f9;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* --- DYNAMISCHES DRAG-FEEDBACK --- */
+        
+        /* Aktiver Hover über einer Dropzone */
+        .drag-over {
+            border: 2px solid #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
+        }
+        
+        /* ERLAUBTE Spalten während des Draggens: Grün & halbtransparent */
+        .column-allowed {
+            border: 2px dashed #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.04) !important;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.08);
+            opacity: 0.95;
+        }
+        
+        /* NICHT ERLAUBTE Spalten während des Draggens: Rot schraffiert & gesperrt */
+        .column-disabled {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(239, 68, 68, 0.04),
+                rgba(239, 68, 68, 0.04) 10px,
+                rgba(239, 68, 68, 0.08) 10px,
+                rgba(239, 68, 68, 0.08) 20px
+            ) !important;
+            border: 2px dashed #ef4444 !important;
+            opacity: 0.35;
+            cursor: not-allowed !important;
+        }
+        .column-disabled * {
+            pointer-events: none !important;
+        }
+
+        /* Toast notification */
+        #toast {
+            visibility: hidden;
+            min-width: 300px;
+            background-color: #ef4444;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            right: 30px;
+            bottom: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            transition: visibility 0s, opacity 0.3s linear;
+            opacity: 0;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+                <i class="fa-solid fa-square-poll-horizontal text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wide text-white">Dynamic Workflow Kanban</h1>
+                <p class="text-xs text-slate-400">Adaptive Columns • Nested Swimlanes • WIP Limits on Doing Subcolumns</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Legend Area -->
+        <div id="dynamic-legend" class="flex flex-wrap gap-4 text-xs bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700/50">
+            <!-- Legend items injected by JS -->
+        </div>
+    </header>
+
+    <!-- Controls Panel: Filters & Grouping -->
+    <section class="bg-slate-900/60 border-b border-slate-800/80 p-6 flex flex-wrap items-end gap-6 shadow-sm">
+        <!-- Filters -->
+        <div class="flex-1 min-w-[280px]">
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-filter mr-1.5"></i>Board-Filterung
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Owner</label>
+                    <select id="filter-owner" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                        <option value="ALL">Alle Owner</option>
+                        <option value="Max">Max</option>
+                        <option value="Julia">Julia</option>
+                        <option value="Ben">Ben</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Kunde (Customer)</label>
+                    <select id="filter-customer" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                        <option value="ALL">Alle Kunden</option>
+                        <option value="Acme Corp">Acme Corp</option>
+                        <option value="Globex">Globex</option>
+                        <option value="Initech">Initech</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Task Typ</label>
+                    <select id="filter-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                        <!-- Filled dynamically -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groupings / Swimlanes -->
+        <div class="flex-1 min-w-[280px]">
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-layer-group mr-1.5"></i>Gruppierung & Swimlanes
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Primäre Gruppe (Swimlane)</label>
+                    <select id="group-primary" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                        <option value="NONE">Keine Gruppierung</option>
+                        <option value="customer">Kunde</option>
+                        <option value="taskType">Task Typ</option>
+                        <option value="owner">Owner</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Sub-Gruppe (Innere Swimlane)</label>
+                    <select id="group-secondary" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200" disabled>
+                        <option value="NONE">Keine Untergruppierung</option>
+                        <option value="customer">Kunde</option>
+                        <option value="taskType">Task Typ</option>
+                        <option value="owner">Owner</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Panel Buttons -->
+        <div class="w-full sm:w-auto flex flex-wrap gap-2">
+            <button onclick="openTagsModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-tags"></i> Tags verwalten
+            </button>
+            <button onclick="openTypesModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-gears"></i> Typen verwalten
+            </button>
+            <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/10">
+                <i class="fa-solid fa-plus"></i> Task hinzufügen
+            </button>
+        </div>
+    </section>
+
+    <!-- Board Area -->
+    <main class="flex-1 p-6 overflow-y-auto" id="board-container">
+        <!-- Rendered Dynamically inside JavaScript -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
+        Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits & Collapsible Swimlanes implementiert.
+    </footer>
+
+    <!-- Task Add / Edit Modal -->
+    <div id="task-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5">
+                <h3 id="modal-heading" class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-square-plus text-blue-500"></i> Neuen Task erstellen
+                </h3>
+                <button onclick="closeAddTaskModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="modal-task-id">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Titel der Aufgabe</label>
+                    <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Task Typ</label>
+                        <select id="modal-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- Filled dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Owner</label>
+                        <select id="modal-owner" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Max">Max</option>
+                            <option value="Julia">Julia</option>
+                            <option value="Ben">Ben</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Kunde</label>
+                    <select id="modal-customer" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Acme Corp">Acme Corp</option>
+                        <option value="Globex">Globex</option>
+                        <option value="Initech">Initech</option>
+                    </select>
+                </div>
+                <!-- Integration Links (D365 & Zeiterfassung) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-400 mr-1"></i> D365 Task Link</label>
+                        <input type="url" id="modal-d365-link" placeholder="https://dynamics.microsoft.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i> Zeiterfassung Link</label>
+                        <input type="url" id="modal-time-link" placeholder="https://zeiterfassung.local/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
+                    <div id="modal-tags-selection" class="flex flex-wrap gap-2 p-3 bg-slate-850 border border-slate-700 rounded-lg max-h-[120px] overflow-y-auto">
+                        <!-- Clickable tags dynamically populated here -->
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button type="button" onclick="closeAddTaskModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
+                        Speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tags Management Modal -->
+    <div id="tags-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-tags text-blue-500"></i> Tags verwalten
+                </h3>
+                <button onclick="closeTagsModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Quick Creator for Tags -->
+            <div class="bg-slate-850 p-4 border border-slate-800 rounded-lg mb-4 space-y-3">
+                <h4 class="text-xs font-bold text-slate-300 uppercase">Neuen Tag erstellen</h4>
+                <div class="flex gap-2">
+                    <input type="text" id="new-tag-name" placeholder="Tag Name (z.B. Prio A)" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+                    <input type="color" id="new-tag-color" value="#3b82f6" class="w-10 h-8 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer">
+                    <button onclick="addNewTag()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg">Erstellen</button>
+                </div>
+            </div>
+
+            <!-- Scrollable list of defined Tags -->
+            <div id="tags-manager-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                <!-- Tag configs populated here -->
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-slate-800">
+                <button onclick="closeTagsModal()" class="bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
+                    Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Types Management Modal -->
+    <div id="types-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gears text-blue-500"></i> Task Typen verwalten
+                </h3>
+                <button onclick="closeTypesModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Creator for Types -->
+            <div class="bg-slate-850 p-4 border border-slate-800 rounded-lg mb-4 space-y-3">
+                <h4 class="text-xs font-bold text-slate-300 uppercase">Neuen Typ erstellen</h4>
+                <div class="space-y-2">
+                    <input type="text" id="new-type-name" placeholder="z.B. Hardware Test" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+                    <div>
+                        <span class="block text-[10px] text-slate-400 mb-1">Erlaubter Workflow-Pfad (Spalten):</span>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="path-todo" checked disabled class="accent-blue-500"> To Do
+                            </label>
+                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="path-analysis" checked class="accent-blue-500"> Analysis
+                            </label>
+                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="path-inprogress" checked class="accent-blue-500"> In Progress
+                            </label>
+                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="path-done" checked disabled class="accent-blue-500"> Done
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1.5 text-xs text-slate-300">
+                            Farbe:
+                            <input type="color" id="new-type-color" value="#8b5cf6" class="w-8 h-6 bg-slate-800 border border-slate-700 rounded cursor-pointer">
+                        </label>
+                        <button onclick="addNewType()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-lg">Typ erstellen</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List of Types -->
+            <div id="types-manager-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                <!-- Configured Types dynamically populated -->
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-slate-800">
+                <button onclick="closeTypesModal()" class="bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
+                    Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Box -->
+    <div id="toast">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-circle-exclamation text-lg"></i>
+            <span id="toast-message">Fehler</span>
+        </div>
+    </div>
+
+    <!-- Main Script Block -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDE2TQ0t5TlhiBYnsdYOZbXM3iuBTAU2OM", // This is a placeholder, ensure it's your actual key
+            authDomain: "prkanban.firebaseapp.com",
+            projectId: "prkanban",
+            storageBucket: "prkanban.firebasestorage.app",
+            messagingSenderId: "345953337349",
+            appId: "1:345953337349:web:6a998e063e171d9bf19c6c",
+            measurementId: "G-YKRZB7MX7H"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- LOCAL STORAGE HELPERS ---
+        function loadFromStorage(key, defaultValue) {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        }
+
+        function saveToStorage(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // --- FIRESTORE CRUD FUNCTIONS ---
+        async function loadTasksFromCloud() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "tasks"));
+                let cloudTasks = [];
+                querySnapshot.forEach((docSnapshot) => {
+                    cloudTasks.push({ ...docSnapshot.data(), id: docSnapshot.id });
+                });
+
+                console.log("Tasks successfully loaded from Firestore:", cloudTasks);
+                tasks = cloudTasks; // Overwrite global tasks array with cloud data
+                
+                if (tasks.length === 0) {
+                    console.log("No tasks found in Firestore. The board will be empty.");
+                }
+
+                renderBoard(); // Re-render the entire board with the new data
+            } catch (error) {
+                console.error("Error loading tasks from Firestore:", error);
+                showToast("Error: Could not load data from the cloud.");
+                tasks = loadFromStorage('kanban_tasks', []);
+                renderBoard();
+            }
+        }
+
+        async function addTaskToCloud(taskData) {
+            try {
+                const docRef = await addDoc(collection(db, "tasks"), taskData);
+                console.log("Task added with ID: ", docRef.id);
+                return docRef.id;
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showToast("Error: Could not save new task.");
+                return null;
+            }
+        }
+
+        async function updateTaskInCloud(taskId, taskData) {
+            try {
+                const taskRef = doc(db, "tasks", taskId);
+                await updateDoc(taskRef, taskData);
+                console.log(`Task ${taskId} updated in Firestore.`);
+            } catch (e) {
+                console.error("Error updating document: ", e);
+                showToast(`Error: Could not update task ${taskId}.`);
+            }
+        }
+
+        async function deleteTaskFromCloud(taskId) {
+            try {
+                await deleteDoc(doc(db, "tasks", taskId));
+                console.log(`Task ${taskId} deleted from Firestore.`);
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showToast(`Error: Could not delete task ${taskId}.`);
+            }
+        }
+
+        // --- GLOBAL STATE & CONFIGURATION ---
+        let tasks = [];
+        let selectedModalTags = [];
+        let draggedTaskId = null;
+        const collapsedSwimlanes = new Set();
+
+        let tagsConfig = loadFromStorage('kanban_tagsConfig', {
+            "Prio A": "#ef4444", "Database": "#3b82f6", "Konzept": "#a855f7",
+            "Hardware": "#f97316", "Network": "#06b6d4", "Freigabe": "#10b981",
+            "Review": "#eab308", "Doku": "#64748b"
+        });
+
+        let workflowPaths = loadFromStorage('kanban_workflowPaths', {
+            "Installation": { path: ["ToDo", "InProgress", "Done"], color: "#10b981" }, // Green
+            "Typicals creation": { path: ["ToDo", "Analysis", "InProgress", "Done"], color: "#f97316" } // Orange
+        });
+
+        // --- Data Migration for backward compatibility ---
+        // This ensures that if a user has old data in localStorage, it gets updated to the new object format.
+        let needsSave = false;
+        for (const type in workflowPaths) {
+            if (Array.isArray(workflowPaths[type])) {
+                console.log(`Migrating old task type format for: ${type}`);
+                const oldPath = workflowPaths[type];
+                workflowPaths[type] = {
+                    path: oldPath,
+                    color: type === 'Installation' ? '#10b981' : (type === 'Typicals creation' ? '#f97316' : '#64748b') // Default colors
+                };
+                needsSave = true;
+            }
+        }
+        if (needsSave) {
+            saveToStorage('kanban_workflowPaths', workflowPaths);
+        }
+        // --- End of Migration ---
+        
+        const wipLimits = loadFromStorage('kanban_wipLimits', {
+            "ToDo": 5, "Analysis": 4, "InProgress": 3, "Done": null
+        });
+
+        function saveAllState() {
+            saveToStorage('kanban_tagsConfig', tagsConfig);
+            saveToStorage('kanban_workflowPaths', workflowPaths);
+            saveToStorage('kanban_wipLimits', wipLimits);
+        }
+
+        // --- UI ELEMENT SELECTORS ---
+        const filterOwner = document.getElementById('filter-owner');
+        const filterCustomer = document.getElementById('filter-customer');
+        const filterType = document.getElementById('filter-type');
+        const groupPrimary = document.getElementById('group-primary');
+        const groupSecondary = document.getElementById('group-secondary');
+
+        // --- UI HELPER FUNCTIONS ---
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3500);
+        }
+
+        function getColLabel(col) {
+            const labels = { "ToDo": "To Do", "Analysis": "Analysis", "InProgress": "In Progress", "Done": "Done" };
+            return labels[col] || col;
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderBoard() {
+            const container = document.getElementById('board-container');
+            if (!container) return;
+            container.innerHTML = "";
+
+            const activeTasks = getFilteredTasks();
+            const pGroup = groupPrimary.value;
+            const sGroup = groupSecondary.value;
+
+            if (pGroup === 'NONE') {
+                container.appendChild(createBoardElement("Gesamtes Board", activeTasks));
+            } else {
+                const group1Keys = [...new Set(tasks.map(t => t[pGroup]))].sort();
+                
+                group1Keys.forEach(g1Value => {
+                    const g1Tasks = activeTasks.filter(t => t[pGroup] === g1Value);
+                    const swimlaneId = `p-${pGroup}-${g1Value}`.replace(/\s+/g, '-');
+                    const isCollapsed = collapsedSwimlanes.has(swimlaneId);
+
+                    const swimlaneSection = document.createElement('div');
+                    swimlaneSection.className = "mb-6 bg-slate-900/40 border border-slate-800 rounded-xl p-5 shadow-sm transition-all duration-300";
+                    
+                    swimlaneSection.innerHTML = `
+                        <div onclick="toggleSwimlane('${swimlaneId}')" class="flex items-center justify-between cursor-pointer select-none pb-2 border-b border-slate-800/80 mb-4 group/header">
+                            <div class="flex items-center gap-3">
+                                <span class="text-slate-400 group-hover/header:text-white transition-colors duration-200">
+                                    <i class="fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-xs"></i>
+                                </span>
+                                <span class="text-xs uppercase bg-blue-500/10 text-blue-400 font-bold px-2.5 py-1 rounded-md border border-blue-500/20">
+                                    ${pGroup.toUpperCase()}: ${g1Value}
+                                </span>
+                                <span class="text-xs text-slate-500">(${g1Tasks.length} Tasks)</span>
+                            </div>
+                        </div>
+                    `;
+
+                    const contentContainer = document.createElement('div');
+                    if (isCollapsed) contentContainer.className = "hidden";
+
+                    if (sGroup !== 'NONE' && sGroup !== pGroup) {
+                        const group2Keys = [...new Set(tasks.map(t => t[sGroup]))].sort();
+                        group2Keys.forEach(g2Value => {
+                            const g2Tasks = g1Tasks.filter(t => t[sGroup] === g2Value);
+                            const subSwimlaneId = `s-${swimlaneId}-${sGroup}-${g2Value}`.replace(/\s+/g, '-');
+                            const isSubCollapsed = collapsedSwimlanes.has(subSwimlaneId);
+
+                            if (g2Tasks.length > 0) {
+                                const subSwimlane = document.createElement('div');
+                                subSwimlane.className = "ml-4 mb-4";
+                                
+                                subSwimlane.innerHTML = `
+                                    <div onclick="toggleSwimlane('${subSwimlaneId}')" class="flex items-center justify-between cursor-pointer select-none mb-2 py-1 group/subheader">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-slate-500 group-hover/subheader:text-slate-300 transition-colors duration-200">
+                                                <i class="fa-solid ${isSubCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[10px]"></i>
+                                            </span>
+                                            <span class="text-xs font-semibold text-slate-300">
+                                                ${sGroup.toUpperCase()}: <span class="text-emerald-400">${g2Value}</span>
+                                            </span>
+                                            <span class="text-[10px] text-slate-500">(${g2Tasks.length} Tasks)</span>
+                                        </div>
+                                    </div>
+                                `;
+
+                                const subContentContainer = document.createElement('div');
+                                if (isSubCollapsed) {
+                                    subContentContainer.className = "hidden";
+                                } else {
+                                    subContentContainer.appendChild(createBoardStructure(g2Tasks));
+                                }
+
+                                subSwimlane.appendChild(subContentContainer);
+                                contentContainer.appendChild(subSwimlane);
+                            }
+                        });
+                    } else {
+                        contentContainer.appendChild(createBoardStructure(g1Tasks));
+                    }
+                    
+                    swimlaneSection.appendChild(contentContainer);
+                    container.appendChild(swimlaneSection);
+                });
+            }
+        }
+
+        function createBoardStructure(boardTasks) {
+            const columns = ["ToDo", "Analysis", "InProgress", "Done"];
+            const boardGrid = document.createElement('div');
+            boardGrid.className = "grid grid-cols-1 xl:grid-cols-4 gap-4 mt-2";
+
+            columns.forEach(col => {
+                const colWrapper = document.createElement('div');
+                colWrapper.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col min-h-[220px] transition-all";
+                
+                const activeFilteredTasks = getFilteredTasks();
+                const globalTotalCount = activeFilteredTasks.filter(t => t.column === col).length;
+
+                colWrapper.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <span class="text-xs font-bold text-slate-200 tracking-wide uppercase">${getColLabel(col)}</span>
+                        <span class="bg-slate-900/80 text-[10px] text-slate-400 px-2.5 py-1 rounded-full border border-slate-800/50 font-medium">Gesamt: ${globalTotalCount}</span>
+                    </div>
+                `;
+
+                const subColsContainer = document.createElement('div');
+                subColsContainer.className = "grid grid-cols-2 gap-2 flex-1";
+
+                ["Doing", "Done"].forEach(subCol => {
+                    const subColBox = document.createElement('div');
+                    const globalSubCount = activeFilteredTasks.filter(t => t.column === col && t.subColumn === subCol).length;
+                    const limit = (subCol === "Doing") ? wipLimits[col] : null;
+                    const isOverWip = (limit !== null && limit !== undefined && globalSubCount > limit);
+
+                    let subColBaseClass = "bg-slate-900/60 border rounded-lg p-2 flex flex-col gap-2 min-h-[140px] transition-all ";
+                    subColBaseClass += isOverWip ? "border-red-500/50 bg-red-950/10 shadow-lg shadow-red-950/20" : "border-slate-800/50";
+                    
+                    subColBox.className = subColBaseClass;
+                    subColBox.setAttribute('data-main', col);
+                    subColBox.setAttribute('data-sub', subCol);
+
+                    subColBox.addEventListener('dragover', handleDragOver);
+                    subColBox.addEventListener('dragleave', handleDragLeave);
+                    subColBox.addEventListener('drop', (e) => handleDrop(e, col, subCol));
+
+                    let subColBadgeHtml = '';
+                    if (subCol === "Doing") {
+                        const badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                        const badgeInner = `<span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span>`;
+                        
+                        let wipLimitPill = '';
+                        if (limit !== null && limit !== undefined) {
+                            const pillClass = isOverWip 
+                                ? 'bg-red-500/20 text-red-300 border-red-500/40 animate-pulse cursor-pointer hover:bg-red-500/30' 
+                                : 'bg-slate-800 text-slate-400 border-slate-700/50 cursor-pointer hover:bg-slate-700';
+                            const warnIcon = isOverWip ? '<i class="fa-solid fa-triangle-exclamation mr-1 text-red-400"></i>' : '';
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="Klicken, um WIP Limit anzupassen">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
+                        } else {
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="bg-slate-800 text-[9px] text-slate-500 hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-700/50 font-bold cursor-pointer hover:bg-slate-700" title="Klicken, um WIP Limit anzupassen">${globalSubCount} (Kein Limit)</span>`;
+                        }
+                        
+                        subColBadgeHtml = `<div class="flex items-center gap-1.5 justify-between w-full">${badgeInner} ${wipLimitPill}</div>`;
+                    } else {
+                        const badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                        subColBadgeHtml = `<div class="flex items-center justify-between w-full"><span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span> <span class="text-[9px] text-slate-500 font-medium">${globalSubCount} Tasks</span></div>`;
+                    }
+
+                    subColBox.innerHTML = `<div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-800 mb-1">${subColBadgeHtml}</div>`;
+
+                    const targetTasks = boardTasks.filter(t => t.column === col && t.subColumn === subCol);
+                    targetTasks.forEach(task => subColBox.appendChild(createCard(task)));
+                    subColsContainer.appendChild(subColBox);
+                });
+
+                colWrapper.appendChild(subColsContainer);
+                boardGrid.appendChild(colWrapper);
+            });
+
+            return boardGrid;
+        }
+
+        function createBoardElement(title, boardTasks) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-list-check mr-2"></i>${title}</h2>`;
+            wrapper.appendChild(createBoardStructure(boardTasks));
+            return wrapper;
+        }
+
+        function createCard(task) {
+            const card = document.createElement('div');
+            card.className = "bg-slate-800/90 border border-slate-700/60 rounded-lg p-3 shadow-md hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
+            card.setAttribute('draggable', 'true');
+            
+            // Use the centrally defined color for the task type
+            const typeColor = workflowPaths[task.taskType]?.color || '#64748b'; // Default to gray
+            card.style.borderLeft = `4px solid ${typeColor}`;
+
+            card.addEventListener('dragstart', (e) => handleDragStart(e, task.id));
+            card.addEventListener('dragend', handleDragEnd);
+            card.addEventListener('click', (e) => openEditTaskModal(task.id, e));
+
+            const allowedCols = workflowPaths[task.taskType]?.path || [];
+            const moveOptions = [];
+            allowedCols.forEach(col => {
+                ["Doing", "Done"].forEach(subCol => {
+                    if (!(task.column === col && task.subColumn === subCol)) {
+                        moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors">${getColLabel(col)} (${subCol})</button>`);
+                    }
+                });
+            });
+
+            let tagsHtml = '';
+            if (task.tags && task.tags.length > 0) {
+                tagsHtml = `<div class="flex flex-wrap gap-1 mt-2">${task.tags.map(t => {
+                    const colHex = tagsConfig[t] || "#475569";
+                    return `<span class="border text-[9px] px-1.5 py-0.5 rounded font-bold" style="background-color: ${colHex}20; color: ${colHex}; border-color: ${colHex}40">${t}</span>`;
+                }).join('')}</div>`;
+            }
+
+            let linksHtml = '';
+            if (task.d365Link) {
+                linksHtml += `<a href="${task.d365Link}" target="_blank" title="D365 Task öffnen" onclick="event.stopPropagation()" class="text-blue-400 hover:text-blue-300 transition-colors"><i class="fa-solid fa-up-right-from-square text-xs"></i></a>`;
+            }
+            if (task.timeLink) {
+                linksHtml += `<a href="${task.timeLink}" target="_blank" title="Zeiterfassung öffnen" onclick="event.stopPropagation()" class="text-emerald-400 hover:text-emerald-300 transition-colors"><i class="fa-solid fa-clock text-xs"></i></a>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start gap-1 mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] text-slate-400 font-bold bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">${task.id.slice(0,8)}...</span>
+                        <div class="flex items-center gap-2">${linksHtml}</div>
+                    </div>
+                    <div class="relative inline-block text-left opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="toggleCardDropdown(event, '${task.id}')" class="text-slate-400 hover:text-white px-1"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>
+                        <div id="drop-${task.id}" class="hidden absolute right-0 mt-1 w-40 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1">
+                            <div class="text-[9px] px-3 py-1 text-slate-500 uppercase font-semibold">Verschieben nach:</div>
+                            ${moveOptions.join('')}
+                        </div>
+                    </div>
+                </div>
+                <h4 class="text-xs font-semibold text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
+                ${tagsHtml}
+                <div class="space-y-1.5 border-t border-slate-700/40 pt-2 mt-2 text-[10px]">
+                    <div class="flex items-center gap-1.5 text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-500"></i><span>Owner: <strong class="text-white">${task.owner}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-300"><i class="fa-solid fa-building-user text-[9px] text-slate-500"></i><span>Kunde: <strong class="text-white">${task.customer}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-300"><i class="fa-solid fa-gears text-[9px] text-slate-500"></i><span>Typ: <strong class="text-white">${task.taskType}</strong></span></div>
+                </div>
+            `;
+            return card;
+        }
+
+        function getFilteredTasks() {
+            return tasks.filter(task => {
+                const oMatch = filterOwner.value === 'ALL' || task.owner === filterOwner.value;
+                const cMatch = filterCustomer.value === 'ALL' || task.customer === filterCustomer.value;
+                const tMatch = filterType.value === 'ALL' || task.taskType === filterType.value;
+                return oMatch && cMatch && tMatch;
+            });
+        }
+
+        // --- EVENT HANDLERS & MODAL LOGIC ---
+        // Note: Functions called by `onclick` are attached to `window`
+        window.toggleSwimlane = function(swimlaneId) {
+            if (collapsedSwimlanes.has(swimlaneId)) {
+                collapsedSwimlanes.delete(swimlaneId);
+            } else {
+                collapsedSwimlanes.add(swimlaneId);
+            }
+            renderBoard();
+        }
+
+        window.configureWipLimit = function(col) {
+            const currentLimit = wipLimits[col];
+            const input = prompt(`Neues WIP Limit für die Subspalte "${getColLabel(col)} (Doing)" eingeben (Leer oder 0 zum Deaktivieren):`, currentLimit !== null ? currentLimit : "");
+            if (input === null) return;
+            const num = parseInt(input.trim(), 10);
+            if (input.trim() === "" || isNaN(num) || num <= 0) {
+                wipLimits[col] = null;
+                showToast(`WIP Limit für "${getColLabel(col)} (Doing)" wurde aufgehoben.`);
+            } else {
+                wipLimits[col] = num;
+                showToast(`WIP Limit für "${getColLabel(col)} (Doing)" auf ${num} gesetzt.`);
+            }
+            saveAllState();
+            renderBoard();
+        }
+
+        function validateWorkflowMove(taskId, targetColumn) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return false;
+
+            const allowedColumns = workflowPaths[task.taskType]?.path;
+            if (!allowedColumns || !allowedColumns.includes(targetColumn)) {
+                showToast(`Fehler: Der Typ "${task.taskType}" darf die Spalte "${getColLabel(targetColumn)}" nicht nutzen!`);
+                return false;
+            }
+
+            if (task.column !== targetColumn && wipLimits[targetColumn] !== null) {
+                const currentGlobalCount = tasks.filter(t => t.column === targetColumn && t.subColumn === "Doing").length;
+                if (currentGlobalCount >= wipLimits[targetColumn]) {
+                    showToast(`Achtung: WIP Limit für "${getColLabel(targetColumn)} (Doing)" (${wipLimits[targetColumn]}) wird überschritten!`);
+                }
+            }
+            return true;
+        }
+
+        // Drag & Drop Handlers
+        function handleDragStart(e, taskId) {
+            draggedTaskId = taskId;
+            e.dataTransfer.effectAllowed = "move";
+            e.target.style.opacity = "0.5";
+            
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                const allowedCols = workflowPaths[task.taskType]?.path || [];
+                document.querySelectorAll('[data-main]').forEach(el => {
+                    if (allowedCols.includes(el.dataset.main)) {
+                        el.classList.add('column-allowed');
+                    } else {
+                        el.classList.add('column-disabled');
+                    }
+                });
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.style.opacity = "1";
+            document.querySelectorAll('.column-disabled, .column-allowed, .drag-over').forEach(el => {
+                el.classList.remove('column-disabled', 'column-allowed', 'drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            if (e.target.closest('.column-disabled')) return;
+            e.preventDefault();
+            const dropzone = e.target.closest('[data-main]');
+            if (dropzone) dropzone.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            const dropzone = e.target.closest('[data-main]');
+            if (dropzone) dropzone.classList.remove('drag-over');
+        }
+
+        window.handleDrop = async function(e, mainCol, subCol) {
+            e.preventDefault();
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            if (!draggedTaskId) return;
+
+            if (validateWorkflowMove(draggedTaskId, mainCol)) {
+                await updateTaskInCloud(draggedTaskId, { column: mainCol, subColumn: subCol });
+                await loadTasksFromCloud();
+            }
+            draggedTaskId = null;
+        }
+
+        window.manualMoveTask = async function(taskId, mainCol, subCol) {
+            if (validateWorkflowMove(taskId, mainCol)) {
+                await updateTaskInCloud(taskId, { column: mainCol, subColumn: subCol });
+                await loadTasksFromCloud();
+            }
+        }
+
+        window.toggleCardDropdown = function(event, taskId) {
+            event.stopPropagation();
+            const dropdown = document.getElementById(`drop-${taskId}`);
+            const isHidden = dropdown.classList.contains('hidden');
+            document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
+            if (isHidden) dropdown.classList.remove('hidden');
+        }
+
+        // Form & Modal Handlers
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const taskId = form.querySelector('#modal-task-id').value;
+            const taskData = {
+                title: form.querySelector('#modal-title').value.trim(),
+                taskType: form.querySelector('#modal-type').value,
+                owner: form.querySelector('#modal-owner').value,
+                customer: form.querySelector('#modal-customer').value,
+                d365Link: form.querySelector('#modal-d365-link').value,
+                timeLink: form.querySelector('#modal-time-link').value,
+                tags: [...selectedModalTags]
+            };
+
+            if (taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task && task.taskType !== taskData.taskType) {
+                    const allowed = workflowPaths[taskData.taskType]?.path;
+                    if (!allowed || !allowed.includes(task.column)) {
+                        showToast(`Änderung des Typs verweigert: Die aktuelle Spalte "${getColLabel(task.column)}" ist für den neuen Typ nicht zulässig!`);
+                        return;
+                    }
+                }
+                await updateTaskInCloud(taskId, taskData);
+                showToast(`Task ${taskId.slice(0,8)}... wurde aktualisiert.`);
+            } else {
+                if (wipLimits["ToDo"] !== null) {
+                    const currentGlobalCount = tasks.filter(t => t.column === "ToDo" && t.subColumn === "Doing").length;
+                    if (currentGlobalCount >= wipLimits["ToDo"]) {
+                        showToast(`Achtung: WIP Limit für "To Do (Doing)" wird durch den neuen Task überschritten!`);
+                    }
+                }
+                taskData.column = "ToDo";
+                taskData.subColumn = "Doing";
+                const newId = await addTaskToCloud(taskData);
+                if (newId) showToast(`Task ${newId.slice(0,8)}... wurde im To Do erstellt.`);
+            }
+
+            closeAddTaskModal();
+            await loadTasksFromCloud();
+        }
+
+        window.openAddTaskModal = function() {
+            document.getElementById('modal-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> Neuen Task erstellen`;
+            document.getElementById('task-form').reset();
+            document.getElementById('modal-task-id').value = "";
+            selectedModalTags = [];
+            updateConfiguredDropdowns();
+            renderModalTagsSelection();
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        window.openEditTaskModal = function(taskId, event) {
+            if (event.target.closest('button, a')) return;
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('modal-heading').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500"></i> Task bearbeiten (${task.id.slice(0,8)}...)`;
+            const form = document.getElementById('task-form');
+            form.querySelector('#modal-task-id').value = task.id;
+            form.querySelector('#modal-title').value = task.title;
+            form.querySelector('#modal-type').value = task.taskType;
+            form.querySelector('#modal-owner').value = task.owner;
+            form.querySelector('#modal-customer').value = task.customer;
+            form.querySelector('#modal-d365-link').value = task.d365Link || "";
+            form.querySelector('#modal-time-link').value = task.timeLink || "";
+            
+            selectedModalTags = task.tags ? [...task.tags] : [];
+            updateConfiguredDropdowns();
+            renderModalTagsSelection();
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        window.closeAddTaskModal = function() {
+            document.getElementById('task-modal').classList.add('hidden');
+        }
+
+        // Tag & Type Config Modals
+        window.openTagsModal = function() {
+            renderTagsManagerList();
+            document.getElementById('tags-modal').classList.remove('hidden');
+        }
+        window.closeTagsModal = function() { document.getElementById('tags-modal').classList.add('hidden'); }
+
+        window.openTypesModal = function() {
+            renderTypesManagerList();
+            document.getElementById('types-modal').classList.remove('hidden');
+        }
+        window.closeTypesModal = function() { document.getElementById('types-modal').classList.add('hidden'); }
+
+        function renderModalTagsSelection() {
+            const container = document.getElementById('modal-tags-selection');
+            container.innerHTML = Object.keys(tagsConfig).map(tag => {
+                const isSelected = selectedModalTags.includes(tag);
+                const color = tagsConfig[tag];
+                const activeStyle = isSelected 
+                    ? `style="background-color: ${color}; color: #ffffff; border-color: ${color}"`
+                    : `style="background-color: ${color}10; color: ${color}; border-color: ${color}30"`;
+                return `<button type="button" onclick="toggleModalTag('${tag}')" class="text-[11px] px-2.5 py-1 rounded font-semibold border transition-all duration-200" ${activeStyle}>${tag} ${isSelected ? '✓' : ''}</button>`;
+            }).join('');
+        }
+
+        window.toggleModalTag = function(tag) {
+            if (selectedModalTags.includes(tag)) {
+                selectedModalTags = selectedModalTags.filter(t => t !== tag);
+            } else {
+                selectedModalTags.push(tag);
+            }
+            renderModalTagsSelection();
+        }
+
+        function renderTagsManagerList() {
+            document.getElementById('tags-manager-list').innerHTML = Object.keys(tagsConfig).map(tag => `
+                <div class="flex items-center justify-between bg-slate-850 p-2.5 border border-slate-800 rounded-lg">
+                    <span class="text-xs px-2.5 py-1 rounded font-bold border" style="background-color: ${tagsConfig[tag]}20; border-color: ${tagsConfig[tag]}50; color: ${tagsConfig[tag]}">${tag}</span>
+                    <div class="flex items-center gap-2">
+                        <input type="color" onchange="updateTagColor('${tag}', this.value)" value="${tagsConfig[tag]}" class="w-8 h-6 bg-slate-800 border border-slate-700 rounded cursor-pointer">
+                        <button onclick="deleteTag('${tag}')" class="text-slate-500 hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`).join('');
+        }
+
+        window.addNewTag = function() {
+            const nameInput = document.getElementById('new-tag-name');
+            const name = nameInput.value.trim();
+            if (!name) return;
+            tagsConfig[name] = document.getElementById('new-tag-color').value;
+            nameInput.value = "";
+            saveAllState();
+            renderTagsManagerList();
+            renderBoard();
+        }
+
+        window.updateTagColor = function(tag, newColor) {
+            tagsConfig[tag] = newColor;
+            saveAllState();
+            renderBoard();
+        }
+
+        window.deleteTag = async function(tag) {
+            const tasksToUpdate = tasks.filter(task => task.tags && task.tags.includes(tag));
+            delete tagsConfig[tag];
+            const updatePromises = tasksToUpdate.map(task => {
+                const newTags = task.tags.filter(t => t !== tag);
+                return updateTaskInCloud(task.id, { tags: newTags });
+            });
+            await Promise.all(updatePromises);
+            saveAllState();
+            renderTagsManagerList();
+            await loadTasksFromCloud();
+        }
+
+        function renderTypesManagerList() {
+            document.getElementById('types-manager-list').innerHTML = Object.keys(workflowPaths).map(type => {
+                const typeConfig = workflowPaths[type];
+                const cols = typeConfig.path.map(c => getColLabel(c)).join(', ');
+                return `
+                <div class="flex items-center justify-between bg-slate-850 p-2.5 border border-slate-800 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${typeConfig.color}"></span>
+                            <div class="flex-1">
+                                <span class="text-xs font-bold text-white block">${type}</span>
+                                <span class="text-[10px] text-slate-400">Pfad: ${cols}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="color" onchange="updateTypeColor('${type}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-slate-800 border border-slate-700 rounded cursor-pointer">
+                            <button onclick="deleteType('${type}')" class="text-slate-500 hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        window.addNewType = function() {
+            const nameInput = document.getElementById('new-type-name');
+            const name = nameInput.value.trim();
+            const color = document.getElementById('new-type-color').value;
+            if (!name) return;
+            const path = ["ToDo"];
+            if (document.getElementById('path-analysis').checked) path.push("Analysis");
+            if (document.getElementById('path-inprogress').checked) path.push("InProgress");
+            path.push("Done");
+            workflowPaths[name] = { path, color };
+            nameInput.value = "";
+            saveAllState();
+            updateConfiguredDropdowns();
+            renderTypesManagerList();
+            renderBoard();
+        }
+
+        window.updateTypeColor = function(type, newColor) {
+            if (workflowPaths[type]) {
+                workflowPaths[type].color = newColor;
+            }
+            saveAllState();
+            updateConfiguredDropdowns();
+            renderTypesManagerList();
+            renderBoard();
+        }
+
+        window.deleteType = async function(type) {
+            if (Object.keys(workflowPaths).length <= 1) {
+                return showToast("Mindestens ein Task-Typ muss auf dem Board erhalten bleiben!");
+            }
+            const tasksToDelete = tasks.filter(task => task.taskType === type);
+            await Promise.all(tasksToDelete.map(task => deleteTaskFromCloud(task.id)));
+            delete workflowPaths[type];
+            saveAllState();
+            updateConfiguredDropdowns();
+            renderTypesManagerList();
+            await loadTasksFromCloud();
+        }
+
+        function updateConfiguredDropdowns() {
+            const filterTypeSelect = document.getElementById('filter-type');
+            const modalTypeSelect = document.getElementById('modal-type');
+            const selectedFilterVal = filterTypeSelect.value || "ALL";
+            const selectedModalVal = modalTypeSelect.value || "";
+            let filterHtml = `<option value="ALL">Alle Typen</option>`;
+            let modalHtml = ``;
+            Object.keys(workflowPaths).forEach(type => {
+                filterHtml += `<option value="${type}">${type}</option>`;
+                modalHtml += `<option value="${type}">${type}</option>`;
+            });
+            filterTypeSelect.innerHTML = filterHtml;
+            modalTypeSelect.innerHTML = modalHtml;
+            filterTypeSelect.value = selectedFilterVal;
+            if (selectedModalVal && workflowPaths[selectedModalVal]) {
+                modalTypeSelect.value = selectedModalVal;
+            }
+            const legendContainer = document.getElementById('dynamic-legend');
+            legendContainer.innerHTML = "";
+            Object.keys(workflowPaths).forEach(type => {
+                const color = workflowPaths[type].color || '#64748b';
+                legendContainer.innerHTML += `<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background-color: ${color}"></span><span><strong>${type}:</strong> (${workflowPaths[type].path.map(c => getColLabel(c)).join(' ➔ ')})</span></div>`;
+            });
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add event listeners for controls
+            groupPrimary.addEventListener('change', () => {
+                if (groupPrimary.value === 'NONE') {
+                    groupSecondary.value = 'NONE';
+                    groupSecondary.disabled = true;
+                } else {
+                    groupSecondary.disabled = false;
+                    Array.from(groupSecondary.options).forEach(opt => {
+                        opt.disabled = (opt.value === groupPrimary.value && opt.value !== 'NONE');
+                    });
+                }
+                collapsedSwimlanes.clear();
+                renderBoard();
+            });
+            groupSecondary.addEventListener('change', () => { collapsedSwimlanes.clear(); renderBoard(); });
+            filterOwner.addEventListener('change', renderBoard);
+            filterCustomer.addEventListener('change', renderBoard);
+            filterType.addEventListener('change', renderBoard);
+            window.addEventListener('click', () => {
+                document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
+            });
+
+            // Initial data load and render
+            updateConfiguredDropdowns();
+            loadTasksFromCloud();
+        });
+    </script>
+</body>
+</html>
