@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class=""> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
     
 <head>
     <meta charset="UTF-8">
@@ -7,14 +7,21 @@
     <title>Dynamic Multi-Level Kanban Board</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Konfiguration für Tailwind Dark Mode
+        tailwind.config = {
+            darkMode: 'class',
+        }
+        // Theme aus LocalStorage laden, um "Flashen" zu verhindern
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            background-color: #0f172a;
-            color: #f1f5f9;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-        }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
@@ -22,15 +29,18 @@
         }
         ::-webkit-scrollbar-track {
             background: #1e293b;
+            background-color: #e2e8f0; /* slate-200 */
+        }
+        .dark ::-webkit-scrollbar-track {
+            background-color: #1e293b; /* slate-800 */
         }
         ::-webkit-scrollbar-thumb {
-            background: #475569;
+            background: #94a3b8; /* slate-400 */
             border-radius: 3px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569; /* slate-600 */
         }
-        
         /* --- DYNAMISCHES DRAG-FEEDBACK --- */
         
         /* Aktiver Hover über einer Dropzone */
@@ -97,11 +107,11 @@
             z-index: 60; /* Higher than modal z-index */
             max-height: 150px;
             overflow-y: auto;
-            background-color: #1e293b; /* slate-800 */
-            border: 1px solid #334155; /* slate-700 */
+            background-color: #f1f5f9; /* slate-100 */
+            border: 1px solid #e2e8f0; /* slate-200 */
             border-radius: 0 0 0.5rem 0.5rem;
             margin-top: -1px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .combobox-item {
             padding: 0.5rem 0.75rem;
@@ -111,10 +121,10 @@
         /* --- Archived Card Styling --- */
         .card-archived {
             opacity: 0.6;
-            background-color: #1e293b !important; /* slate-800 */
+            background-color: #f1f5f9 !important; /* slate-100 */
         }
-        .card-archived:hover {
-            opacity: 0.8;
+        .dark .card-archived {
+            background-color: #1e293b !important; /* slate-800 */
         }
         /* --- Simple Rich Text Editor --- */
         #modal-description {
@@ -122,20 +132,27 @@
             outline: none;
         }
         .toolbar-btn {
-            padding-left: 0.75rem; /* px-3 */
-            padding-right: 0.75rem;
-            padding-top: 0.375rem; /* py-1.5 */
-            padding-bottom: 0.375rem;
-            color: #94a3b8; /* text-slate-400 */
-            transition: color 0.2s, background-color 0.2s;
+            padding: 0.375rem 0.75rem;
+            color: #64748b;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
         .toolbar-btn:hover {
-            background-color: #374151; /* slate-700 */
-            color: #ffffff;
+            background-color: #e2e8f0;
+        }
+        .dark .toolbar-btn {
+            color: #94a3b8;
+        }
+        .dark .toolbar-btn:hover {
+            background-color: #334155;
+            color: #fff;
         }
         .toolbar-btn.active {
-            background-color: #2563eb; /* blue-600 */
-            color: #ffffff;
+            background-color: #dbeafe;
+            color: #2563eb;
+        }
+        .dark .toolbar-btn.active {
+            background-color: #2563eb;
+            color: #fff;
         }
         /* Toast notification */
         #toast {
@@ -161,37 +178,44 @@
     </style>
 </head>
 
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 font-sans">
 
     <!-- Header / Navbar -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
             <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
                 <i class="fa-solid fa-square-poll-horizontal text-xl"></i>
             </div>
             <div>
-                <h1 class="text-lg font-bold tracking-wide text-white">Dynamic Workflow Kanban</h1>
-                <p class="text-xs text-slate-400">Adaptive Columns • Nested Swimlanes • WIP Limits on Doing Subcolumns</p>
+                <h1 class="text-lg font-bold tracking-wide text-slate-900 dark:text-white">Dynamic Workflow Kanban</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Adaptive Columns • Nested Swimlanes • WIP Limits on Doing Subcolumns</p>
             </div>
         </div>
 
-        <!-- Dynamic Legend Area -->
-        <div id="dynamic-legend" class="flex flex-wrap gap-4 text-xs bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700/50">
-            <!-- Legend items injected by JS -->
+        <div class="flex items-center gap-4">
+            <!-- Dynamic Legend Area -->
+            <div id="dynamic-legend" class="hidden md:flex flex-wrap gap-4 text-xs bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                <!-- Legend items injected by JS -->
+            </div>
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
+                <i id="theme-toggle-dark-icon" class="fa-solid fa-moon w-5 h-5 hidden"></i>
+                <i id="theme-toggle-light-icon" class="fa-solid fa-sun w-5 h-5 hidden"></i>
+            </button>
         </div>
     </header>
 
     <!-- Controls Panel: Filters & Grouping -->
-    <section class="bg-slate-900/60 border-b border-slate-800/80 p-6 flex flex-wrap items-end gap-6 shadow-sm">
+    <section class="bg-white/60 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800/80 p-6 flex flex-wrap items-end gap-6 shadow-sm backdrop-blur-sm">
         <!-- Filters -->
         <div class="flex-1 min-w-[280px]">
-            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 <i class="fa-solid fa-filter mr-1.5"></i>Board-Filterung
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Owner</label>
-                    <select id="filter-owner" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Owner</label>
+                    <select id="filter-owner" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
                         <option value="ALL">Alle Owner</option>
                         <option value="Max">Max</option>
                         <option value="Julia">Julia</option>
@@ -199,8 +223,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Kunde (Customer)</label>
-                    <select id="filter-customer" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde (Customer)</label>
+                    <select id="filter-customer" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
                         <option value="ALL">Alle Kunden</option>
                         <option value="Acme Corp">Acme Corp</option>
                         <option value="Globex">Globex</option>
@@ -208,8 +232,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Task Typ</label>
-                    <select id="filter-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Typ</label>
+                    <select id="filter-type" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
                         <!-- Filled dynamically -->
                     </select>
                 </div>
@@ -218,13 +242,13 @@
 
         <!-- Groupings / Swimlanes -->
         <div class="flex-1 min-w-[280px]">
-            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 <i class="fa-solid fa-layer-group mr-1.5"></i>Gruppierung & Swimlanes
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Primäre Gruppe (Swimlane)</label>
-                    <select id="group-primary" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200">
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Primäre Gruppe (Swimlane)</label>
+                    <select id="group-primary" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
                         <option value="NONE">Keine Gruppierung</option>
                         <option value="customer">Kunde</option>
                         <option value="taskType">Task Typ</option>
@@ -232,8 +256,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Sub-Gruppe (Innere Swimlane)</label>
-                    <select id="group-secondary" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200" disabled>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Sub-Gruppe (Innere Swimlane)</label>
+                    <select id="group-secondary" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
                         <option value="NONE">Keine Untergruppierung</option>
                         <option value="customer">Kunde</option>
                         <option value="taskType">Task Typ</option>
@@ -245,24 +269,24 @@
 
         <!-- View Options -->
         <div class="flex-1 min-w-[240px]">
-            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 <i class="fa-solid fa-eye mr-1.5"></i>Ansicht
             </h3>
-            <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-lg px-4 py-2">
-                <span class="text-sm font-medium text-slate-200">Archiv anzeigen</span>
+            <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2">
+                <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Archiv anzeigen</span>
                 <label for="filter-archived" class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="filter-archived" class="sr-only peer">
-                    <div class="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>
         </div>
 
         <!-- Action Panel Buttons -->
         <div class="w-full sm:w-auto flex flex-wrap gap-2">
-            <button onclick="openTagsModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
+            <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
                 <i class="fa-solid fa-tags"></i> Tags verwalten
             </button>
-            <button onclick="openTypesModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
+            <button onclick="openTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
                 <i class="fa-solid fa-gears"></i> Typen verwalten
             </button>
             <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/10">
@@ -281,13 +305,13 @@
         <div id="details-resizer" class="hidden"></div>
 
         <!-- Task Details Side Panel (replaces modal) -->
-        <aside id="task-details-panel" class="hidden bg-slate-900 border-l border-slate-800 flex-col" style="width: 450px;">
+        <aside id="task-details-panel" class="hidden bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex-col" style="width: 450px;">
             <!-- Panel content will be injected here, similar to the old modal -->
-            <div class="flex justify-between items-center p-4 border-b border-slate-800">
-                <h3 id="panel-heading" class="text-base font-bold text-white flex items-center gap-2">
+            <div class="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800">
+                <h3 id="panel-heading" class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <!-- Heading set by JS -->
                 </h3>
-                <button onclick="closeDetailsPanel()" class="text-slate-400 hover:text-white transition-colors">
+                <button onclick="closeDetailsPanel()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
@@ -295,79 +319,79 @@
                 <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
                     <input type="hidden" id="modal-task-id">
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Titel der Aufgabe</label>
-                        <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Titel der Aufgabe</label>
+                        <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Task Typ</label>
-                            <select id="modal-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Typ</label>
+                            <select id="modal-type" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <!-- Filled dynamically -->
                             </select>
                         </div>
                         <div>
-                        <label class="block text-xs text-slate-400 mb-1">Owner</label>
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Owner</label>
                         <div id="modal-owner-container" class="combobox-container">
                             <div class="relative">
-                                <input type="text" id="modal-owner" list="owner-list" required placeholder="Owner auswählen oder neu erstellen" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <div id="owner-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white cursor-pointer">
+                                <input type="text" id="modal-owner" list="owner-list" required placeholder="Owner auswählen oder neu erstellen" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div id="owner-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
                             <datalist id="owner-list"></datalist>
-                            <div id="owner-custom-dropdown" class="combobox-dropdown hidden"></div>
+                            <div id="owner-custom-dropdown" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
                         </div>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Kunde</label>
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde</label>
                         <div id="modal-customer-container" class="combobox-container">
                             <div class="relative">
-                                <input type="text" id="modal-customer" list="customer-list" required placeholder="Kunden auswählen oder neu erstellen" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <div id="customer-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white cursor-pointer">
+                                <input type="text" id="modal-customer" list="customer-list" required placeholder="Kunden auswählen oder neu erstellen" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div id="customer-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
                             <datalist id="customer-list">
                                 <!-- Dynamisch gefüllt für Autocomplete -->
                             </datalist>
-                            <div id="customer-custom-dropdown" class="combobox-dropdown hidden"></div>
+                            <div id="customer-custom-dropdown" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Beschreibung</label>
-                        <div class="bg-slate-800 border border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
-                            <div id="description-toolbar" class="flex items-center border-b border-slate-700 divide-x divide-slate-700">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Beschreibung</label>
+                        <div class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
+                            <div id="description-toolbar" class="flex items-center border-b border-slate-300 dark:border-slate-700 divide-x divide-slate-300 dark:divide-slate-700">
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('bold')" title="Fett"><i class="fa-solid fa-bold"></i></button>
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('italic')" title="Kursiv"><i class="fa-solid fa-italic"></i></button>
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('underline')" title="Unterstrichen"><i class="fa-solid fa-underline"></i></button>
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('removeFormat')" title="Formatierung entfernen"><i class="fa-solid fa-text-slash"></i></button>
                             </div>
-                            <div id="modal-description" contenteditable="true" class="w-full p-3 text-sm text-white"></div>
+                            <div id="modal-description" contenteditable="true" class="w-full p-3 text-sm text-slate-800 dark:text-white"></div>
                         </div>
                     </div>
                     <!-- Integration Links (D365 & Zeiterfassung) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-400 mr-1"></i> D365 Task Link</label>
-                            <input type="url" id="modal-d365-link" placeholder="https://dynamics.microsoft.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-500 dark:text-blue-400 mr-1"></i> D365 Task Link</label>
+                            <input type="url" id="modal-d365-link" placeholder="https://dynamics.microsoft.com/..." class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i> Zeiterfassung Link</label>
-                            <input type="url" id="modal-time-link" placeholder="https://zeiterfassung.local/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-500 dark:text-emerald-400 mr-1"></i> Zeiterfassung Link</label>
+                            <input type="url" id="modal-time-link" placeholder="https://zeiterfassung.local/..." class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
-                        <div id="modal-tags-selection" class="flex flex-wrap gap-2 p-3 bg-slate-850 border border-slate-700 rounded-lg max-h-[120px] overflow-y-auto">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
+                        <div id="modal-tags-selection" class="flex flex-wrap gap-2 p-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg max-h-[120px] overflow-y-auto">
                             <!-- Clickable tags dynamically populated here -->
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="p-4 border-t border-slate-800">
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800">
                 <div class="grid grid-cols-2 gap-3">
-                    <button type="button" onclick="closeDetailsPanel()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                    <button type="button" onclick="closeDetailsPanel()" class="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
                         Schließen
                     </button>
                     <button type="submit" form="task-form" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
@@ -378,7 +402,7 @@
         </aside>
     </div>
     <!-- Footer -->
-    <footer class="bg-slate-950 border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
+    <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
         Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits & Collapsible Swimlanes implementiert.
     </footer>
 
@@ -387,22 +411,22 @@
 
     <!-- Tags Management Modal -->
     <div id="tags-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-tags text-blue-500"></i> Tags verwalten
                 </h3>
-                <button onclick="closeTagsModal()" class="text-slate-400 hover:text-white transition-colors">
+                <button onclick="closeTagsModal()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
             
             <!-- Quick Creator for Tags -->
-            <div class="bg-slate-850 p-4 border border-slate-800 rounded-lg mb-4 space-y-3">
-                <h4 class="text-xs font-bold text-slate-300 uppercase">Neuen Tag erstellen</h4>
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4 space-y-3">
+                <h4 class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Tag erstellen</h4>
                 <div class="flex gap-2">
-                    <input type="text" id="new-tag-name" placeholder="Tag Name (z.B. Prio A)" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
-                    <input type="color" id="new-tag-color" value="#3b82f6" class="w-10 h-8 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer">
+                    <input type="text" id="new-tag-name" placeholder="Tag Name (z.B. Prio A)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
+                    <input type="color" id="new-tag-color" value="#3b82f6" class="w-10 h-8 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer">
                     <button onclick="addNewTag()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg">Erstellen</button>
                 </div>
             </div>
@@ -412,8 +436,8 @@
                 <!-- Tag configs populated here -->
             </div>
 
-            <div class="flex justify-end pt-4 border-t border-slate-800">
-                <button onclick="closeTagsModal()" class="bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
+            <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+                <button onclick="closeTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
                     Schließen
                 </button>
             </div>
@@ -422,42 +446,42 @@
 
     <!-- Types Management Modal -->
     <div id="types-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <i class="fa-solid fa-gears text-blue-500"></i> Task Typen verwalten
                 </h3>
-                <button onclick="closeTypesModal()" class="text-slate-400 hover:text-white transition-colors">
+                <button onclick="closeTypesModal()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
             <!-- Creator for Types -->
-            <div class="bg-slate-850 p-4 border border-slate-800 rounded-lg mb-4 space-y-3">
-                <h4 class="text-xs font-bold text-slate-300 uppercase">Neuen Typ erstellen</h4>
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4 space-y-3">
+                <h4 class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Typ erstellen</h4>
                 <div class="space-y-2">
-                    <input type="text" id="new-type-name" placeholder="z.B. Hardware Test" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+                    <input type="text" id="new-type-name" placeholder="z.B. Hardware Test" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
                     <div>
-                        <span class="block text-[10px] text-slate-400 mb-1">Erlaubter Workflow-Pfad (Spalten):</span>
+                        <span class="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">Erlaubter Workflow-Pfad (Spalten):</span>
                         <div class="flex flex-wrap gap-4">
-                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                                 <input type="checkbox" id="path-todo" checked disabled class="accent-blue-500"> To Do
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                                 <input type="checkbox" id="path-analysis" checked class="accent-blue-500"> Analysis
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                                 <input type="checkbox" id="path-inprogress" checked class="accent-blue-500"> In Progress
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                                 <input type="checkbox" id="path-done" checked disabled class="accent-blue-500"> Done
                             </label>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-1.5 text-xs text-slate-300">
+                        <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
                             Farbe:
-                            <input type="color" id="new-type-color" value="#8b5cf6" class="w-8 h-6 bg-slate-800 border border-slate-700 rounded cursor-pointer">
+                            <input type="color" id="new-type-color" value="#8b5cf6" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
                         </label>
                         <button onclick="addNewType()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-lg">Typ erstellen</button>
                     </div>
@@ -469,8 +493,8 @@
                 <!-- Configured Types dynamically populated -->
             </div>
 
-            <div class="flex justify-end pt-4 border-t border-slate-800">
-                <button onclick="closeTypesModal()" class="bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
+            <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+                <button onclick="closeTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
                     Schließen
                 </button>
             </div>
@@ -738,15 +762,15 @@
 
             columns.forEach(col => {
                 const colWrapper = document.createElement('div');
-                colWrapper.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col min-h-[220px] transition-all";
+                colWrapper.className = "bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-3 flex flex-col min-h-[220px] transition-all";
                 
                 const activeFilteredTasks = getFilteredTasks();
                 const globalTotalCount = activeFilteredTasks.filter(t => t.column === col).length;
 
                 colWrapper.innerHTML = `
                     <div class="flex justify-between items-center mb-3 px-1">
-                        <span class="text-xs font-bold text-slate-200 tracking-wide uppercase">${getColLabel(col)}</span>
-                        <span class="bg-slate-900/80 text-[10px] text-slate-400 px-2.5 py-1 rounded-full border border-slate-800/50 font-medium">Gesamt: ${globalTotalCount}</span>
+                        <span class="text-xs font-bold text-slate-600 dark:text-slate-200 tracking-wide uppercase">${getColLabel(col)}</span>
+                        <span class="bg-slate-200 dark:bg-slate-900/80 text-[10px] text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-800/50 font-medium">Gesamt: ${globalTotalCount}</span>
                     </div>
                 `;
 
@@ -755,12 +779,12 @@
 
                 ["Doing", "Done"].forEach(subCol => {
                     const subColBox = document.createElement('div');
-                    const globalSubCount = activeFilteredTasks.filter(t => t.column === col && t.subColumn === subCol).length;
+                    const globalSubCount = activeFilteredTasks.filter(t => t.column === col && t.subColumn === subCol && !t.isArchived).length;
                     const limit = (subCol === "Doing") ? wipLimits[col] : null;
                     const isOverWip = (limit !== null && limit !== undefined && globalSubCount > limit);
 
-                    let subColBaseClass = "bg-slate-900/60 border rounded-lg p-2 flex flex-col gap-2 min-h-[140px] transition-all ";
-                    subColBaseClass += isOverWip ? "border-red-500/50 bg-red-950/10 shadow-lg shadow-red-950/20" : "border-slate-800/50";
+                    let subColBaseClass = "bg-white dark:bg-slate-900/60 border rounded-lg p-2 flex flex-col gap-2 min-h-[140px] transition-all ";
+                    subColBaseClass += isOverWip ? "border-red-500/50 bg-red-50/50 dark:bg-red-950/10 shadow-lg shadow-red-950/20" : "border-slate-200 dark:border-slate-800/50";
                     
                     subColBox.className = subColBaseClass;
                     subColBox.setAttribute('data-main', col);
@@ -772,27 +796,27 @@
 
                     let subColBadgeHtml = '';
                     if (subCol === "Doing") {
-                        const badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                        const badgeColor = 'bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
                         const badgeInner = `<span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span>`;
                         
                         let wipLimitPill = '';
                         if (limit !== null && limit !== undefined) {
                             const pillClass = isOverWip 
-                                ? 'bg-red-500/20 text-red-300 border-red-500/40 animate-pulse cursor-pointer hover:bg-red-500/30' 
-                                : 'bg-slate-800 text-slate-400 border-slate-700/50 cursor-pointer hover:bg-slate-700';
-                            const warnIcon = isOverWip ? '<i class="fa-solid fa-triangle-exclamation mr-1 text-red-400"></i>' : '';
+                                ? 'bg-red-600 text-white border-red-700 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 animate-pulse cursor-pointer hover:bg-red-700 dark:hover:bg-red-500/30' 
+                                : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700/50 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700';
+                            const warnIcon = isOverWip ? `<i class="fa-solid fa-triangle-exclamation mr-1 text-white dark:text-red-400"></i>` : '';
                             wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="Klicken, um WIP Limit anzupassen">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
                         } else {
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="bg-slate-800 text-[9px] text-slate-500 hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-700/50 font-bold cursor-pointer hover:bg-slate-700" title="Klicken, um WIP Limit anzupassen">${globalSubCount} (Kein Limit)</span>`;
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="Klicken, um WIP Limit anzupassen">${globalSubCount} (Kein Limit)</span>`;
                         }
                         
                         subColBadgeHtml = `<div class="flex items-center gap-1.5 justify-between w-full">${badgeInner} ${wipLimitPill}</div>`;
                     } else {
                         const badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-                        subColBadgeHtml = `<div class="flex items-center justify-between w-full"><span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span> <span class="text-[9px] text-slate-500 font-medium">${globalSubCount} Tasks</span></div>`;
+                        subColBadgeHtml = `<div class="flex items-center justify-between w-full"><span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span> <span class="text-[9px] text-slate-400 dark:text-slate-500 font-medium">${globalSubCount} Tasks</span></div>`;
                     }
 
-                    subColBox.innerHTML = `<div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-800 mb-1">${subColBadgeHtml}</div>`;
+                    subColBox.innerHTML = `<div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800 mb-1">${subColBadgeHtml}</div>`;
 
                     const targetTasks = boardTasks.filter(t => t.column === col && t.subColumn === subCol);
                     targetTasks.forEach(task => subColBox.appendChild(createCard(task)));
@@ -808,14 +832,14 @@
 
         function createBoardElement(title, boardTasks) {
             const wrapper = document.createElement('div');
-            wrapper.innerHTML = `<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-list-check mr-2"></i>${title}</h2>`;
+            wrapper.innerHTML = `<h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-list-check mr-2"></i>${title}</h2>`;
             wrapper.appendChild(createBoardStructure(boardTasks));
             return wrapper;
         }
 
         function createCard(task) {
             const card = document.createElement('div');
-            let cardClasses = "bg-slate-800/90 border border-slate-700/60 rounded-lg p-3 shadow-md hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
+            let cardClasses = "bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 rounded-lg p-3 shadow-md hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
             if (task.isArchived) {
                 cardClasses += " card-archived";
             }
@@ -838,7 +862,7 @@
                 allowedCols.forEach(col => {
                     ["Doing", "Done"].forEach(subCol => {
                         if (!(task.column === col && task.subColumn === subCol)) {
-                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors">${getColLabel(col)} (${subCol})</button>`);
+                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${getColLabel(col)} (${subCol})</button>`);
                         }
                     });
                 });
@@ -846,8 +870,8 @@
             }
 
             const archiveButtonHtml = task.isArchived
-                ? `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', false)" class="w-full text-left px-3 py-1.5 hover:bg-blue-500/20 text-blue-400 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-open w-4 mr-1"></i> Wiederherstellen</button>`
-                : `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', true)" class="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-archive w-4 mr-1"></i> Archivieren</button>`;
+                ? `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', false)" class="w-full text-left px-3 py-1.5 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-open w-4 mr-1"></i> Wiederherstellen</button>`
+                : `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', true)" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-archive w-4 mr-1"></i> Archivieren</button>`;
 
             let tagsHtml = '';
             if (task.tags && task.tags.length > 0) {
@@ -860,7 +884,7 @@
             let descriptionIconHtml = '';
             // Check for description content beyond empty tags
             if (task.description && task.description.replace(/<[^>]*>/g, '').trim().length > 0) {
-                descriptionIconHtml = `<i class="fa-solid fa-align-left text-slate-500" title="Diese Aufgabe hat eine Beschreibung"></i>`;
+                descriptionIconHtml = `<i class="fa-solid fa-align-left text-slate-400 dark:text-slate-500" title="Diese Aufgabe hat eine Beschreibung"></i>`;
             }
 
             let linksHtml = '';
@@ -874,31 +898,31 @@
             card.innerHTML = `
                 <div class="flex justify-between items-start gap-1 mb-1.5">
                     <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] text-slate-400 font-bold bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">${task.id.slice(0,8)}...</span>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700/50">${task.id.slice(0,8)}...</span>
                         <div class="flex items-center gap-2">
                             ${descriptionIconHtml}
                             ${linksHtml}
                         </div>
                     </div>
                     <div class="relative inline-block text-left opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="toggleCardDropdown(event, '${task.id}')" class="text-slate-400 hover:text-white px-1"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>
-                        <div id="drop-${task.id}" class="hidden absolute right-0 mt-1 w-40 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1">
+                        <button onclick="toggleCardDropdown(event, '${task.id}')" class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-1"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>
+                        <div id="drop-${task.id}" class="hidden absolute right-0 mt-1 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-20 py-1">
                             ${moveOptionsHtml}
-                            <div class="border-t border-slate-700/50 my-1"></div>
+                            <div class="border-t border-slate-200 dark:border-slate-700/50 my-1"></div>
                             ${archiveButtonHtml}
-                            <div class="border-t border-slate-700/50 my-1"></div>
-                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 text-red-400 text-[11px] font-medium transition-colors">
+                            <div class="border-t border-slate-200 dark:border-slate-700/50 my-1"></div>
+                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="w-full text-left px-3 py-1.5 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-[11px] font-medium transition-colors">
                                 <i class="fa-solid fa-trash-can w-4 mr-1"></i> Endgültig Löschen
                             </button>
                         </div>
                     </div>
                 </div>
-                <h4 class="text-xs font-semibold text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
+                <h4 class="text-sm font-semibold text-slate-800 dark:text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
                 ${tagsHtml}
-                <div class="space-y-1.5 border-t border-slate-700/40 pt-2 mt-2 text-[10px]">
-                    <div class="flex items-center gap-1.5 text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-500"></i><span>Owner: <strong class="text-white">${task.owner}</strong></span></div>
-                    <div class="flex items-center gap-1.5 text-slate-300"><i class="fa-solid fa-building-user text-[9px] text-slate-500"></i><span>Kunde: <strong class="text-white">${task.customer}</strong></span></div>
-                    <div class="flex items-center gap-1.5 text-slate-300"><i class="fa-solid fa-gears text-[9px] text-slate-500"></i><span>Typ: <strong class="text-white">${task.taskType}</strong></span></div>
+                <div class="space-y-1.5 border-t border-slate-200 dark:border-slate-700/40 pt-2 mt-2 text-[10px]">
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>Owner: <strong class="text-slate-800 dark:text-white">${task.owner}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-building-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>Kunde: <strong class="text-slate-800 dark:text-white">${task.customer}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-gears text-[9px] text-slate-400 dark:text-slate-500"></i><span>Typ: <strong class="text-slate-800 dark:text-white">${task.taskType}</strong></span></div>
                 </div>
             `;
             return card;
@@ -1247,13 +1271,13 @@
                         <div class="flex items-center gap-3">
                             <span class="w-3 h-3 rounded-full" style="background-color: ${typeConfig.color}"></span>
                             <div class="flex-1">
-                                <span class="text-xs font-bold text-white block">${type}</span>
-                                <span class="text-[10px] text-slate-400">Pfad: ${cols}</span>
+                                <span class="text-xs font-bold text-slate-800 dark:text-white block">${type}</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400">Pfad: ${cols}</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="color" onchange="updateTypeColor('${type}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-slate-800 border border-slate-700 rounded cursor-pointer">
-                            <button onclick="deleteType('${type}')" class="text-slate-500 hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                            <input type="color" onchange="updateTypeColor('${type}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
+                            <button onclick="deleteType('${type}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>`;
             }).join('');
@@ -1469,6 +1493,45 @@
             setupOwnerCombobox();
             setupCustomerCombobox(); // Initial setup for event listeners
             loadTasksFromCloud();
+
+            // --- Theme Toggle Logic ---
+            const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+            const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+            // Change the icons inside the button based on previous settings
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                themeToggleLightIcon.classList.remove('hidden');
+            } else {
+                themeToggleDarkIcon.classList.remove('hidden');
+            }
+
+            const themeToggleBtn = document.getElementById('theme-toggle');
+
+            themeToggleBtn.addEventListener('click', function() {
+                // toggle icons inside button
+                themeToggleDarkIcon.classList.toggle('hidden');
+                themeToggleLightIcon.classList.toggle('hidden');
+
+                // if set via local storage previously
+                if (localStorage.getItem('theme')) {
+                    if (localStorage.getItem('theme') === 'light') {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    }
+                // if NOT set via local storage previously
+                } else {
+                    if (document.documentElement.classList.contains('dark')) {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    } else {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    }
+                }
+            });
         });
 
         // --- Resizable Panel Logic ---
