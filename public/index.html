@@ -175,6 +175,26 @@
             visibility: visible;
             opacity: 1;
         }
+
+        .dragging-card {
+            opacity: 0.25 !important;
+            transform: scale(0.98);
+        }
+
+        #drop-position-indicator {
+            height: 10px;
+            border: 2px dashed #2563eb;
+            border-radius: 8px;
+            background: rgba(37, 99, 235, 0.12);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+            margin: 2px 0;
+        }
+
+        .dark #drop-position-indicator {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.18);
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18);
+        }
     </style>
 </head>
 
@@ -527,7 +547,7 @@
     <!-- Main Script Block -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, enableIndexedDbPersistence, collection, getDocs, getDoc, setDoc, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, enableIndexedDbPersistence, collection, getDocs, getDoc, setDoc, addDoc, updateDoc, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         // Your web app's Firebase configuration
@@ -883,6 +903,8 @@
         let selectedModalTags = [];
         let draggedTaskId = null;
         let selectedTaskId = null;
+        let dragSource = null;
+        let dragDropState = null;
         const collapsedSwimlanes = new Set();
 
         let owners = [];
@@ -936,6 +958,203 @@
         function getColLabel(col) {
             const labels = { "ToDo": "To Do", "Analysis": "Analysis", "InProgress": "In Progress", "Done": "Done" };
             return labels[col] || col;
+        }
+
+        function sortTasksByPriority(a, b) {
+            const aOrder = typeof a.order === 'number' ? a.order : Number.POSITIVE_INFINITY;
+            const bOrder = typeof b.order === 'number' ? b.order : Number.POSITIVE_INFINITY;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+
+            const aCreated = a.createdAt || '';
+            const bCreated = b.createdAt || '';
+            if (aCreated !== bCreated) return aCreated.localeCompare(bCreated);
+
+            return (a.id || '').localeCompare(b.id || '');
+        }
+
+        function getLaneTasks(mainCol, subCol, excludeTaskId = null) {
+            return tasks
+                .filter(task => task.column === mainCol && task.subColumn === subCol && task.id !== excludeTaskId)
+                .sort(sortTasksByPriority);
+        }
+
+        function getTaskById(taskId) {
+            return tasks.find(task => task.id === taskId) || null;
+        }
+
+        function buildLaneOrderUpdates(mainCol, subCol, laneTasks) {
+            return laneTasks.map((task, index) => ({
+                id: task.id,
+                data: {
+                    column: mainCol,
+                    subColumn: subCol,
+                    order: (index + 1) * 1024
+                }
+            }));
+        }
+
+        async function updateTaskSetInCloud(taskUpdates) {
+            if (!ensureAuthenticatedOrToast('Prioritäten zu speichern')) return false;
+            if (!taskUpdates || taskUpdates.length === 0) return true;
+
+            try {
+                const batch = writeBatch(db);
+                taskUpdates.forEach((item) => {
+                    const payload = normalizeTaskPayload(item.data, true);
+                    batch.update(doc(db, "tasks", item.id), payload);
+                });
+
+                await batch.commit();
+
+                taskUpdates.forEach((item) => {
+                    const payload = normalizeTaskPayload(item.data, true);
+                    const index = tasks.findIndex(task => task.id === item.id);
+                    if (index !== -1) {
+                        tasks[index] = { ...tasks[index], ...payload };
+                    }
+                });
+
+                persistTaskSnapshot();
+                return true;
+            } catch (error) {
+                console.error("Error updating task order set:", error);
+                showToast("Priorisierung konnte nicht gespeichert werden.");
+                return false;
+            }
+        }
+
+        function normalizeLaneOrders(laneTasks) {
+            return laneTasks.map((task, index) => {
+                const fallbackOrder = (index + 1) * 1024;
+                return {
+                    ...task,
+                    _order: typeof task.order === 'number' ? task.order : fallbackOrder
+                };
+            });
+        }
+
+        function computeNewOrder(mainCol, subCol, beforeTaskId, draggedId) {
+            const lane = normalizeLaneOrders(getLaneTasks(mainCol, subCol, draggedId));
+            if (lane.length === 0) {
+                return 1024;
+            }
+
+            if (!beforeTaskId) {
+                return lane[lane.length - 1]._order + 1024;
+            }
+
+            const insertIndex = lane.findIndex(task => task.id === beforeTaskId);
+            if (insertIndex <= 0) {
+                return lane[0]._order - 1024;
+            }
+
+            const prev = lane[insertIndex - 1]._order;
+            const next = lane[insertIndex]._order;
+            if (prev >= next) {
+                return prev + 0.5;
+            }
+            return prev + (next - prev) / 2;
+        }
+
+        function getDropIndicator() {
+            let indicator = document.getElementById('drop-position-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'drop-position-indicator';
+            }
+            return indicator;
+        }
+
+        function getBeforeCardForY(dropzone, clientY, excludeTaskId) {
+            const cards = [...dropzone.querySelectorAll('[data-task-id]')]
+                .filter(card => card.getAttribute('data-task-id') !== excludeTaskId);
+
+            for (const card of cards) {
+                const rect = card.getBoundingClientRect();
+                if (clientY < rect.top + rect.height / 2) {
+                    return card;
+                }
+            }
+
+            return null;
+        }
+
+        function getBeforeTaskIdFromIndicator(indicator) {
+            if (!indicator) return null;
+            let sibling = indicator.nextElementSibling;
+            while (sibling) {
+                if (sibling.hasAttribute && sibling.hasAttribute('data-task-id')) {
+                    return sibling.getAttribute('data-task-id');
+                }
+                sibling = sibling.nextElementSibling;
+            }
+            return null;
+        }
+
+        function clearDropIndicators() {
+            document.querySelectorAll('.column-disabled, .column-allowed, .drag-over').forEach(el => {
+                el.classList.remove('column-disabled', 'column-allowed', 'drag-over');
+            });
+            const indicator = document.getElementById('drop-position-indicator');
+            if (indicator) indicator.remove();
+            dragDropState = null;
+        }
+
+        function cleanupDraggingCards() {
+            document.querySelectorAll('.dragging-card').forEach((card) => {
+                card.classList.remove('dragging-card');
+                card.style.display = '';
+            });
+        }
+
+        function getDropzoneFromEvent(e) {
+            const target = e.target;
+            if (!target) return null;
+            if (target.id === 'drop-position-indicator') {
+                return target.parentElement?.closest('[data-main]') || null;
+            }
+            return target.closest('[data-main]');
+        }
+
+        function getInsertIndexFromDropzone(dropzone, draggedId, beforeTaskId) {
+            const lane = getLaneTasks(dropzone.dataset.main, dropzone.dataset.sub, draggedId);
+            if (!beforeTaskId) return lane.length;
+            const index = lane.findIndex(task => task.id === beforeTaskId);
+            return index === -1 ? lane.length : index;
+        }
+
+        async function reorderTaskAndPersist(taskId, targetMain, targetSub, beforeTaskId) {
+            const movedTask = getTaskById(taskId);
+            if (!movedTask) return false;
+
+            const sourceMain = dragSource?.mainCol || movedTask.column;
+            const sourceSub = dragSource?.subCol || movedTask.subColumn;
+            const sourceLane = getLaneTasks(sourceMain, sourceSub, taskId);
+            const targetLane = getLaneTasks(targetMain, targetSub, taskId);
+
+            const insertIndex = (() => {
+                if (!beforeTaskId) return targetLane.length;
+                const idx = targetLane.findIndex(task => task.id === beforeTaskId);
+                return idx === -1 ? targetLane.length : idx;
+            })();
+
+            targetLane.splice(insertIndex, 0, { ...movedTask, column: targetMain, subColumn: targetSub });
+
+            let updates = [];
+            if (sourceMain === targetMain && sourceSub === targetSub) {
+                updates = buildLaneOrderUpdates(targetMain, targetSub, targetLane);
+            } else {
+                updates = [
+                    ...buildLaneOrderUpdates(sourceMain, sourceSub, sourceLane),
+                    ...buildLaneOrderUpdates(targetMain, targetSub, targetLane)
+                ];
+            }
+
+            const success = await updateTaskSetInCloud(updates);
+            if (!success) return false;
+
+            await loadTasksFromCloud();
+            return true;
         }
 
         // --- RENDER FUNCTIONS ---
@@ -1087,7 +1306,9 @@
 
                     subColBox.innerHTML = `<div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800 mb-1">${subColBadgeHtml}</div>`;
 
-                    const targetTasks = boardTasks.filter(t => t.column === col && t.subColumn === subCol);
+                    const targetTasks = boardTasks
+                        .filter(t => t.column === col && t.subColumn === subCol)
+                        .sort(sortTasksByPriority);
                     targetTasks.forEach(task => subColBox.appendChild(createCard(task)));
                     subColsContainer.appendChild(subColBox);
                 });
@@ -1292,7 +1513,16 @@
         function handleDragStart(e, taskId) {
             draggedTaskId = taskId;
             e.dataTransfer.effectAllowed = "move";
-            e.target.style.opacity = "0.5";
+            e.dataTransfer.setData('text/plain', taskId);
+            e.target.classList.add('dragging-card');
+            const sourceCard = getTaskById(taskId);
+            dragSource = sourceCard ? { mainCol: sourceCard.column, subCol: sourceCard.subColumn } : null;
+
+            // Hide original card after drag starts so insertion positions are calculated against the real remaining list.
+            setTimeout(() => {
+                const cardEl = document.querySelector(`[data-task-id="${taskId}"]`);
+                if (cardEl) cardEl.style.display = 'none';
+            }, 0);
             
             const task = tasks.find(t => t.id === taskId);
             if (task) {
@@ -1308,46 +1538,109 @@
         }
 
         function handleDragEnd(e) {
-            e.target.style.opacity = "1";
-            document.querySelectorAll('.column-disabled, .column-allowed, .drag-over').forEach(el => {
-                el.classList.remove('column-disabled', 'column-allowed', 'drag-over');
-            });
+            cleanupDraggingCards();
+            clearDropIndicators();
+            draggedTaskId = null;
+            dragSource = null;
         }
 
         function handleDragOver(e) {
             if (e.target.closest('.column-disabled')) return;
             e.preventDefault();
-            const dropzone = e.target.closest('[data-main]');
-            if (dropzone) dropzone.classList.add('drag-over');
+            const dropzone = getDropzoneFromEvent(e);
+            if (!dropzone || !draggedTaskId) return;
+
+            dropzone.classList.add('drag-over');
+            const indicator = getDropIndicator();
+            const beforeCard = getBeforeCardForY(dropzone, e.clientY, draggedTaskId);
+
+            if (beforeCard) {
+                dropzone.insertBefore(indicator, beforeCard);
+            } else {
+                dropzone.appendChild(indicator);
+            }
+
+            dragDropState = {
+                mainCol: dropzone.dataset.main,
+                subCol: dropzone.dataset.sub,
+                beforeTaskId: beforeCard ? beforeCard.getAttribute('data-task-id') : null
+            };
         }
 
         function handleDragLeave(e) {
-            const dropzone = e.target.closest('[data-main]');
-            if (dropzone) dropzone.classList.remove('drag-over');
+            const dropzone = getDropzoneFromEvent(e);
+            if (!dropzone) return;
+            const related = e.relatedTarget;
+            if (related && dropzone.contains(related)) return;
+
+            // Ignore synthetic dragleave events fired when pointer moves over child nodes.
+            const pointerX = e.clientX;
+            const pointerY = e.clientY;
+            const pointerElement = document.elementFromPoint(pointerX, pointerY);
+            if (pointerElement && dropzone.contains(pointerElement)) return;
+
+            dropzone.classList.remove('drag-over');
+
+            if (dragDropState && dragDropState.mainCol === dropzone.dataset.main && dragDropState.subCol === dropzone.dataset.sub) {
+                dragDropState = null;
+            }
+
+            const indicator = document.getElementById('drop-position-indicator');
+            if (indicator && dropzone.contains(indicator)) {
+                indicator.remove();
+            }
         }
 
         window.handleDrop = async function(e, mainCol, subCol) {
             e.preventDefault();
-            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
             if (!draggedTaskId) return;
 
-            if (validateWorkflowMove(draggedTaskId, mainCol)) {
-                const success = await updateTaskInCloud(draggedTaskId, { column: mainCol, subColumn: subCol });
+            const indicator = document.getElementById('drop-position-indicator');
+            const indicatorDropzone = indicator?.closest('[data-main]') || null;
+            const eventDropzone = getDropzoneFromEvent(e);
+            const effectiveDropzone = indicatorDropzone || eventDropzone;
+
+            if (!effectiveDropzone) {
+                cleanupDraggingCards();
+                clearDropIndicators();
+                draggedTaskId = null;
+                dragSource = null;
+                return;
+            }
+
+            const targetMain = effectiveDropzone?.dataset.main || dragDropState?.mainCol || mainCol;
+            const targetSub = effectiveDropzone?.dataset.sub || dragDropState?.subCol || subCol;
+            let beforeTaskId = getBeforeTaskIdFromIndicator(indicator);
+
+            if (!beforeTaskId && effectiveDropzone) {
+                const fallbackBeforeCard = getBeforeCardForY(effectiveDropzone, e.clientY, draggedTaskId);
+                beforeTaskId = fallbackBeforeCard ? fallbackBeforeCard.getAttribute('data-task-id') : null;
+            }
+
+            const fallbackIndex = getInsertIndexFromDropzone(effectiveDropzone, draggedTaskId, beforeTaskId);
+            if (beforeTaskId === null && fallbackIndex < getLaneTasks(targetMain, targetSub, draggedTaskId).length) {
+                const lane = getLaneTasks(targetMain, targetSub, draggedTaskId);
+                beforeTaskId = lane[fallbackIndex]?.id || null;
+            }
+
+            cleanupDraggingCards();
+            clearDropIndicators();
+
+            if (validateWorkflowMove(draggedTaskId, targetMain)) {
+                const success = await reorderTaskAndPersist(draggedTaskId, targetMain, targetSub, beforeTaskId);
                 if (!success) {
                     draggedTaskId = null;
+                    dragSource = null;
                     return;
                 }
-                await loadTasksFromCloud();
             }
             draggedTaskId = null;
+            dragSource = null;
         }
 
         window.manualMoveTask = async function(taskId, mainCol, subCol) {
             if (validateWorkflowMove(taskId, mainCol)) {
-                const success = await updateTaskInCloud(taskId, { column: mainCol, subColumn: subCol });
-                if (success) {
-                    await loadTasksFromCloud();
-                }
+                await reorderTaskAndPersist(taskId, mainCol, subCol, null);
             }
         }
 
@@ -1398,6 +1691,7 @@
                 taskData.column = "ToDo";
                 taskData.isArchived = false;
                 taskData.subColumn = "Doing";
+                taskData.order = computeNewOrder("ToDo", "Doing", null, null);
                 const newId = await addTaskToCloud(taskData);
                 if (!newId) return;
                 showToast(`Task ${newId.slice(0,8)}... wurde im To Do erstellt.`);
