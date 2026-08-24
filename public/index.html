@@ -512,7 +512,7 @@
     <!-- Main Script Block -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, enableIndexedDbPersistence, collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -532,36 +532,77 @@
         // --- LOCAL STORAGE HELPERS ---
         function loadFromStorage(key, defaultValue) {
             const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : defaultValue;
+            if (data === null) return defaultValue;
+            try {
+                return JSON.parse(data);
+            } catch (error) {
+                console.warn(`Could not parse localStorage key "${key}". Resetting it.`);
+                return defaultValue;
+            }
         }
 
         function saveToStorage(key, value) {
-            localStorage.setItem(key, JSON.stringify(value));
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (error) {
+                console.warn(`Could not save "${key}" to localStorage:`, error);
+            }
+        }
+
+        function persistTaskSnapshot() {
+            saveToStorage('kanban_tasks', tasks);
+        }
+
+        function normalizeTaskPayload(taskData, isUpdate = false) {
+            const now = new Date().toISOString();
+            const base = { ...taskData };
+            if (!isUpdate) {
+                base.createdAt = base.createdAt || now;
+            }
+            base.updatedAt = now;
+            return base;
+        }
+
+        async function setupFirestorePersistence() {
+            try {
+                await enableIndexedDbPersistence(db);
+                console.log("Firestore offline persistence enabled.");
+            } catch (error) {
+                if (error.code === 'failed-precondition') {
+                    console.warn('Firestore persistence can only be enabled in one tab at a time.');
+                } else if (error.code === 'unimplemented') {
+                    console.warn('This browser does not support Firestore offline persistence.');
+                } else {
+                    console.warn('Firestore persistence could not be enabled:', error);
+                }
+            }
         }
 
         // --- FIRESTORE CRUD FUNCTIONS ---
         async function loadTasksFromCloud() {
             try {
                 const querySnapshot = await getDocs(collection(db, "tasks"));
-                let cloudTasks = [];
+                const cloudTasks = [];
                 querySnapshot.forEach((docSnapshot) => {
                     cloudTasks.push({ ...docSnapshot.data(), id: docSnapshot.id });
                 });
 
                 updateDynamicListsFromTasks(cloudTasks);
                 console.log("Tasks successfully loaded from Firestore:", cloudTasks);
-                tasks = cloudTasks; // Overwrite global tasks array with cloud data
-                
+                tasks = cloudTasks;
+                persistTaskSnapshot();
+
                 if (tasks.length === 0) {
                     console.log("No tasks found in Firestore. The board will be empty.");
                 }
 
                 updateAllDropdowns();
-                renderBoard(); // Re-render the entire board with the new data
+                renderBoard();
             } catch (error) {
                 console.error("Error loading tasks from Firestore:", error);
-                showToast("Error: Could not load data from the cloud.");
-                tasks = loadFromStorage('kanban_tasks', []);
+                const localFallback = loadFromStorage('kanban_tasks', []);
+                tasks = Array.isArray(localFallback) ? localFallback : [];
+                showToast("Firestore erreichbar? Lokale letzte Sicherung wird geladen.");
                 updateAllDropdowns();
                 renderBoard();
             }
@@ -569,12 +610,16 @@
 
         async function addTaskToCloud(taskData) {
             try {
-                const docRef = await addDoc(collection(db, "tasks"), taskData);
+                const payload = normalizeTaskPayload(taskData, false);
+                const docRef = await addDoc(collection(db, "tasks"), payload);
+                const newTask = { ...payload, id: docRef.id };
+                tasks = [...tasks, newTask];
+                persistTaskSnapshot();
                 console.log("Task added with ID: ", docRef.id);
                 return docRef.id;
             } catch (e) {
                 console.error("Error adding document: ", e);
-                showToast("Error: Could not save new task.");
+                showToast("Task konnte nicht in Firebase gespeichert werden.");
                 return null;
             }
         }
@@ -582,21 +627,34 @@
         async function updateTaskInCloud(taskId, taskData) {
             try {
                 const taskRef = doc(db, "tasks", taskId);
-                await updateDoc(taskRef, taskData);
+                const payload = normalizeTaskPayload(taskData, true);
+                await updateDoc(taskRef, payload);
+
+                const taskIndex = tasks.findIndex((task) => task.id === taskId);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex] = { ...tasks[taskIndex], ...payload };
+                }
+                persistTaskSnapshot();
                 console.log(`Task ${taskId} updated in Firestore.`);
+                return true;
             } catch (e) {
                 console.error("Error updating document: ", e);
-                showToast(`Error: Could not update task ${taskId}.`);
+                showToast(`Task ${taskId.slice(0, 8)}... konnte nicht gespeichert werden.`);
+                return false;
             }
         }
 
         async function deleteTaskFromCloud(taskId) {
             try {
                 await deleteDoc(doc(db, "tasks", taskId));
+                tasks = tasks.filter((task) => task.id !== taskId);
+                persistTaskSnapshot();
                 console.log(`Task ${taskId} deleted from Firestore.`);
+                return true;
             } catch (e) {
                 console.error("Error deleting document: ", e);
-                showToast(`Error: Could not delete task ${taskId}.`);
+                showToast(`Task ${taskId.slice(0, 8)}... konnte nicht gelöscht werden.`);
+                return false;
             }
         }
 
@@ -1001,10 +1059,23 @@
                 if (selectedTaskId === taskId) {
                     closeDetailsPanel();
                 }
-                await updateTaskInCloud(taskId, { isArchived: shouldArchive });
+                const success = await updateTaskInCloud(taskId, { isArchived: shouldArchive });
+                if (!success) return;
                 showToast(`Task wurde ${actionText}.`);
                 await loadTasksFromCloud();
             }
+        }
+
+        window.deleteTask = async function(taskId) {
+            const taskTitle = tasks.find(t => t.id === taskId)?.title || 'diesen Task';
+            if (!confirm(`Möchten Sie "${taskTitle}" endgültig löschen?`)) {
+                return;
+            }
+
+            const success = await deleteTaskFromCloud(taskId);
+            if (!success) return;
+            showToast('Task wurde endgültig gelöscht.');
+            await loadTasksFromCloud();
         }
         // Drag & Drop Handlers
         function handleDragStart(e, taskId) {
@@ -1050,7 +1121,11 @@
             if (!draggedTaskId) return;
 
             if (validateWorkflowMove(draggedTaskId, mainCol)) {
-                await updateTaskInCloud(draggedTaskId, { column: mainCol, subColumn: subCol });
+                const success = await updateTaskInCloud(draggedTaskId, { column: mainCol, subColumn: subCol });
+                if (!success) {
+                    draggedTaskId = null;
+                    return;
+                }
                 await loadTasksFromCloud();
             }
             draggedTaskId = null;
@@ -1058,8 +1133,10 @@
 
         window.manualMoveTask = async function(taskId, mainCol, subCol) {
             if (validateWorkflowMove(taskId, mainCol)) {
-                await updateTaskInCloud(taskId, { column: mainCol, subColumn: subCol });
-                await loadTasksFromCloud();
+                const success = await updateTaskInCloud(taskId, { column: mainCol, subColumn: subCol });
+                if (success) {
+                    await loadTasksFromCloud();
+                }
             }
         }
 
@@ -1096,7 +1173,8 @@
                         return;
                     }
                 }
-                await updateTaskInCloud(taskId, taskData);
+                const success = await updateTaskInCloud(taskId, taskData);
+                if (!success) return;
                 showToast(`Task ${taskId.slice(0,8)}... wurde aktualisiert.`);
             } else {
                 if (wipLimits["ToDo"] !== null) {
@@ -1109,7 +1187,8 @@
                 taskData.isArchived = false;
                 taskData.subColumn = "Doing";
                 const newId = await addTaskToCloud(taskData);
-                if (newId) showToast(`Task ${newId.slice(0,8)}... wurde im To Do erstellt.`);
+                if (!newId) return;
+                showToast(`Task ${newId.slice(0,8)}... wurde im To Do erstellt.`);
             }
 
             closeAddTaskModal();
@@ -1464,7 +1543,7 @@
         }
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Add event listeners for controls
             groupPrimary.addEventListener('change', () => {
                 if (groupPrimary.value === 'NONE') {
@@ -1488,11 +1567,13 @@
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
             });
 
+            await setupFirestorePersistence();
+
             // Initial data load and render
             updateAllDropdowns();
             setupOwnerCombobox();
             setupCustomerCombobox(); // Initial setup for event listeners
-            loadTasksFromCloud();
+            await loadTasksFromCloud();
 
             // --- Theme Toggle Logic ---
             const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');

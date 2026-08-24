@@ -1,0 +1,9 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^echo \"Project:\" ; type \\.firebaserc ; echo \"---\" ; echo \"Hosting config:\" ; type firebase\\.json ; echo \"---\" ; echo \"Check if site is deployed via Firebase CLI metadata:\" ; if exist \\.firebase\\\\hosting\\.\\* \\(dir /s /b \\.firebase 2>nul\\) else \\(echo \"No \\.firebase hosting metadata found locally\"\\)$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "npx -y firebase-tools@latest": true
+    }
+}
