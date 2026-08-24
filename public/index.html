@@ -145,7 +145,7 @@
         .dark .toolbar-btn:hover {
             background-color: #334155;
             color: #fff;
-        }
+        }   
         .toolbar-btn.active {
             background-color: #dbeafe;
             color: #2563eb;
@@ -197,6 +197,21 @@
             <div id="dynamic-legend" class="hidden md:flex flex-wrap gap-4 text-xs bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700/50">
                 <!-- Legend items injected by JS -->
             </div>
+            <div id="firebase-connection-status" class="hidden sm:flex items-center gap-2 text-xs bg-slate-100 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                <i class="fa-solid fa-plug-circle-check text-emerald-500"></i>
+                <span id="firebase-project-pill" class="font-semibold text-slate-700 dark:text-slate-200"></span>
+                <span class="text-slate-400">|</span>
+                <span id="firebase-user-pill" class="text-slate-600 dark:text-slate-300"></span>
+            </div>
+            <button id="firebase-login-google" type="button" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+                <i class="fa-brands fa-google mr-1.5"></i>Login
+            </button>
+            <button id="firebase-login-guest" type="button" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+                <i class="fa-solid fa-user-clock mr-1.5"></i>Gast
+            </button>
+            <button id="firebase-logout" type="button" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+                <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Logout
+            </button>
             <!-- Theme Toggle Button -->
             <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
                 <i id="theme-toggle-dark-icon" class="fa-solid fa-moon w-5 h-5 hidden"></i>
@@ -512,7 +527,8 @@
     <!-- Main Script Block -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, enableIndexedDbPersistence, collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, enableIndexedDbPersistence, collection, getDocs, getDoc, setDoc, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -528,6 +544,99 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const boardConfigRef = doc(db, "boardConfig", "main");
+        const googleProvider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let authReadyResolver = null;
+        const authReady = new Promise((resolve) => {
+            authReadyResolver = resolve;
+        });
+
+        function ensureAuthenticatedOrToast(operationName) {
+            if (currentUser) return true;
+            showToast(`Bitte zuerst einloggen, um ${operationName} auszuführen.`);
+            return false;
+        }
+
+        function updateFirebaseConnectionUi() {
+            const projectPill = document.getElementById('firebase-project-pill');
+            const userPill = document.getElementById('firebase-user-pill');
+            const statusBox = document.getElementById('firebase-connection-status');
+            const loginGoogleBtn = document.getElementById('firebase-login-google');
+            const loginGuestBtn = document.getElementById('firebase-login-guest');
+            const logoutBtn = document.getElementById('firebase-logout');
+            const projectText = `Projekt: ${firebaseConfig.projectId}`;
+
+            projectPill.textContent = projectText;
+
+            if (currentUser) {
+                const userLabel = currentUser.isAnonymous
+                    ? `User: Gast (${currentUser.uid.slice(0, 8)}...)`
+                    : `User: ${currentUser.email || currentUser.uid}`;
+                userPill.textContent = userLabel;
+                statusBox.classList.remove('hidden');
+                loginGoogleBtn.classList.add('hidden');
+                loginGuestBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+            } else {
+                userPill.textContent = 'User: Nicht angemeldet';
+                statusBox.classList.remove('hidden');
+                loginGoogleBtn.classList.remove('hidden');
+                loginGuestBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        }
+
+        async function initAuth() {
+            onAuthStateChanged(auth, async (user) => {
+                currentUser = user;
+                updateFirebaseConnectionUi();
+
+                if (currentUser) {
+                    await loadBoardConfigFromCloud();
+                    await loadTasksFromCloud();
+                } else {
+                    tasks = [];
+                    updateAllDropdowns();
+                    renderBoard();
+                }
+
+                if (authReadyResolver) {
+                    authReadyResolver();
+                    authReadyResolver = null;
+                }
+            });
+        }
+
+        window.loginWithGoogle = async function() {
+            try {
+                await signInWithPopup(auth, googleProvider);
+            } catch (error) {
+                console.error('Google login failed:', error);
+                showToast('Google-Login fehlgeschlagen. Bitte Authorised Domains prüfen.');
+            }
+        }
+
+        window.loginAsGuest = async function() {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error('Guest login failed:', error);
+                showToast('Gast-Login fehlgeschlagen. Anonymous Auth aktivieren.');
+            }
+        }
+
+        window.logoutFromFirebase = async function() {
+            try {
+                await signOut(auth);
+                showToast('Abgemeldet.');
+            } catch (error) {
+                console.error('Logout failed:', error);
+                showToast('Logout fehlgeschlagen.');
+            }
+        }
 
         // --- LOCAL STORAGE HELPERS ---
         function loadFromStorage(key, defaultValue) {
@@ -551,6 +660,101 @@
 
         function persistTaskSnapshot() {
             saveToStorage('kanban_tasks', tasks);
+        }
+
+        function isPlainObject(value) {
+            return value && typeof value === 'object' && !Array.isArray(value);
+        }
+
+        function migrateWorkflowPathConfig(inputPaths) {
+            let didMigrate = false;
+            const migrated = {};
+
+            Object.keys(inputPaths || {}).forEach((type) => {
+                const config = inputPaths[type];
+                if (Array.isArray(config)) {
+                    didMigrate = true;
+                    migrated[type] = {
+                        path: config,
+                        color: '#64748b'
+                    };
+                    return;
+                }
+
+                migrated[type] = {
+                    path: Array.isArray(config?.path) ? config.path : ["ToDo", "Done"],
+                    color: typeof config?.color === 'string' ? config.color : '#64748b'
+                };
+            });
+
+            return { migrated, didMigrate };
+        }
+
+        function getTaskTypeColor(taskType) {
+            return workflowPaths[taskType]?.color || '#64748b';
+        }
+
+        let configSaveTimer = null;
+        function queueBoardConfigSync() {
+            if (!currentUser) return;
+            if (configSaveTimer) {
+                clearTimeout(configSaveTimer);
+            }
+
+            configSaveTimer = setTimeout(async () => {
+                try {
+                    await setDoc(boardConfigRef, {
+                        tagsConfig,
+                        workflowPaths,
+                        wipLimits,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error("Could not sync board config to Firestore:", error);
+                }
+            }, 250);
+        }
+
+        async function loadBoardConfigFromCloud() {
+            if (!currentUser) return;
+            try {
+                const configSnap = await getDoc(boardConfigRef);
+                if (!configSnap.exists()) {
+                    return;
+                }
+
+                const cloudConfig = configSnap.data();
+
+                if (isPlainObject(cloudConfig.tagsConfig)) {
+                    tagsConfig = cloudConfig.tagsConfig;
+                }
+
+                if (isPlainObject(cloudConfig.workflowPaths)) {
+                    const migrationResult = migrateWorkflowPathConfig(cloudConfig.workflowPaths);
+                    workflowPaths = migrationResult.migrated;
+                    if (migrationResult.didMigrate) {
+                        queueBoardConfigSync();
+                    }
+                }
+
+                if (isPlainObject(cloudConfig.wipLimits)) {
+                    Object.keys(wipLimits).forEach((column) => {
+                        wipLimits[column] = Object.prototype.hasOwnProperty.call(cloudConfig.wipLimits, column)
+                            ? cloudConfig.wipLimits[column]
+                            : wipLimits[column];
+                    });
+                }
+
+                saveToStorage('kanban_tagsConfig', tagsConfig);
+                saveToStorage('kanban_workflowPaths', workflowPaths);
+                saveToStorage('kanban_wipLimits', wipLimits);
+            } catch (error) {
+                if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
+                    showToast("Board-Konfiguration gesperrt. Bitte erneut einloggen.");
+                    return;
+                }
+                console.warn("Could not load board config from Firestore. Using local settings.", error);
+            }
         }
 
         function normalizeTaskPayload(taskData, isUpdate = false) {
@@ -580,6 +784,12 @@
 
         // --- FIRESTORE CRUD FUNCTIONS ---
         async function loadTasksFromCloud() {
+            if (!currentUser) {
+                tasks = [];
+                updateAllDropdowns();
+                renderBoard();
+                return;
+            }
             try {
                 const querySnapshot = await getDocs(collection(db, "tasks"));
                 const cloudTasks = [];
@@ -600,15 +810,23 @@
                 renderBoard();
             } catch (error) {
                 console.error("Error loading tasks from Firestore:", error);
+                if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
+                    tasks = [];
+                    updateAllDropdowns();
+                    renderBoard();
+                    showToast("Kein Zugriff auf Firebase-Daten. Bitte erneut einloggen.");
+                    return;
+                }
                 const localFallback = loadFromStorage('kanban_tasks', []);
                 tasks = Array.isArray(localFallback) ? localFallback : [];
-                showToast("Firestore erreichbar? Lokale letzte Sicherung wird geladen.");
+                showToast("Cloud momentan nicht erreichbar. Lokale Sicherung wird angezeigt.");
                 updateAllDropdowns();
                 renderBoard();
             }
         }
 
         async function addTaskToCloud(taskData) {
+            if (!ensureAuthenticatedOrToast('Tasks zu erstellen')) return null;
             try {
                 const payload = normalizeTaskPayload(taskData, false);
                 const docRef = await addDoc(collection(db, "tasks"), payload);
@@ -625,6 +843,7 @@
         }
 
         async function updateTaskInCloud(taskId, taskData) {
+            if (!ensureAuthenticatedOrToast('Tasks zu speichern')) return false;
             try {
                 const taskRef = doc(db, "tasks", taskId);
                 const payload = normalizeTaskPayload(taskData, true);
@@ -645,6 +864,7 @@
         }
 
         async function deleteTaskFromCloud(taskId) {
+            if (!ensureAuthenticatedOrToast('Tasks zu löschen')) return false;
             try {
                 await deleteDoc(doc(db, "tasks", taskId));
                 tasks = tasks.filter((task) => task.id !== taskId);
@@ -679,20 +899,10 @@
         });
 
         // --- Data Migration for backward compatibility ---
-        // This ensures that if a user has old data in localStorage, it gets updated to the new object format.
-        let needsSave = false;
-        for (const type in workflowPaths) {
-            if (Array.isArray(workflowPaths[type])) {
-                console.log(`Migrating old task type format for: ${type}`);
-                const oldPath = workflowPaths[type];
-                workflowPaths[type] = {
-                    path: oldPath,
-                    color: type === 'Installation' ? '#10b981' : (type === 'Typicals creation' ? '#f97316' : '#64748b') // Default colors
-                };
-                needsSave = true;
-            }
-        }
-        if (needsSave) {
+        // This ensures that old local structures are normalized to the new object format.
+        const localMigrationResult = migrateWorkflowPathConfig(workflowPaths);
+        workflowPaths = localMigrationResult.migrated;
+        if (localMigrationResult.didMigrate) {
             saveToStorage('kanban_workflowPaths', workflowPaths);
         }
         // --- End of Migration ---
@@ -705,6 +915,7 @@
             saveToStorage('kanban_tagsConfig', tagsConfig);
             saveToStorage('kanban_workflowPaths', workflowPaths);
             saveToStorage('kanban_wipLimits', wipLimits);
+            queueBoardConfigSync();
         }
 
         // --- UI ELEMENT SELECTORS ---
@@ -906,7 +1117,7 @@
             card.setAttribute('data-task-id', task.id);
             
             // Use the centrally defined color for the task type
-            const typeColor = workflowPaths[task.taskType]?.color || '#64748b'; // Default to gray
+            const typeColor = task.taskTypeColor || getTaskTypeColor(task.taskType); // Persisted task color first
             card.style.borderLeft = `4px solid ${typeColor}`;
 
             card.addEventListener('dragstart', (e) => handleDragStart(e, task.id));
@@ -1156,6 +1367,7 @@
             const taskData = {
                 title: form.querySelector('#modal-title').value.trim(),
                 taskType: form.querySelector('#modal-type').value,
+                taskTypeColor: getTaskTypeColor(form.querySelector('#modal-type').value),
                 owner: form.querySelector('#modal-owner').value,
                 customer: form.querySelector('#modal-customer').value,
                 d365Link: form.querySelector('#modal-d365-link').value,
@@ -1387,6 +1599,13 @@
             updateConfiguredDropdowns();
             renderTypesManagerList();
             renderBoard();
+
+            const tasksToUpdate = tasks.filter(task => task.taskType === type);
+            if (tasksToUpdate.length > 0) {
+                Promise.all(tasksToUpdate.map(task => updateTaskInCloud(task.id, { taskTypeColor: newColor })))
+                    .then(() => loadTasksFromCloud())
+                    .catch((error) => console.error("Could not update type colors on tasks:", error));
+            }
         }
 
         window.deleteType = async function(type) {
@@ -1567,13 +1786,18 @@
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
             });
 
+            document.getElementById('firebase-login-google').addEventListener('click', window.loginWithGoogle);
+            document.getElementById('firebase-login-guest').addEventListener('click', window.loginAsGuest);
+            document.getElementById('firebase-logout').addEventListener('click', window.logoutFromFirebase);
+
             await setupFirestorePersistence();
+            await initAuth();
+            await authReady;
 
             // Initial data load and render
             updateAllDropdowns();
             setupOwnerCombobox();
             setupCustomerCombobox(); // Initial setup for event listeners
-            await loadTasksFromCloud();
 
             // --- Theme Toggle Logic ---
             const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
