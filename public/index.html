@@ -195,6 +195,25 @@
             background: rgba(96, 165, 250, 0.18);
             box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18);
         }
+
+        .tag-filter-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            z-index: 70;
+            max-height: 220px;
+            overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            box-shadow: 0 14px 30px -12px rgba(15, 23, 42, 0.35);
+        }
+
+        .dark .tag-filter-dropdown {
+            background: #0f172a;
+            border-color: #334155;
+        }
     </style>
 </head>
 
@@ -243,34 +262,50 @@
     <!-- Controls Panel: Filters & Grouping -->
     <section class="bg-white/60 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800/80 p-6 flex flex-wrap items-end gap-6 shadow-sm backdrop-blur-sm">
         <!-- Filters -->
-        <div class="flex-1 min-w-[280px]">
+        <div class="flex-[1.45_1_620px] min-w-[320px]">
             <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 <i class="fa-solid fa-filter mr-1.5"></i>Board-Filterung
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Owner</label>
-                    <select id="filter-owner" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
-                        <option value="ALL">Alle Owner</option>
-                        <option value="Max">Max</option>
-                        <option value="Julia">Julia</option>
-                        <option value="Ben">Ben</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde (Customer)</label>
-                    <select id="filter-customer" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
-                        <option value="ALL">Alle Kunden</option>
-                        <option value="Acme Corp">Acme Corp</option>
-                        <option value="Globex">Globex</option>
-                        <option value="Initech">Initech</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Typ</label>
-                    <select id="filter-type" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
+            <div class="flex flex-wrap xl:flex-nowrap items-end gap-2.5">
+                <div class="relative w-full sm:w-[160px]" id="filter-owner-container">
+                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Owner</label>
+                    <button id="filter-owner-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                        <span id="filter-owner-label">Alle Owner</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
+                    </button>
+                    <div id="filter-owner-dropdown" class="tag-filter-dropdown hidden">
                         <!-- Filled dynamically -->
-                    </select>
+                    </div>
+                </div>
+                <div class="relative w-full sm:w-[160px]" id="filter-customer-container">
+                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Kunde</label>
+                    <button id="filter-customer-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                        <span id="filter-customer-label">Alle Kunden</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
+                    </button>
+                    <div id="filter-customer-dropdown" class="tag-filter-dropdown hidden">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+                <div class="relative w-full sm:w-[160px]" id="filter-type-container">
+                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Task Typ</label>
+                    <button id="filter-type-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                        <span id="filter-type-label">Alle Typen</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
+                    </button>
+                    <div id="filter-type-dropdown" class="tag-filter-dropdown hidden">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+                <div class="relative w-full sm:w-[185px]" id="filter-tags-container">
+                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Tags</label>
+                    <button id="filter-tags-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                        <span id="filter-tags-label">Alle Tags</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
+                    </button>
+                    <div id="filter-tags-dropdown" class="tag-filter-dropdown hidden">
+                        <!-- Filled dynamically -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -303,12 +338,12 @@
         </div>
 
         <!-- View Options -->
-        <div class="flex-1 min-w-[240px]">
+        <div class="flex-none w-[220px] min-w-[220px]">
             <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 <i class="fa-solid fa-eye mr-1.5"></i>Ansicht
             </h3>
-            <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2">
-                <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Archiv anzeigen</span>
+            <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5">
+                <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Archiv</span>
                 <label for="filter-archived" class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="filter-archived" class="sr-only peer">
                     <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -714,6 +749,37 @@
             return workflowPaths[taskType]?.color || '#64748b';
         }
 
+        const LEGACY_DEFAULT_TAGS = {
+            "Prio A": "#ef4444",
+            "Database": "#3b82f6",
+            "Konzept": "#a855f7",
+            "Hardware": "#f97316",
+            "Network": "#06b6d4",
+            "Freigabe": "#10b981",
+            "Review": "#eab308",
+            "Doku": "#64748b"
+        };
+
+        function isExactLegacyDefaultTagSet(config) {
+            if (!isPlainObject(config)) return false;
+            const cfgKeys = Object.keys(config).sort();
+            const legacyKeys = Object.keys(LEGACY_DEFAULT_TAGS).sort();
+            if (cfgKeys.length !== legacyKeys.length) return false;
+            for (let i = 0; i < legacyKeys.length; i += 1) {
+                const key = legacyKeys[i];
+                if (cfgKeys[i] !== key) return false;
+                if (config[key] !== LEGACY_DEFAULT_TAGS[key]) return false;
+            }
+            return true;
+        }
+
+        function normalizeLegacySampleTags(config) {
+            if (isExactLegacyDefaultTagSet(config)) {
+                return {};
+            }
+            return config;
+        }
+
         let configSaveTimer = null;
         function queueBoardConfigSync() {
             if (!currentUser) return;
@@ -728,11 +794,35 @@
                         workflowPaths,
                         wipLimits,
                         updatedAt: new Date().toISOString()
-                    }, { merge: true });
+                    });
                 } catch (error) {
                     console.error("Could not sync board config to Firestore:", error);
                 }
             }, 250);
+        }
+
+        async function flushBoardConfigSync(showErrorToast = true) {
+            if (!ensureAuthenticatedOrToast('Board-Konfiguration zu speichern')) return false;
+            if (configSaveTimer) {
+                clearTimeout(configSaveTimer);
+                configSaveTimer = null;
+            }
+
+            try {
+                await setDoc(boardConfigRef, {
+                    tagsConfig,
+                    workflowPaths,
+                    wipLimits,
+                    updatedAt: new Date().toISOString()
+                });
+                return true;
+            } catch (error) {
+                console.error("Could not flush board config to Firestore:", error);
+                if (showErrorToast) {
+                    showToast("Konfiguration konnte nicht in Firebase gespeichert werden.");
+                }
+                return false;
+            }
         }
 
         async function loadBoardConfigFromCloud() {
@@ -746,7 +836,7 @@
                 const cloudConfig = configSnap.data();
 
                 if (isPlainObject(cloudConfig.tagsConfig)) {
-                    tagsConfig = cloudConfig.tagsConfig;
+                    tagsConfig = normalizeLegacySampleTags(cloudConfig.tagsConfig);
                 }
 
                 if (isPlainObject(cloudConfig.workflowPaths)) {
@@ -768,6 +858,10 @@
                 saveToStorage('kanban_tagsConfig', tagsConfig);
                 saveToStorage('kanban_workflowPaths', workflowPaths);
                 saveToStorage('kanban_wipLimits', wipLimits);
+
+                if (isExactLegacyDefaultTagSet(cloudConfig.tagsConfig)) {
+                    queueBoardConfigSync();
+                }
             } catch (error) {
                 if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
                     showToast("Board-Konfiguration gesperrt. Bitte erneut einloggen.");
@@ -901,6 +995,10 @@
         // --- GLOBAL STATE & CONFIGURATION ---
         let tasks = [];
         let selectedModalTags = [];
+        let selectedFilterOwners = loadFromStorage('kanban_selectedFilterOwners', []);
+        let selectedFilterCustomers = loadFromStorage('kanban_selectedFilterCustomers', []);
+        let selectedFilterTypes = loadFromStorage('kanban_selectedFilterTypes', []);
+        let selectedFilterTags = loadFromStorage('kanban_selectedFilterTags', []);
         let draggedTaskId = null;
         let selectedTaskId = null;
         let dragSource = null;
@@ -909,11 +1007,7 @@
 
         let owners = [];
         let customers = [];
-        let tagsConfig = loadFromStorage('kanban_tagsConfig', {
-            "Prio A": "#ef4444", "Database": "#3b82f6", "Konzept": "#a855f7",
-            "Hardware": "#f97316", "Network": "#06b6d4", "Freigabe": "#10b981",
-            "Review": "#eab308", "Doku": "#64748b"
-        });
+        let tagsConfig = normalizeLegacySampleTags(loadFromStorage('kanban_tagsConfig', {}));
 
         let workflowPaths = loadFromStorage('kanban_workflowPaths', {
             "Installation": { path: ["ToDo", "InProgress", "Done"], color: "#10b981" }, // Green
@@ -941,9 +1035,14 @@
         }
 
         // --- UI ELEMENT SELECTORS ---
-        const filterOwner = document.getElementById('filter-owner');
-        const filterCustomer = document.getElementById('filter-customer');
-        const filterType = document.getElementById('filter-type');
+        const filterOwnerTrigger = document.getElementById('filter-owner-trigger');
+        const filterOwnerDropdown = document.getElementById('filter-owner-dropdown');
+        const filterCustomerTrigger = document.getElementById('filter-customer-trigger');
+        const filterCustomerDropdown = document.getElementById('filter-customer-dropdown');
+        const filterTypeTrigger = document.getElementById('filter-type-trigger');
+        const filterTypeDropdown = document.getElementById('filter-type-dropdown');
+        const filterTagsTrigger = document.getElementById('filter-tags-trigger');
+        const filterTagsDropdown = document.getElementById('filter-tags-dropdown');
         const groupPrimary = document.getElementById('group-primary');
         const groupSecondary = document.getElementById('group-secondary');
 
@@ -958,6 +1057,236 @@
         function getColLabel(col) {
             const labels = { "ToDo": "To Do", "Analysis": "Analysis", "InProgress": "In Progress", "Done": "Done" };
             return labels[col] || col;
+        }
+
+        function sanitizeSelectedFilterTags() {
+            const validTags = new Set(Object.keys(tagsConfig));
+            selectedFilterTags = selectedFilterTags.filter(tag => validTags.has(tag));
+            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
+        }
+
+        function sanitizeArrayFilter(selection, validValues, storageKey) {
+            const valid = new Set(validValues);
+            const sanitized = selection.filter(item => valid.has(item));
+            saveToStorage(storageKey, sanitized);
+            return sanitized;
+        }
+
+        function updateMultiFilterLabel(labelId, selectedItems, allText, singularSuffix, pluralSuffix) {
+            const labelEl = document.getElementById(labelId);
+            if (!labelEl) return;
+            if (selectedItems.length === 0) {
+                labelEl.textContent = allText;
+            } else if (selectedItems.length === 1) {
+                labelEl.textContent = selectedItems[0];
+            } else {
+                labelEl.textContent = `${selectedItems.length} ${selectedItems.length === 1 ? singularSuffix : pluralSuffix}`;
+            }
+        }
+
+        function renderMultiFilterDropdown({
+            dropdownEl,
+            selectedItems,
+            options,
+            onReset,
+            onToggle,
+            resetLabel,
+            labelId,
+            allLabel,
+            singularSuffix,
+            pluralSuffix
+        }) {
+            if (!dropdownEl) return;
+
+            const allOptionChecked = selectedItems.length === 0;
+            const allOptionHtml = `
+                <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700" onclick="${onReset}()">
+                    <input type="checkbox" ${allOptionChecked ? 'checked' : ''} class="pointer-events-none">
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">${resetLabel}</span>
+                </button>
+            `;
+
+            const optionsHtml = options.length === 0
+                ? `<div class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Keine Einträge vorhanden</div>`
+                : options.map((option) => {
+                    const checked = selectedItems.includes(option);
+                    const safeOption = option.replace(/'/g, "\\'");
+                    return `
+                        <label class="w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" ${checked ? 'checked' : ''} onchange="${onToggle}('${safeOption}')">
+                            <span class="text-slate-700 dark:text-slate-200">${option}</span>
+                        </label>
+                    `;
+                }).join('');
+
+            dropdownEl.innerHTML = allOptionHtml + optionsHtml;
+            updateMultiFilterLabel(labelId, selectedItems, allLabel, singularSuffix, pluralSuffix);
+        }
+
+        function closeAllFilterDropdowns() {
+            filterOwnerDropdown.classList.add('hidden');
+            filterCustomerDropdown.classList.add('hidden');
+            filterTypeDropdown.classList.add('hidden');
+            filterTagsDropdown.classList.add('hidden');
+        }
+
+        function renderOwnerFilterDropdown() {
+            selectedFilterOwners = sanitizeArrayFilter(selectedFilterOwners, owners, 'kanban_selectedFilterOwners');
+            renderMultiFilterDropdown({
+                dropdownEl: filterOwnerDropdown,
+                selectedItems: selectedFilterOwners,
+                options: [...owners].sort(),
+                onReset: 'resetOwnerFilterToAll',
+                onToggle: 'toggleFilterOwner',
+                resetLabel: 'Alle Owner anzeigen',
+                labelId: 'filter-owner-label',
+                allLabel: 'Alle Owner',
+                singularSuffix: 'Owner',
+                pluralSuffix: 'Owner'
+            });
+        }
+
+        function renderCustomerFilterDropdown() {
+            selectedFilterCustomers = sanitizeArrayFilter(selectedFilterCustomers, customers, 'kanban_selectedFilterCustomers');
+            renderMultiFilterDropdown({
+                dropdownEl: filterCustomerDropdown,
+                selectedItems: selectedFilterCustomers,
+                options: [...customers].sort(),
+                onReset: 'resetCustomerFilterToAll',
+                onToggle: 'toggleFilterCustomer',
+                resetLabel: 'Alle Kunden anzeigen',
+                labelId: 'filter-customer-label',
+                allLabel: 'Alle Kunden',
+                singularSuffix: 'Kunde',
+                pluralSuffix: 'Kunden'
+            });
+        }
+
+        function renderTypeFilterDropdown() {
+            const typeOptions = Object.keys(workflowPaths).sort();
+            selectedFilterTypes = sanitizeArrayFilter(selectedFilterTypes, typeOptions, 'kanban_selectedFilterTypes');
+            renderMultiFilterDropdown({
+                dropdownEl: filterTypeDropdown,
+                selectedItems: selectedFilterTypes,
+                options: typeOptions,
+                onReset: 'resetTypeFilterToAll',
+                onToggle: 'toggleFilterType',
+                resetLabel: 'Alle Typen anzeigen',
+                labelId: 'filter-type-label',
+                allLabel: 'Alle Typen',
+                singularSuffix: 'Typ',
+                pluralSuffix: 'Typen'
+            });
+        }
+
+        function updateTagFilterLabel() {
+            updateMultiFilterLabel('filter-tags-label', selectedFilterTags, 'Alle Tags', 'Tag', 'Tags');
+        }
+
+        function renderTagFilterDropdown() {
+            if (!filterTagsDropdown) return;
+            sanitizeSelectedFilterTags();
+
+            const allOptionChecked = selectedFilterTags.length === 0;
+            const tagEntries = Object.keys(tagsConfig).sort();
+
+            const allOptionHtml = `
+                <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700" onclick="resetTagFilterToAll()">
+                    <input type="checkbox" ${allOptionChecked ? 'checked' : ''} class="pointer-events-none">
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">Alle Tags anzeigen</span>
+                </button>
+            `;
+
+            const tagsHtml = tagEntries.length === 0
+                ? `<div class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Keine Tags vorhanden</div>`
+                : tagEntries.map((tag) => {
+                    const checked = selectedFilterTags.includes(tag);
+                    return `
+                        <label class="w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleFilterTag('${tag.replace(/'/g, "\\'")}')">
+                            <span class="text-slate-700 dark:text-slate-200">${tag}</span>
+                        </label>
+                    `;
+                }).join('');
+
+            filterTagsDropdown.innerHTML = allOptionHtml + tagsHtml;
+            updateTagFilterLabel();
+        }
+
+        window.toggleFilterTag = function(tag) {
+            if (selectedFilterTags.includes(tag)) {
+                selectedFilterTags = selectedFilterTags.filter(t => t !== tag);
+            } else {
+                selectedFilterTags.push(tag);
+            }
+            selectedFilterTags = [...new Set(selectedFilterTags)];
+            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
+            renderTagFilterDropdown();
+            renderBoard();
+        }
+
+        window.toggleFilterOwner = function(owner) {
+            if (selectedFilterOwners.includes(owner)) {
+                selectedFilterOwners = selectedFilterOwners.filter(item => item !== owner);
+            } else {
+                selectedFilterOwners.push(owner);
+            }
+            selectedFilterOwners = [...new Set(selectedFilterOwners)];
+            saveToStorage('kanban_selectedFilterOwners', selectedFilterOwners);
+            renderOwnerFilterDropdown();
+            renderBoard();
+        }
+
+        window.resetOwnerFilterToAll = function() {
+            selectedFilterOwners = [];
+            saveToStorage('kanban_selectedFilterOwners', selectedFilterOwners);
+            renderOwnerFilterDropdown();
+            renderBoard();
+        }
+
+        window.toggleFilterCustomer = function(customer) {
+            if (selectedFilterCustomers.includes(customer)) {
+                selectedFilterCustomers = selectedFilterCustomers.filter(item => item !== customer);
+            } else {
+                selectedFilterCustomers.push(customer);
+            }
+            selectedFilterCustomers = [...new Set(selectedFilterCustomers)];
+            saveToStorage('kanban_selectedFilterCustomers', selectedFilterCustomers);
+            renderCustomerFilterDropdown();
+            renderBoard();
+        }
+
+        window.resetCustomerFilterToAll = function() {
+            selectedFilterCustomers = [];
+            saveToStorage('kanban_selectedFilterCustomers', selectedFilterCustomers);
+            renderCustomerFilterDropdown();
+            renderBoard();
+        }
+
+        window.toggleFilterType = function(type) {
+            if (selectedFilterTypes.includes(type)) {
+                selectedFilterTypes = selectedFilterTypes.filter(item => item !== type);
+            } else {
+                selectedFilterTypes.push(type);
+            }
+            selectedFilterTypes = [...new Set(selectedFilterTypes)];
+            saveToStorage('kanban_selectedFilterTypes', selectedFilterTypes);
+            renderTypeFilterDropdown();
+            renderBoard();
+        }
+
+        window.resetTypeFilterToAll = function() {
+            selectedFilterTypes = [];
+            saveToStorage('kanban_selectedFilterTypes', selectedFilterTypes);
+            renderTypeFilterDropdown();
+            renderBoard();
+        }
+
+        window.resetTagFilterToAll = function() {
+            selectedFilterTags = [];
+            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
+            renderTagFilterDropdown();
+            renderBoard();
         }
 
         function sortTasksByPriority(a, b) {
@@ -1178,18 +1507,18 @@
                     const isCollapsed = collapsedSwimlanes.has(swimlaneId);
 
                     const swimlaneSection = document.createElement('div');
-                    swimlaneSection.className = "mb-6 bg-slate-900/40 border border-slate-800 rounded-xl p-5 shadow-sm transition-all duration-300";
+                    swimlaneSection.className = "mb-6 bg-slate-100/90 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-all duration-300";
                     
                     swimlaneSection.innerHTML = `
-                        <div onclick="toggleSwimlane('${swimlaneId}')" class="flex items-center justify-between cursor-pointer select-none pb-2 border-b border-slate-800/80 mb-4 group/header">
+                        <div onclick="toggleSwimlane('${swimlaneId}')" class="flex items-center justify-between cursor-pointer select-none pb-2 border-b border-slate-200 dark:border-slate-800/80 mb-4 group/header">
                             <div class="flex items-center gap-3">
-                                <span class="text-slate-400 group-hover/header:text-white transition-colors duration-200">
+                                <span class="text-slate-500 dark:text-slate-400 group-hover/header:text-slate-700 dark:group-hover/header:text-white transition-colors duration-200">
                                     <i class="fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-xs"></i>
                                 </span>
-                                <span class="text-xs uppercase bg-blue-500/10 text-blue-400 font-bold px-2.5 py-1 rounded-md border border-blue-500/20">
+                                <span class="text-xs uppercase bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold px-2.5 py-1 rounded-md border border-blue-500/30 dark:border-blue-500/20">
                                     ${pGroup.toUpperCase()}: ${g1Value}
                                 </span>
-                                <span class="text-xs text-slate-500">(${g1Tasks.length} Tasks)</span>
+                                <span class="text-xs text-slate-600 dark:text-slate-500">(${g1Tasks.length} Tasks)</span>
                             </div>
                         </div>
                     `;
@@ -1211,13 +1540,13 @@
                                 subSwimlane.innerHTML = `
                                     <div onclick="toggleSwimlane('${subSwimlaneId}')" class="flex items-center justify-between cursor-pointer select-none mb-2 py-1 group/subheader">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-slate-500 group-hover/subheader:text-slate-300 transition-colors duration-200">
+                                            <span class="text-slate-500 dark:text-slate-500 group-hover/subheader:text-slate-700 dark:group-hover/subheader:text-slate-300 transition-colors duration-200">
                                                 <i class="fa-solid ${isSubCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[10px]"></i>
                                             </span>
-                                            <span class="text-xs font-semibold text-slate-300">
-                                                ${sGroup.toUpperCase()}: <span class="text-emerald-400">${g2Value}</span>
+                                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                ${sGroup.toUpperCase()}: <span class="text-emerald-700 dark:text-emerald-400">${g2Value}</span>
                                             </span>
-                                            <span class="text-[10px] text-slate-500">(${g2Tasks.length} Tasks)</span>
+                                            <span class="text-[10px] text-slate-600 dark:text-slate-500">(${g2Tasks.length} Tasks)</span>
                                         </div>
                                     </div>
                                 `;
@@ -1429,11 +1758,13 @@
         function getFilteredTasks() {
             const showArchived = document.getElementById('filter-archived').checked;
             return tasks.filter(task => {
-                const oMatch = filterOwner.value === 'ALL' || task.owner === filterOwner.value;
-                const cMatch = filterCustomer.value === 'ALL' || task.customer === filterCustomer.value;
-                const tMatch = filterType.value === 'ALL' || task.taskType === filterType.value;
+                const oMatch = selectedFilterOwners.length === 0 || selectedFilterOwners.includes(task.owner);
+                const cMatch = selectedFilterCustomers.length === 0 || selectedFilterCustomers.includes(task.customer);
+                const tMatch = selectedFilterTypes.length === 0 || selectedFilterTypes.includes(task.taskType);
+                const tags = Array.isArray(task.tags) ? task.tags : [];
+                const tagMatch = selectedFilterTags.length === 0 || selectedFilterTags.some(tag => tags.includes(tag));
                 const archiveMatch = showArchived ? task.isArchived === true : task.isArchived !== true;
-                return oMatch && cMatch && tMatch && archiveMatch;
+                return oMatch && cMatch && tMatch && tagMatch && archiveMatch;
             });
         }
 
@@ -1448,7 +1779,8 @@
             renderBoard();
         }
 
-        window.configureWipLimit = function(col) {
+        window.configureWipLimit = async function(col) {
+            if (!ensureAuthenticatedOrToast('WIP Limits zu ändern')) return;
             const currentLimit = wipLimits[col];
             const input = prompt(`Neues WIP Limit für die Subspalte "${getColLabel(col)} (Doing)" eingeben (Leer oder 0 zum Deaktivieren):`, currentLimit !== null ? currentLimit : "");
             if (input === null) return;
@@ -1461,6 +1793,7 @@
                 showToast(`WIP Limit für "${getColLabel(col)} (Doing)" auf ${num} gesetzt.`);
             }
             saveAllState();
+            await flushBoardConfigSync(false);
             renderBoard();
         }
 
@@ -1773,6 +2106,7 @@
 
         // Tag & Type Config Modals
         window.openTagsModal = function() {
+            renderTagFilterDropdown();
             renderTagsManagerList();
             document.getElementById('tags-modal').classList.remove('hidden');
         }
@@ -1805,43 +2139,130 @@
             renderModalTagsSelection();
         }
 
-        function renderTagsManagerList() {
-            document.getElementById('tags-manager-list').innerHTML = Object.keys(tagsConfig).map(tag => `
-                <div class="flex items-center justify-between bg-slate-850 p-2.5 border border-slate-800 rounded-lg">
-                    <span class="text-xs px-2.5 py-1 rounded font-bold border" style="background-color: ${tagsConfig[tag]}20; border-color: ${tagsConfig[tag]}50; color: ${tagsConfig[tag]}">${tag}</span>
-                    <div class="flex items-center gap-2">
-                        <input type="color" onchange="updateTagColor('${tag}', this.value)" value="${tagsConfig[tag]}" class="w-8 h-6 bg-slate-800 border border-slate-700 rounded cursor-pointer">
-                        <button onclick="deleteTag('${tag}')" class="text-slate-500 hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>`).join('');
+        function escapeSingleQuotedJs(value) {
+            return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         }
 
-        window.addNewTag = function() {
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderTagsManagerList() {
+            document.getElementById('tags-manager-list').innerHTML = Object.keys(tagsConfig).map(tag => {
+                const escapedTag = escapeSingleQuotedJs(tag);
+                const safeTagText = escapeHtml(tag);
+                return `
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-lg">
+                    <div class="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value="${safeTagText}"
+                            class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-white"
+                            onkeydown="handleTagEditKeydown(event, this)"
+                            onblur="renameTagInline(this, '${escapedTag}')"
+                        >
+                        <span class="w-3 h-3 rounded-full border border-slate-300 dark:border-slate-700" style="background-color: ${tagsConfig[tag]}"></span>
+                        <input type="color" onchange="updateTagColor('${escapedTag}', this.value)" value="${tagsConfig[tag]}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
+                        <button onclick="deleteTag('${escapedTag}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.addNewTag = async function() {
+            if (!ensureAuthenticatedOrToast('Tags zu erstellen')) return;
             const nameInput = document.getElementById('new-tag-name');
             const name = nameInput.value.trim();
             if (!name) return;
             tagsConfig[name] = document.getElementById('new-tag-color').value;
             nameInput.value = "";
             saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
             renderTagsManagerList();
             renderBoard();
         }
 
-        window.updateTagColor = function(tag, newColor) {
+        window.updateTagColor = async function(tag, newColor) {
+            if (!ensureAuthenticatedOrToast('Tag-Farben zu ändern')) return;
             tagsConfig[tag] = newColor;
             saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
             renderBoard();
         }
 
+        window.handleTagEditKeydown = function(event, inputElement) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            inputElement.blur();
+        }
+
+        window.renameTagInline = async function(inputElement, oldTag) {
+            if (!ensureAuthenticatedOrToast('Tags umzubenennen')) return;
+            const newTag = inputElement.value.trim();
+            if (!newTag) {
+                showToast('Tag-Name darf nicht leer sein.');
+                inputElement.value = oldTag;
+                return;
+            }
+            if (newTag === oldTag) return;
+            if (Object.prototype.hasOwnProperty.call(tagsConfig, newTag)) {
+                showToast('Tag-Name existiert bereits.');
+                inputElement.value = oldTag;
+                return;
+            }
+
+            const tasksToUpdate = tasks.filter(task => task.tags && task.tags.includes(oldTag));
+            const oldColor = tagsConfig[oldTag] || '#475569';
+            delete tagsConfig[oldTag];
+            tagsConfig[newTag] = oldColor;
+
+            selectedFilterTags = [...new Set(selectedFilterTags.map(t => t === oldTag ? newTag : t))];
+            selectedModalTags = [...new Set(selectedModalTags.map(t => t === oldTag ? newTag : t))];
+            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
+
+            const updatePromises = tasksToUpdate.map(task => {
+                const replacedTags = task.tags.map(t => t === oldTag ? newTag : t);
+                const dedupedTags = [...new Set(replacedTags)];
+                return updateTaskInCloud(task.id, { tags: dedupedTags });
+            });
+            const updateResults = await Promise.all(updatePromises);
+            if (updateResults.some(result => result === false)) {
+                showToast('Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.');
+            }
+
+            saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
+
+            renderTagFilterDropdown();
+            renderTagsManagerList();
+            renderModalTagsSelection();
+            await loadTasksFromCloud();
+            showToast(`Tag "${oldTag}" wurde in "${newTag}" umbenannt.`);
+        }
+
         window.deleteTag = async function(tag) {
+            if (!ensureAuthenticatedOrToast('Tags zu löschen')) return;
             const tasksToUpdate = tasks.filter(task => task.tags && task.tags.includes(tag));
             delete tagsConfig[tag];
+            selectedFilterTags = selectedFilterTags.filter(t => t !== tag);
+            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
             const updatePromises = tasksToUpdate.map(task => {
                 const newTags = task.tags.filter(t => t !== tag);
                 return updateTaskInCloud(task.id, { tags: newTags });
             });
             await Promise.all(updatePromises);
             saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
+            renderTagFilterDropdown();
             renderTagsManagerList(); // Visuelle Liste im Modal
             // loadTasksFromCloud wird die Dropdowns nach dem Neuladen der Daten aktualisieren
             await loadTasksFromCloud();
@@ -1851,24 +2272,83 @@
             document.getElementById('types-manager-list').innerHTML = Object.keys(workflowPaths).map(type => {
                 const typeConfig = workflowPaths[type];
                 const cols = typeConfig.path.map(c => getColLabel(c)).join(', ');
+                const escapedType = escapeSingleQuotedJs(type);
+                const safeTypeText = escapeHtml(type);
                 return `
-                <div class="flex items-center justify-between bg-slate-850 p-2.5 border border-slate-800 rounded-lg">
-                        <div class="flex items-center gap-3">
-                            <span class="w-3 h-3 rounded-full" style="background-color: ${typeConfig.color}"></span>
-                            <div class="flex-1">
-                                <span class="text-xs font-bold text-slate-800 dark:text-white block">${type}</span>
-                                <span class="text-[10px] text-slate-500 dark:text-slate-400">Pfad: ${cols}</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="color" onchange="updateTypeColor('${type}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
-                            <button onclick="deleteType('${type}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>`;
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full" style="background-color: ${typeConfig.color}"></span>
+                        <input
+                            type="text"
+                            value="${safeTypeText}"
+                            class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-white"
+                            onkeydown="handleTypeEditKeydown(event, this)"
+                            onblur="renameTypeInline(this, '${escapedType}')"
+                        >
+                        <input type="color" onchange="updateTypeColor('${escapedType}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
+                        <button onclick="deleteType('${escapedType}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block pl-5">Pfad: ${cols}</span>
+                </div>`;
             }).join('');
         }
 
-        window.addNewType = function() {
+        window.handleTypeEditKeydown = function(event, inputElement) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            inputElement.blur();
+        }
+
+        window.renameTypeInline = async function(inputElement, oldType) {
+            if (!ensureAuthenticatedOrToast('Task-Typen umzubenennen')) return;
+
+            const newType = inputElement.value.trim();
+            if (!newType) {
+                showToast('Typ-Name darf nicht leer sein.');
+                inputElement.value = oldType;
+                return;
+            }
+            if (newType === oldType) return;
+            if (Object.prototype.hasOwnProperty.call(workflowPaths, newType)) {
+                showToast('Typ-Name existiert bereits.');
+                inputElement.value = oldType;
+                return;
+            }
+
+            const oldConfig = workflowPaths[oldType];
+            if (!oldConfig) return;
+
+            const tasksToUpdate = tasks.filter(task => task.taskType === oldType);
+
+            delete workflowPaths[oldType];
+            workflowPaths[newType] = oldConfig;
+
+            selectedFilterTypes = [...new Set(selectedFilterTypes.map(t => t === oldType ? newType : t))];
+            saveToStorage('kanban_selectedFilterTypes', selectedFilterTypes);
+
+            const updatePromises = tasksToUpdate.map(task => updateTaskInCloud(task.id, {
+                taskType: newType,
+                taskTypeColor: oldConfig.color
+            }));
+            const updateResults = await Promise.all(updatePromises);
+            if (updateResults.some(result => result === false)) {
+                showToast('Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.');
+            }
+
+            saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
+
+            updateConfiguredDropdowns();
+            renderTypesManagerList();
+            renderTypeFilterDropdown();
+            renderBoard();
+            await loadTasksFromCloud();
+            showToast(`Task-Typ "${oldType}" wurde in "${newType}" umbenannt.`);
+        }
+
+        window.addNewType = async function() {
+            if (!ensureAuthenticatedOrToast('Task-Typen zu erstellen')) return;
             const nameInput = document.getElementById('new-type-name');
             const name = nameInput.value.trim();
             const color = document.getElementById('new-type-color').value;
@@ -1880,16 +2360,21 @@
             workflowPaths[name] = { path, color };
             nameInput.value = "";
             saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
             updateConfiguredDropdowns();
             renderTypesManagerList();
             renderBoard();
         }
 
-        window.updateTypeColor = function(type, newColor) {
+        window.updateTypeColor = async function(type, newColor) {
+            if (!ensureAuthenticatedOrToast('Task-Typ Farben zu ändern')) return;
             if (workflowPaths[type]) {
                 workflowPaths[type].color = newColor;
             }
             saveAllState();
+            const saved = await flushBoardConfigSync();
+            if (!saved) return;
             updateConfiguredDropdowns();
             renderTypesManagerList();
             renderBoard();
@@ -1909,6 +2394,8 @@
             const tasksToDelete = tasks.filter(task => task.taskType === type);
             await Promise.all(tasksToDelete.map(task => deleteTaskFromCloud(task.id)));
             delete workflowPaths[type];
+            selectedFilterTypes = selectedFilterTypes.filter(selected => selected !== type);
+            saveToStorage('kanban_selectedFilterTypes', selectedFilterTypes);
             saveAllState();
             updateAllDropdowns();
             renderTypesManagerList();
@@ -1916,22 +2403,17 @@
         }
 
         function updateConfiguredDropdowns() {
-            const filterTypeSelect = document.getElementById('filter-type');
             const modalTypeSelect = document.getElementById('modal-type');
-            const selectedFilterVal = filterTypeSelect.value || "ALL";
             const selectedModalVal = modalTypeSelect.value || "";
-            let filterHtml = `<option value="ALL">Alle Typen</option>`;
             let modalHtml = ``;
             Object.keys(workflowPaths).forEach(type => {
-                filterHtml += `<option value="${type}">${type}</option>`;
                 modalHtml += `<option value="${type}">${type}</option>`;
             });
-            filterTypeSelect.innerHTML = filterHtml;
             modalTypeSelect.innerHTML = modalHtml;
-            filterTypeSelect.value = selectedFilterVal;
             if (selectedModalVal && workflowPaths[selectedModalVal]) {
                 modalTypeSelect.value = selectedModalVal;
             }
+            renderTypeFilterDropdown();
             const legendContainer = document.getElementById('dynamic-legend');
             legendContainer.innerHTML = "";
             Object.keys(workflowPaths).forEach(type => {
@@ -1953,49 +2435,34 @@
         }
 
         function updateOwnerDropdowns() {
-            const filterOwnerSelect = document.getElementById('filter-owner');
             const modalOwnerDatalist = document.getElementById('owner-list');
-            
-            const savedFilterValue = filterOwnerSelect.value;
-
-            // Filter-Dropdown aktualisieren
-            filterOwnerSelect.innerHTML = `<option value="ALL">Alle Owner</option>`;
-            owners.forEach(owner => {
-                filterOwnerSelect.innerHTML += `<option value="${owner}">${owner}</option>`;
-            });
-            filterOwnerSelect.value = savedFilterValue;
 
             // Datalist im Modal aktualisieren
             modalOwnerDatalist.innerHTML = '';
             owners.forEach(owner => {
                 modalOwnerDatalist.innerHTML += `<option value="${owner}"></option>`;
             });
+
+            renderOwnerFilterDropdown();
         }
 
         function updateCustomerDropdowns() {
-            const filterCustomerSelect = document.getElementById('filter-customer');
             const modalCustomerDatalist = document.getElementById('customer-list');
-            
-            const savedFilterValue = filterCustomerSelect.value;
-
-            // Filter-Dropdown aktualisieren
-            filterCustomerSelect.innerHTML = `<option value="ALL">Alle Kunden</option>`;
-            customers.forEach(customer => {
-                filterCustomerSelect.innerHTML += `<option value="${customer}">${customer}</option>`;
-            });
-            filterCustomerSelect.value = savedFilterValue;
 
             // Datalist im Modal aktualisieren
             modalCustomerDatalist.innerHTML = '';
             customers.forEach(customer => {
                 modalCustomerDatalist.innerHTML += `<option value="${customer}"></option>`;
             });
+
+            renderCustomerFilterDropdown();
         }
 
         function updateAllDropdowns() {
             updateConfiguredDropdowns(); // For Task Types
             updateOwnerDropdowns();
             updateCustomerDropdowns();
+            renderTagFilterDropdown();
         }
 
         function setupCombobox(containerSelector, inputId, dropdownId, arrowId, dataArray) {
@@ -2072,12 +2539,46 @@
                 renderBoard();
             });
             groupSecondary.addEventListener('change', () => { collapsedSwimlanes.clear(); renderBoard(); });
-            filterOwner.addEventListener('change', renderBoard);
-            filterCustomer.addEventListener('change', renderBoard);
-            filterType.addEventListener('change', renderBoard);
+            filterOwnerTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                renderOwnerFilterDropdown();
+                filterOwnerDropdown.classList.toggle('hidden');
+                filterCustomerDropdown.classList.add('hidden');
+                filterTypeDropdown.classList.add('hidden');
+                filterTagsDropdown.classList.add('hidden');
+            });
+            filterCustomerTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                renderCustomerFilterDropdown();
+                filterCustomerDropdown.classList.toggle('hidden');
+                filterOwnerDropdown.classList.add('hidden');
+                filterTypeDropdown.classList.add('hidden');
+                filterTagsDropdown.classList.add('hidden');
+            });
+            filterTypeTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                renderTypeFilterDropdown();
+                filterTypeDropdown.classList.toggle('hidden');
+                filterOwnerDropdown.classList.add('hidden');
+                filterCustomerDropdown.classList.add('hidden');
+                filterTagsDropdown.classList.add('hidden');
+            });
+            filterTagsTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                renderTagFilterDropdown();
+                filterTagsDropdown.classList.toggle('hidden');
+                filterOwnerDropdown.classList.add('hidden');
+                filterCustomerDropdown.classList.add('hidden');
+                filterTypeDropdown.classList.add('hidden');
+            });
+            filterOwnerDropdown.addEventListener('click', (e) => e.stopPropagation());
+            filterCustomerDropdown.addEventListener('click', (e) => e.stopPropagation());
+            filterTypeDropdown.addEventListener('click', (e) => e.stopPropagation());
+            filterTagsDropdown.addEventListener('click', (e) => e.stopPropagation());
             document.getElementById('filter-archived').addEventListener('change', renderBoard);
             window.addEventListener('click', () => {
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
+                closeAllFilterDropdowns();
             });
 
             document.getElementById('firebase-login-google').addEventListener('click', window.loginWithGoogle);
