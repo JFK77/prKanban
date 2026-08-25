@@ -232,10 +232,6 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <!-- Dynamic Legend Area -->
-            <div id="dynamic-legend" class="hidden md:flex flex-wrap gap-4 text-xs bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700/50">
-                <!-- Legend items injected by JS -->
-            </div>
             <div id="firebase-connection-status" class="hidden sm:flex items-center gap-2 text-xs bg-slate-100 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700/50">
                 <i class="fa-solid fa-plug-circle-check text-emerald-500"></i>
                 <span id="firebase-project-pill" class="font-semibold text-slate-700 dark:text-slate-200"></span>
@@ -2414,12 +2410,6 @@
                 modalTypeSelect.value = selectedModalVal;
             }
             renderTypeFilterDropdown();
-            const legendContainer = document.getElementById('dynamic-legend');
-            legendContainer.innerHTML = "";
-            Object.keys(workflowPaths).forEach(type => {
-                const color = workflowPaths[type].color || '#64748b';
-                legendContainer.innerHTML += `<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background-color: ${color}"></span><span><strong>${type}:</strong> (${workflowPaths[type].path.map(c => getColLabel(c)).join(' ➔ ')})</span></div>`;
-            });
         }
 
         function updateDynamicListsFromTasks(currentTasks) {
