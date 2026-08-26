@@ -18,6 +18,8 @@ This project is a Firebase-hosted Kanban board with task persistence in Firestor
 The app writes task documents to the Firestore collection `tasks`.
 If Firestore cannot be reached, the app falls back to `localStorage` as a temporary safety net only.
 
+Current working version: single-project Kanban board, with persistence and authentication backed by Firebase Google services.
+
 ## Data model
 
 Each task document is stored under `tasks/{taskId}` and typically contains fields like:
