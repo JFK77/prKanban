@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PrKanban.Models;
+using Task = PrKanban.Models.Task;
 
 namespace PrKanban.Data
 {

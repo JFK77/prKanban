@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrKanban.Data;
 using PrKanban.Models;
+using Task = PrKanban.Models.Task;
 
 namespace PrKanban.Controllers
 {

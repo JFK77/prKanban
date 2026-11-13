@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace PrKanban.Models
@@ -63,6 +64,7 @@ namespace PrKanban.Models
         public virtual ApplicationUser? User { get; set; }
 
         // Non-mapped properties for API serialization
+        [NotMapped]
         [JsonPropertyName("columnOrder")]
         public string[] ColumnOrder
         {
@@ -85,6 +87,7 @@ namespace PrKanban.Models
             }
         }
 
+        [NotMapped]
         [JsonPropertyName("subColumnMapping")]
         public Dictionary<string, string[]> SubColumnMapping
         {
@@ -107,6 +110,7 @@ namespace PrKanban.Models
             }
         }
 
+        [NotMapped]
         [JsonPropertyName("wipLimits")]
         public Dictionary<string, int> WipLimits
         {

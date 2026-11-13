@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PrKanban.Data;
 using PrKanban.Models;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>
@@ -63,9 +63,16 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 
 // 6. Add Swagger for API docs
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Auto-create database if it doesn't exist
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PrKanbanContext>();
+    dbContext.Database.Migrate();
+}
 
 // Middleware
 if (!app.Environment.IsDevelopment())
@@ -84,11 +91,11 @@ app.UseAuthorization();
 
 // Map controllers
 app.MapControllers();
-app.MapOpenApi();
 
 // Swagger UI
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
     app.UseSwaggerUI();
 }
 
