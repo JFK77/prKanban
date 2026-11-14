@@ -64,6 +64,28 @@ dotnet run
 
 The API will be available at: `http://localhost:5000`
 
+WIP limits can be configured independently for each Doing and Done subcolumn by
+clicking its count. A limit warns when exceeded but does not block moves. The
+current backend has no board-config endpoint, so these settings persist only in
+the browser's local storage.
+
+The four board columns can be collapsed independently using their side tabs.
+Their open/closed state is shared across all visible swimlanes and is retained
+while the page remains open. Dragging a task over a permitted collapsed column
+opens it so a Doing or Done subcolumn can be selected. The Backlog and board
+panels sit side by side; on narrow screens, scroll the board horizontally.
+Use **Öffnen** or **Einklappen** in the board controls to open or collapse all
+five panels without changing the swimlane grouping.
+Swimlanes appear inside the board panels and stay aligned across columns.
+Opening or closing a group in any panel applies to all panels; group counts
+show the number of tasks in that panel.
+
+The collapsible Backlog on the left holds tasks outside the workflow board.
+Create tasks with its `+ Task` button, edit them by selecting a card, and move
+them between the Backlog and permitted board columns by drag and drop or the
+card's move menu. Backlog tasks are stored through the same task API as board
+tasks.
+
 ---
 
 ## 📚 IMPLEMENTED ENDPOINTS

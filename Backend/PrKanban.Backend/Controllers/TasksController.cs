@@ -148,6 +148,8 @@ namespace PrKanban.Controllers
 
             if (!string.IsNullOrEmpty(request.Title))
                 task.Title = request.Title;
+            if (!string.IsNullOrEmpty(request.TaskType))
+                task.TaskType = request.TaskType;
             if (!string.IsNullOrEmpty(request.Owner))
                 task.Owner = request.Owner;
             if (!string.IsNullOrEmpty(request.Customer))
@@ -255,6 +257,7 @@ namespace PrKanban.Controllers
     public class UpdateTaskRequest
     {
         public string? Title { get; set; }
+        public string? TaskType { get; set; }
         public string? Owner { get; set; }
         public string? Customer { get; set; }
         public string? Description { get; set; }

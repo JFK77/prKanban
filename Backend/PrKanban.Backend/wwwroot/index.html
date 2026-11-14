@@ -233,156 +233,439 @@
             background: #0f172a;
             border-color: #334155;
         }
+
+        .board-area {
+            --board-panel-gap: 12px;
+            --board-grid-gaps: calc(var(--board-panel-gap) + var(--board-panel-gap) + var(--board-panel-gap));
+        }
+        #backlog-panel, #board-container {
+            margin-top: var(--board-panel-gap);
+            margin-bottom: var(--board-panel-gap);
+        }
+        #backlog-panel {
+            display: flex;
+            flex: 0 0 48px;
+            min-width: 0;
+            margin-right: var(--board-panel-gap);
+            overflow: hidden;
+            border-radius: 12px;
+            background: #f8fafc;
+            box-shadow: inset 0 0 0 1px #e2e8f0;
+            transition: flex-basis 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        #backlog-panel.is-open {
+            flex: 1 1 0;
+            min-width: 250px;
+        }
+        #backlog-toggle {
+            display: flex;
+            position: relative;
+            flex: 0 0 48px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 16px 0;
+            border-radius: 12px;
+            background: #f1f5f9;
+            color: #475569;
+            transition: background-color 0.2s;
+        }
+        #backlog-toggle:hover {
+            background: #e2e8f0;
+        }
+        #backlog-toggle:focus-visible {
+            outline: 3px solid #6366f1;
+            outline-offset: -3px;
+        }
+        #backlog-panel.is-open #backlog-toggle {
+            flex-basis: 24px;
+            justify-content: flex-start;
+            border-radius: 12px 0 0 12px;
+            background: transparent;
+        }
+        #backlog-panel.is-open #backlog-toggle-label,
+        #backlog-panel.is-open #backlog-toggle-count,
+        #backlog-panel.is-open #backlog-toggle-icon {
+            display: none;
+        }
+        #backlog-panel.is-open #backlog-toggle:hover {
+            background: #e2e8f0;
+        }
+        .dark #backlog-toggle {
+            background: #1e293b;
+            color: #cbd5e1;
+        }
+        .dark #backlog-toggle:hover {
+            background: #334155;
+        }
+        .dark #backlog-toggle:focus-visible {
+            outline-color: #a5b4fc;
+        }
+        .dark #backlog-panel.is-open #backlog-toggle {
+            background: transparent;
+        }
+        .dark #backlog-panel.is-open #backlog-toggle:hover {
+            background: #263449;
+        }
+        #backlog-toggle-label {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+        #backlog-chevron { order: 1; }
+        #backlog-toggle-count {
+            position: absolute;
+            top: 16px;
+        }
+        #backlog-toggle-icon {
+            position: absolute;
+            bottom: 16px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        #backlog-panel.is-open #backlog-chevron {
+            transform: rotate(180deg);
+        }
+        #backlog-content {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            min-width: 220px;
+            min-height: 0;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        #backlog-panel.is-open #backlog-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        #backlog-tasks { min-height: 0; }
+        .board-grid {
+            display: grid;
+            grid-template-columns: var(--board-columns);
+            column-gap: var(--board-panel-gap);
+        }
+        #board-container > .board-grid { min-height: 100%; }
+        .board-column-panel {
+            display: grid;
+            grid-template-columns: 24px minmax(0, 1fr);
+            grid-template-rows: subgrid;
+            grid-row: 1 / -1;
+            min-width: 0;
+            min-height: 220px;
+            border-radius: 12px;
+            background: #f8fafc;
+            box-shadow: inset 0 0 0 1px #e2e8f0;
+        }
+        .board-column-panel.is-collapsed { grid-template-columns: 48px; }
+        .board-column-toggle {
+            display: flex;
+            position: relative;
+            grid-column: 1;
+            grid-row: 1 / -1;
+            min-width: 0;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 1rem 0;
+            border-radius: 12px 0 0 12px;
+            background: transparent;
+            color: #475569;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .board-column-toggle:hover { background: #e2e8f0; }
+        .board-column-toggle:focus-visible {
+            outline: 3px solid #6366f1;
+            outline-offset: -3px;
+        }
+        .board-column-toggle-label {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .board-column-panel.is-collapsed .board-column-toggle {
+            justify-content: center;
+            border-radius: 12px;
+            background: #f1f5f9;
+        }
+        .board-column-panel.is-collapsed .board-column-toggle:hover { background: #e2e8f0; }
+        .board-column-panel.is-collapsed .board-column-chevron { order: 1; }
+        .board-column-toggle-count, #backlog-toggle-count {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            background: #fff;
+            color: #64748b;
+            font-size: 0.625rem;
+            line-height: 1;
+        }
+        .board-column-toggle-count {
+            position: absolute;
+            top: 16px;
+        }
+        .board-column-panel.is-collapsed .board-column-toggle::after {
+            content: '';
+            position: absolute;
+            bottom: 16px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #cbd5e1;
+        }
+        .board-column-panel:not(.is-collapsed) .board-column-chevron {
+            transform: rotate(180deg);
+        }
+        .board-column-panel:not(.is-collapsed) .board-column-toggle-label,
+        .board-column-panel:not(.is-collapsed) .board-column-toggle-count {
+            display: none;
+        }
+        .board-column-body {
+            display: grid;
+            grid-column: 2;
+            grid-row: 1 / -1;
+            grid-template-rows: subgrid;
+            min-width: 0;
+        }
+        .board-column-body[hidden] { display: none; }
+        .board-column-header { padding: 0.875rem 0.75rem; }
+        .board-swimlane-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            min-width: 0;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            border-top: 1px solid #e2e8f0;
+        }
+        .board-swimlane-header.is-secondary { padding-left: 1.5rem; }
+        .board-swimlane-header:focus-visible { outline: 2px solid #6366f1; outline-offset: -2px; }
+        .board-swimlane-label { overflow-wrap: anywhere; }
+        .board-lane { padding: 0.5rem 0.75rem 0.75rem; }
+        .board-subcolumn:not(.is-over-wip) {
+            background: #fff;
+            border-color: #e2e8f0;
+            box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+        }
+        .board-column-panel:not(.is-collapsed) .board-subcolumn:not(:has(> [data-task-id]))::after {
+            content: 'Keine Aufgaben';
+            display: flex;
+            min-height: 72px;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #e2e8f0;
+            border-radius: 8px;
+            color: #94a3b8;
+            font-size: 0.6875rem;
+            text-align: center;
+            pointer-events: none;
+        }
+        .board-task-card { box-shadow: 0 1px 2px rgb(15 23 42 / 0.05); }
+        .board-task-card:hover { box-shadow: 0 3px 8px rgb(15 23 42 / 0.08); }
+        .dark #backlog-panel, .dark .board-column-panel {
+            background: #111c2c;
+            box-shadow: inset 0 0 0 1px #29384b;
+        }
+        .dark .board-swimlane-header { border-color: #29384b; }
+        .dark .board-column-toggle { color: #cbd5e1; }
+        .dark .board-column-toggle:hover { background: #263449; }
+        .dark .board-column-panel.is-collapsed .board-column-toggle { background: #1e293b; }
+        .dark .board-column-panel.is-collapsed .board-column-toggle:hover { background: #334155; }
+        .dark .board-column-toggle-count, .dark #backlog-toggle-count {
+            background: #263449;
+            border-color: #475569;
+            color: #cbd5e1;
+        }
+        .dark .board-column-panel.is-collapsed .board-column-toggle::after { background: #64748b; }
+        .dark .board-subcolumn:not(.is-over-wip) {
+            background: #0f172a;
+            border-color: #334155;
+        }
+        .dark .board-column-panel:not(.is-collapsed) .board-subcolumn:not(:has(> [data-task-id]))::after {
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        .dark .board-column-toggle:focus-visible { outline-color: #a5b4fc; }
+        @media (max-width: 767px) {
+            #task-details-panel {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                max-width: calc(100vw - 24px);
+                z-index: 60;
+                box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
+            }
+            #details-resizer { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #backlog-panel, #backlog-content, #backlog-toggle { transition: none; }
+        }
     </style>
 </head>
 
 <body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 font-sans">
 
     <!-- Header / Navbar -->
-    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
-                <i class="fa-solid fa-square-poll-horizontal text-xl"></i>
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3 min-w-0">
+            <div class="flex items-center gap-2.5">
+                <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center">
+                    <i class="fa-regular fa-file-lines" aria-hidden="true"></i>
+                </div>
+                <h1 class="text-sm font-bold text-slate-900 dark:text-white">Dynamic Workflow Kanban</h1>
             </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-wide text-slate-900 dark:text-white">Dynamic Workflow Kanban</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Adaptive Columns • Nested Swimlanes • WIP Limits on Doing Subcolumns</p>
+            <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <div id="firebase-connection-status" class="hidden flex items-center gap-2 min-w-0 max-w-full text-xs bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <i class="fa-solid fa-circle text-emerald-500 text-[7px]" aria-hidden="true"></i>
+                    <span id="firebase-project-pill" class="font-semibold text-slate-700 dark:text-slate-200"></span>
+                    <span class="text-slate-300 dark:text-slate-600">|</span>
+                    <span id="firebase-user-pill" class="min-w-0 break-all text-slate-600 dark:text-slate-300"></span>
+                </div>
+                <button id="firebase-login-google" type="button" onclick="window.loginWithGoogle && window.loginWithGoogle()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+                    <i class="fa-brands fa-google mr-1.5"></i>Login
+                </button>
+                <button id="firebase-login-guest" type="button" onclick="window.loginAsGuest && window.loginAsGuest()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+                    <i class="fa-regular fa-user mr-1.5"></i>Gast
+                </button>
+                <button id="firebase-logout" type="button" onclick="window.logoutFromFirebase && window.logoutFromFirebase()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Logout
+                </button>
             </div>
         </div>
 
-        <div class="flex items-center gap-4">
-            <div id="firebase-connection-status" class="hidden sm:flex items-center gap-2 text-xs bg-slate-100 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700/50">
-                <i class="fa-solid fa-plug-circle-check text-emerald-500"></i>
-                <span id="firebase-project-pill" class="font-semibold text-slate-700 dark:text-slate-200"></span>
-                <span class="text-slate-400">|</span>
-                <span id="firebase-user-pill" class="text-slate-600 dark:text-slate-300"></span>
-            </div>
-            <button id="firebase-login-google" type="button" onclick="window.loginWithGoogle && window.loginWithGoogle()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
-                <i class="fa-brands fa-google mr-1.5"></i>Login
+        <div class="flex flex-wrap items-center gap-2">
+            <button id="theme-toggle" type="button" aria-label="Farbschema wechseln" class="text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg text-xs w-9 h-9">
+                <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden" aria-hidden="true"></i>
+                <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden" aria-hidden="true"></i>
             </button>
-            <button id="firebase-login-guest" type="button" onclick="window.loginAsGuest && window.loginAsGuest()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
-                <i class="fa-solid fa-user-clock mr-1.5"></i>Gast
+            <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-tag text-slate-500" aria-hidden="true"></i> Tags verwalten
             </button>
-            <button id="firebase-logout" type="button" onclick="window.logoutFromFirebase && window.logoutFromFirebase()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
-                <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Logout
+            <button onclick="openTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-sliders text-slate-500" aria-hidden="true"></i> Typen verwalten
             </button>
-            <!-- Theme Toggle Button -->
-            <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
-                <i id="theme-toggle-dark-icon" class="fa-solid fa-moon w-5 h-5 hidden"></i>
-                <i id="theme-toggle-light-icon" class="fa-solid fa-sun w-5 h-5 hidden"></i>
+            <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Task hinzufügen
             </button>
         </div>
     </header>
 
     <!-- Controls Panel: Filters & Grouping -->
-    <section class="bg-white/60 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800/80 p-6 flex flex-wrap items-end gap-6 shadow-sm backdrop-blur-sm">
+    <section aria-label="Board-Einstellungen" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         <!-- Filters -->
-        <div class="flex-[1.45_1_620px] min-w-[320px]">
-            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                <i class="fa-solid fa-filter mr-1.5"></i>Board-Filterung
-            </h3>
-            <div class="flex flex-wrap xl:flex-nowrap items-end gap-2.5">
-                <div class="relative w-full sm:w-[160px]" id="filter-owner-container">
-                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Owner</label>
-                    <button id="filter-owner-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                        <span id="filter-owner-label">Alle Owner</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
-                    </button>
-                    <div id="filter-owner-dropdown" class="tag-filter-dropdown hidden">
-                        <!-- Filled dynamically -->
-                    </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                <i class="fa-solid fa-filter mr-1" aria-hidden="true"></i>Filter:
+            </span>
+            <div class="relative" id="filter-owner-container">
+                <button id="filter-owner-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                    <span class="sr-only">Owner filtern: </span>
+                    <span id="filter-owner-label" class="max-w-[140px] truncate">Alle Owner</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="filter-owner-dropdown" class="tag-filter-dropdown hidden">
+                    <!-- Filled dynamically -->
                 </div>
-                <div class="relative w-full sm:w-[160px]" id="filter-customer-container">
-                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Kunde</label>
-                    <button id="filter-customer-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                        <span id="filter-customer-label">Alle Kunden</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
-                    </button>
-                    <div id="filter-customer-dropdown" class="tag-filter-dropdown hidden">
-                        <!-- Filled dynamically -->
-                    </div>
+            </div>
+            <div class="relative" id="filter-customer-container">
+                <button id="filter-customer-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                    <span class="sr-only">Kunde filtern: </span>
+                    <span id="filter-customer-label" class="max-w-[140px] truncate">Alle Kunden</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="filter-customer-dropdown" class="tag-filter-dropdown hidden">
+                    <!-- Filled dynamically -->
                 </div>
-                <div class="relative w-full sm:w-[160px]" id="filter-type-container">
-                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Task Typ</label>
-                    <button id="filter-type-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                        <span id="filter-type-label">Alle Typen</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
-                    </button>
-                    <div id="filter-type-dropdown" class="tag-filter-dropdown hidden">
-                        <!-- Filled dynamically -->
-                    </div>
+            </div>
+            <div class="relative" id="filter-type-container">
+                <button id="filter-type-trigger" type="button" class="min-w-[108px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                    <span class="sr-only">Task Typ filtern: </span>
+                    <span id="filter-type-label" class="max-w-[140px] truncate">Alle Typen</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="filter-type-dropdown" class="tag-filter-dropdown hidden">
+                    <!-- Filled dynamically -->
                 </div>
-                <div class="relative w-full sm:w-[185px]" id="filter-tags-container">
-                    <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-0.5">Tags</label>
-                    <button id="filter-tags-trigger" type="button" class="w-full h-9 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                        <span id="filter-tags-label">Alle Tags</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-slate-500"></i>
-                    </button>
-                    <div id="filter-tags-dropdown" class="tag-filter-dropdown hidden">
-                        <!-- Filled dynamically -->
-                    </div>
+            </div>
+            <div class="relative" id="filter-tags-container">
+                <button id="filter-tags-trigger" type="button" class="min-w-[104px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
+                    <span class="sr-only">Tags filtern: </span>
+                    <span id="filter-tags-label" class="max-w-[140px] truncate">Alle Tags</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="filter-tags-dropdown" class="tag-filter-dropdown hidden">
+                    <!-- Filled dynamically -->
                 </div>
             </div>
         </div>
 
         <!-- Groupings / Swimlanes -->
-        <div class="flex-1 min-w-[280px]">
-            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                <i class="fa-solid fa-layer-group mr-1.5"></i>Gruppierung & Swimlanes
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Primäre Gruppe (Swimlane)</label>
-                    <select id="group-primary" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
-                        <option value="NONE">Keine Gruppierung</option>
-                        <option value="customer">Kunde</option>
-                        <option value="taskType">Task Typ</option>
-                        <option value="owner">Owner</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Sub-Gruppe (Innere Swimlane)</label>
-                    <select id="group-secondary" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
-                        <option value="NONE">Keine Untergruppierung</option>
-                        <option value="customer">Kunde</option>
-                        <option value="taskType">Task Typ</option>
-                        <option value="owner">Owner</option>
-                    </select>
-                </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Swimlanes:
+            </span>
+            <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
+                <option value="NONE">Keine Gruppierung</option>
+                <option value="customer">Kunde</option>
+                <option value="taskType">Task Typ</option>
+                <option value="owner">Owner</option>
+            </select>
+            <select id="group-secondary" aria-label="Sub-Gruppe (Innere Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
+                <option value="NONE">Keine Untergruppierung</option>
+                <option value="customer">Kunde</option>
+                <option value="taskType">Task Typ</option>
+                <option value="owner">Owner</option>
+            </select>
+            <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i> Öffnen
+                </button>
+                <button id="collapse-all-panels" type="button" aria-label="Alle Panels einklappen" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i> Einklappen
+                </button>
             </div>
-        </div>
-
-        <!-- View Options -->
-        <div class="flex-none w-[220px] min-w-[220px]">
-            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                <i class="fa-solid fa-eye mr-1.5"></i>Ansicht
-            </h3>
-            <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5">
-                <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Archiv</span>
-                <label for="filter-archived" class="relative inline-flex items-center cursor-pointer">
+            <label for="filter-archived" class="h-8 inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
+                <i class="fa-solid fa-box-archive text-slate-400" aria-hidden="true"></i>
+                <span>Archiv</span>
+                <span class="relative inline-flex items-center">
                     <input type="checkbox" id="filter-archived" class="sr-only peer">
-                    <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-        </div>
-
-        <!-- Action Panel Buttons -->
-        <div class="w-full sm:w-auto flex flex-wrap gap-2">
-            <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-tags"></i> Tags verwalten
-            </button>
-            <button onclick="openTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-gears"></i> Typen verwalten
-            </button>
-            <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/10">
-                <i class="fa-solid fa-plus"></i> Task hinzufügen
-            </button>
+                    <span class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-4 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></span>
+                </span>
+            </label>
         </div>
     </section>
 
     <!-- Board Area -->
-    <div class="flex flex-1 overflow-hidden">
-        <main class="flex-1 p-6 overflow-y-auto" id="board-container">
+    <div class="board-area flex flex-1 overflow-hidden">
+        <aside id="backlog-panel" class="bg-white dark:bg-slate-900" aria-label="Backlog">
+            <button type="button" id="backlog-toggle" aria-label="Backlog" aria-expanded="false" aria-controls="backlog-content" title="Backlog auf- oder zuklappen" class="font-semibold tracking-wide">
+                <i id="backlog-chevron" class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                <span id="backlog-toggle-label">Backlog</span>
+                <span id="backlog-toggle-count"></span>
+                <i id="backlog-toggle-icon" class="fa-solid fa-inbox text-lg" aria-hidden="true"></i>
+            </button>
+            <div id="backlog-content" aria-hidden="true">
+                <div class="flex items-center justify-between gap-2 p-4 border-b border-slate-200 dark:border-slate-800">
+                    <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">Backlog <span id="backlog-count" class="text-slate-500"></span></h2>
+                    <button type="button" onclick="openAddTaskModal('Backlog')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg">+ Task</button>
+                </div>
+                <div id="backlog-tasks" data-main="Backlog" data-sub="Backlog" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[140px]" aria-label="Backlog-Aufgaben"></div>
+            </div>
+        </aside>
+        <main class="flex-1 min-w-0 overflow-auto" id="board-container">
             <!-- Rendered Dynamically inside JavaScript -->
         </main>
 
@@ -1062,6 +1345,7 @@
 
         // Konvertiert API-Task-Format zum Frontend-Format
         function normalizeTaskFromAPI(apiTask) {
+            const column = normalizeColumnName(apiTask.columnName || "ToDo");
             return {
                 id: apiTask.id,
                 title: apiTask.title,
@@ -1069,8 +1353,8 @@
                 owner: apiTask.owner || "Unassigned",
                 customer: apiTask.customer || "No Customer",
                 taskType: apiTask.taskType || "Task",
-                column: normalizeColumnName(apiTask.columnName || "ToDo"),
-                subColumn: apiTask.subColumnName || "Doing",
+                column,
+                subColumn: column === "Backlog" ? "Backlog" : (apiTask.subColumnName || "Doing"),
                 isArchived: apiTask.isArchived || false,
                 tags: apiTask.tags || [],
                 taskTypeColor: undefined, // Wird von Frontend berechnet
@@ -1085,6 +1369,7 @@
         function normalizeColumnName(columnName) {
             if (!columnName) return "ToDo";
             const mapping = {
+                "backlog": "Backlog",
                 "todo": "ToDo",
                 "analysis": "Analysis",
                 "inprogress": "InProgress",
@@ -1198,9 +1483,12 @@
         let selectedFilterTags = loadFromStorage('kanban_selectedFilterTags', []);
         let draggedTaskId = null;
         let selectedTaskId = null;
+        let newTaskColumn = "ToDo";
         let dragSource = null;
         let dragDropState = null;
         const collapsedSwimlanes = new Set();
+        const collapsedBoardColumns = new Set();
+        const boardColumns = ["ToDo", "Analysis", "InProgress", "Done"];
 
         let owners = [];
         let customers = [];
@@ -1220,9 +1508,19 @@
         }
         // --- End of Migration ---
         
-        const wipLimits = loadFromStorage('kanban_wipLimits', {
-            "ToDo": 5, "Analysis": 4, "InProgress": 3, "Done": null
-        });
+        const wipLimits = {
+            "ToDo": 5, "Analysis": 4, "InProgress": 3, "Done": null,
+            "ToDo:Done": null, "Analysis:Done": null, "InProgress:Done": null, "Done:Done": null,
+            ...loadFromStorage('kanban_wipLimits', {})
+        };
+
+        function getWipLimitKey(column, subColumn) {
+            return subColumn === "Doing" ? column : `${column}:Done`;
+        }
+
+        function getWipTaskCount(column, subColumn) {
+            return tasks.filter(t => t.column === column && t.subColumn === subColumn && !t.isArchived).length;
+        }
 
         function saveAllState() {
             saveToStorage('kanban_tagsConfig', tagsConfig);
@@ -1686,178 +1984,235 @@
         }
 
         // --- RENDER FUNCTIONS ---
+        function renderBacklog(filteredTasks) {
+            const backlogTasks = filteredTasks.filter(task => task.column === "Backlog").sort(sortTasksByPriority);
+            const container = document.getElementById('backlog-tasks');
+            container.innerHTML = '';
+            document.getElementById('backlog-count').textContent = `(${backlogTasks.length})`;
+            document.getElementById('backlog-toggle-count').textContent = backlogTasks.length;
+            if (backlogTasks.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = "text-xs text-slate-500 dark:text-slate-400";
+                empty.textContent = "Keine Aufgaben im Backlog.";
+                container.appendChild(empty);
+            } else {
+                backlogTasks.forEach(task => container.appendChild(createCard(task)));
+            }
+        }
+
         function renderBoard() {
             const container = document.getElementById('board-container');
             if (!container) return;
             container.innerHTML = "";
+            updateBoardContainerFlex();
 
-            const activeTasks = getFilteredTasks();
+            const filteredTasks = getFilteredTasks();
+            renderBacklog(filteredTasks);
+            const activeTasks = filteredTasks.filter(task => task.column !== "Backlog");
+            const boardTasks = tasks.filter(task => task.column !== "Backlog");
             const pGroup = groupPrimary.value;
             const sGroup = groupSecondary.value;
+            const rows = [];
 
             if (pGroup === 'NONE') {
-                container.appendChild(createBoardElement("Gesamtes Board", activeTasks));
+                rows.push({ type: 'lane', tasks: activeTasks });
             } else {
-                const group1Keys = [...new Set(tasks.map(t => t[pGroup]))].sort();
-                
+                const group1Keys = [...new Set(boardTasks.map(t => t[pGroup]))].sort();
                 group1Keys.forEach(g1Value => {
                     const g1Tasks = activeTasks.filter(t => t[pGroup] === g1Value);
                     const swimlaneId = `p-${pGroup}-${g1Value}`.replace(/\s+/g, '-');
-                    const isCollapsed = collapsedSwimlanes.has(swimlaneId);
-
-                    const swimlaneSection = document.createElement('div');
-                    swimlaneSection.className = "mb-6 bg-slate-100/90 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-all duration-300";
-                    
-                    swimlaneSection.innerHTML = `
-                        <div onclick="toggleSwimlane('${swimlaneId}')" class="flex items-center justify-between cursor-pointer select-none pb-2 border-b border-slate-200 dark:border-slate-800/80 mb-4 group/header">
-                            <div class="flex items-center gap-3">
-                                <span class="text-slate-500 dark:text-slate-400 group-hover/header:text-slate-700 dark:group-hover/header:text-white transition-colors duration-200">
-                                    <i class="fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-xs"></i>
-                                </span>
-                                <span class="text-xs uppercase bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold px-2.5 py-1 rounded-md border border-blue-500/30 dark:border-blue-500/20">
-                                    ${pGroup.toUpperCase()}: ${g1Value}
-                                </span>
-                                <span class="text-xs text-slate-600 dark:text-slate-500">(${g1Tasks.length} Tasks)</span>
-                            </div>
-                        </div>
-                    `;
-
-                    const contentContainer = document.createElement('div');
-                    if (isCollapsed) contentContainer.className = "hidden";
+                    rows.push({ type: 'group', level: 1, id: swimlaneId, group: pGroup, value: g1Value, tasks: g1Tasks });
+                    if (collapsedSwimlanes.has(swimlaneId)) return;
 
                     if (sGroup !== 'NONE' && sGroup !== pGroup) {
-                        const group2Keys = [...new Set(tasks.map(t => t[sGroup]))].sort();
+                        const group2Keys = [...new Set(boardTasks.map(t => t[sGroup]))].sort();
                         group2Keys.forEach(g2Value => {
                             const g2Tasks = g1Tasks.filter(t => t[sGroup] === g2Value);
+                            if (g2Tasks.length === 0) return;
                             const subSwimlaneId = `s-${swimlaneId}-${sGroup}-${g2Value}`.replace(/\s+/g, '-');
-                            const isSubCollapsed = collapsedSwimlanes.has(subSwimlaneId);
-
-                            if (g2Tasks.length > 0) {
-                                const subSwimlane = document.createElement('div');
-                                subSwimlane.className = "ml-4 mb-4";
-                                
-                                subSwimlane.innerHTML = `
-                                    <div onclick="toggleSwimlane('${subSwimlaneId}')" class="flex items-center justify-between cursor-pointer select-none mb-2 py-1 group/subheader">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-slate-500 dark:text-slate-500 group-hover/subheader:text-slate-700 dark:group-hover/subheader:text-slate-300 transition-colors duration-200">
-                                                <i class="fa-solid ${isSubCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[10px]"></i>
-                                            </span>
-                                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                                ${sGroup.toUpperCase()}: <span class="text-emerald-700 dark:text-emerald-400">${g2Value}</span>
-                                            </span>
-                                            <span class="text-[10px] text-slate-600 dark:text-slate-500">(${g2Tasks.length} Tasks)</span>
-                                        </div>
-                                    </div>
-                                `;
-
-                                const subContentContainer = document.createElement('div');
-                                if (isSubCollapsed) {
-                                    subContentContainer.className = "hidden";
-                                } else {
-                                    subContentContainer.appendChild(createBoardStructure(g2Tasks));
-                                }
-
-                                subSwimlane.appendChild(subContentContainer);
-                                contentContainer.appendChild(subSwimlane);
+                            rows.push({ type: 'group', level: 2, id: subSwimlaneId, group: sGroup, value: g2Value, tasks: g2Tasks });
+                            if (!collapsedSwimlanes.has(subSwimlaneId)) {
+                                rows.push({ type: 'lane', tasks: g2Tasks });
                             }
                         });
                     } else {
-                        contentContainer.appendChild(createBoardStructure(g1Tasks));
+                        rows.push({ type: 'lane', tasks: g1Tasks });
                     }
-                    
-                    swimlaneSection.appendChild(contentContainer);
-                    container.appendChild(swimlaneSection);
                 });
             }
+            container.appendChild(createBoardStructure(activeTasks, rows));
         }
 
-        function createBoardStructure(boardTasks) {
-            const columns = ["ToDo", "Analysis", "InProgress", "Done"];
+        function boardGridColumns() {
+            return boardColumns.map(col => collapsedBoardColumns.has(col) ? "48px" : "minmax(250px, 1fr)").join(" ");
+        }
+
+        function updateBoardContainerFlex() {
+            const container = document.getElementById('board-container');
+            container.style.flexGrow = boardColumns.length - collapsedBoardColumns.size;
+            container.style.flexBasis = `calc(${collapsedBoardColumns.size * 48}px + var(--board-grid-gaps))`;
+        }
+
+        function setBoardColumnCollapsed(column, collapsed) {
+            if (collapsed) collapsedBoardColumns.add(column);
+            else collapsedBoardColumns.delete(column);
+
+            updateBoardContainerFlex();
+            document.querySelectorAll('.board-grid').forEach(grid => {
+                grid.style.setProperty('--board-columns', boardGridColumns());
+            });
+            document.querySelectorAll('[data-board-column]').forEach(panel => {
+                if (panel.dataset.boardColumn !== column) return;
+                panel.classList.toggle('is-collapsed', collapsed);
+                panel.querySelector('.board-column-toggle').setAttribute('aria-expanded', String(!collapsed));
+                panel.querySelector('.board-column-body').hidden = collapsed;
+            });
+        }
+
+        function createSwimlaneHeader(row, column) {
+            const button = document.createElement('button');
+            const collapsed = collapsedSwimlanes.has(row.id);
+            button.type = 'button';
+            button.className = `board-swimlane-header text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 ${row.level === 2 ? 'is-secondary' : ''}`;
+            button.dataset.swimlaneId = row.id;
+            button.setAttribute('aria-expanded', String(!collapsed));
+            button.addEventListener('click', () => {
+                window.toggleSwimlane(row.id);
+                const panel = document.querySelector(`[data-board-column="${column}"]`);
+                const replacement = [...panel.querySelectorAll('.board-swimlane-header')]
+                    .find(header => header.dataset.swimlaneId === row.id);
+                replacement.focus({ preventScroll: true });
+            });
+
+            const icon = document.createElement('i');
+            icon.className = `fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[10px]`;
+            icon.setAttribute('aria-hidden', 'true');
+            const label = document.createElement('span');
+            label.className = 'board-swimlane-label';
+            label.textContent = `${row.group.toUpperCase()}: ${row.value}`;
+            const count = document.createElement('span');
+            count.className = 'text-[10px] text-slate-500';
+            count.textContent = `(${row.tasks.filter(task => task.column === column).length} Tasks)`;
+            button.append(icon, label, count);
+            return button;
+        }
+
+        function createBoardStructure(boardTasks, rows) {
             const boardGrid = document.createElement('div');
-            boardGrid.className = "grid grid-cols-1 xl:grid-cols-4 gap-4 mt-2";
+            boardGrid.className = "board-grid";
+            boardGrid.style.setProperty('--board-columns', boardGridColumns());
+            const ungrouped = groupPrimary.value === 'NONE';
+            boardGrid.style.gridTemplateRows = [
+                'max-content',
+                ...rows.map(row => row.type === 'lane' ? (ungrouped ? 'minmax(160px, 1fr)' : 'minmax(160px, max-content)') : 'max-content'),
+                ...(ungrouped ? [] : ['minmax(0, 1fr)'])
+            ].join(' ');
 
-            columns.forEach(col => {
+            boardColumns.forEach((col, columnIndex) => {
                 const colWrapper = document.createElement('div');
-                colWrapper.className = "bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-3 flex flex-col min-h-[220px] transition-all";
+                const collapsed = collapsedBoardColumns.has(col);
+                colWrapper.className = "board-column-panel";
+                colWrapper.style.gridColumn = String(columnIndex + 1);
+                colWrapper.dataset.boardColumn = col;
+                colWrapper.classList.toggle('is-collapsed', collapsed);
                 
-                const activeFilteredTasks = getFilteredTasks();
-                const globalTotalCount = activeFilteredTasks.filter(t => t.column === col).length;
+                const globalTotalCount = boardTasks.filter(t => t.column === col).length;
 
-                colWrapper.innerHTML = `
-                    <div class="flex justify-between items-center mb-3 px-1">
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'board-column-toggle';
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+                toggle.setAttribute('aria-label', `Spalte ${getColLabel(col)}`);
+                toggle.title = 'Spalte auf- oder zuklappen';
+                toggle.innerHTML = `<i class="fa-solid fa-chevron-right board-column-chevron" aria-hidden="true"></i><span class="board-column-toggle-label">${getColLabel(col)}</span><span class="board-column-toggle-count">${globalTotalCount}</span>`;
+                toggle.addEventListener('click', () => setBoardColumnCollapsed(col, !collapsedBoardColumns.has(col)));
+                toggle.addEventListener('dragenter', () => {
+                    const task = getTaskById(draggedTaskId);
+                    if (task && collapsedBoardColumns.has(col) && workflowPaths[task.taskType]?.path?.includes(col)) {
+                        setBoardColumnCollapsed(col, false);
+                    }
+                });
+                colWrapper.appendChild(toggle);
+
+                const colBody = document.createElement('div');
+                colBody.className = 'board-column-body';
+                colBody.hidden = collapsed;
+                const header = document.createElement('div');
+                header.className = 'board-column-header flex justify-between items-center gap-2';
+                header.style.gridRow = '1';
+                header.innerHTML = `
                         <span class="text-xs font-bold text-slate-600 dark:text-slate-200 tracking-wide uppercase">${getColLabel(col)}</span>
                         <span class="bg-slate-200 dark:bg-slate-900/80 text-[10px] text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-800/50 font-medium">Gesamt: ${globalTotalCount}</span>
-                    </div>
                 `;
+                colBody.appendChild(header);
 
-                const subColsContainer = document.createElement('div');
-                subColsContainer.className = "grid grid-cols-2 gap-2 flex-1";
-
-                ["Doing", "Done"].forEach(subCol => {
-                    const subColBox = document.createElement('div');
-                    const globalSubCount = activeFilteredTasks.filter(t => t.column === col && t.subColumn === subCol && !t.isArchived).length;
-                    const limit = (subCol === "Doing") ? wipLimits[col] : null;
-                    const isOverWip = (limit !== null && limit !== undefined && globalSubCount > limit);
-
-                    let subColBaseClass = "bg-white dark:bg-slate-900/60 border rounded-lg p-2 flex flex-col gap-2 min-h-[140px] transition-all ";
-                    subColBaseClass += isOverWip ? "border-red-500/50 bg-red-50/50 dark:bg-red-950/10 shadow-lg shadow-red-950/20" : "border-slate-200 dark:border-slate-800/50";
-                    
-                    subColBox.className = subColBaseClass;
-                    subColBox.setAttribute('data-main', col);
-                    subColBox.setAttribute('data-sub', subCol);
-
-                    subColBox.addEventListener('dragover', handleDragOver);
-                    subColBox.addEventListener('dragleave', handleDragLeave);
-                    subColBox.addEventListener('drop', (e) => handleDrop(e, col, subCol));
-
-                    let subColBadgeHtml = '';
-                    if (subCol === "Doing") {
-                        const badgeColor = 'bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
-                        const badgeInner = `<span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span>`;
-                        
-                        let wipLimitPill = '';
-                        if (limit !== null && limit !== undefined) {
-                            const pillClass = isOverWip 
-                                ? 'bg-red-600 text-white border-red-700 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 animate-pulse cursor-pointer hover:bg-red-700 dark:hover:bg-red-500/30' 
-                                : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700/50 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700';
-                            const warnIcon = isOverWip ? `<i class="fa-solid fa-triangle-exclamation mr-1 text-white dark:text-red-400"></i>` : '';
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="Klicken, um WIP Limit anzupassen">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
-                        } else {
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="Klicken, um WIP Limit anzupassen">${globalSubCount} (Kein Limit)</span>`;
-                        }
-                        
-                        subColBadgeHtml = `<div class="flex items-center gap-1.5 justify-between w-full">${badgeInner} ${wipLimitPill}</div>`;
-                    } else {
-                        const badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-                        subColBadgeHtml = `<div class="flex items-center justify-between w-full"><span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span> <span class="text-[9px] text-slate-400 dark:text-slate-500 font-medium">${globalSubCount} Tasks</span></div>`;
+                rows.forEach((row, rowIndex) => {
+                    if (row.type === 'group') {
+                        const groupHeader = createSwimlaneHeader(row, col);
+                        groupHeader.style.gridRow = String(rowIndex + 2);
+                        colBody.appendChild(groupHeader);
+                        return;
                     }
 
-                    subColBox.innerHTML = `<div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800 mb-1">${subColBadgeHtml}</div>`;
+                    const subColsContainer = document.createElement('div');
+                    subColsContainer.className = "board-lane grid grid-cols-2 gap-2";
+                    subColsContainer.style.gridRow = String(rowIndex + 2);
 
-                    const targetTasks = boardTasks
-                        .filter(t => t.column === col && t.subColumn === subCol)
-                        .sort(sortTasksByPriority);
-                    targetTasks.forEach(task => subColBox.appendChild(createCard(task)));
-                    subColsContainer.appendChild(subColBox);
+                    ["Doing", "Done"].forEach(subCol => {
+                        const subColBox = document.createElement('div');
+                        const globalSubCount = getWipTaskCount(col, subCol);
+                        const limit = wipLimits[getWipLimitKey(col, subCol)];
+                        const isOverWip = (limit !== null && limit !== undefined && globalSubCount > limit);
+
+                        let subColBaseClass = "board-subcolumn border rounded-xl p-2 flex flex-col gap-2 min-h-[140px] transition-all ";
+                        subColBaseClass += isOverWip ? "is-over-wip border-red-500/50 bg-red-50/50 dark:bg-red-950/10 shadow-lg shadow-red-950/20" : "";
+
+                        subColBox.className = subColBaseClass;
+                        subColBox.setAttribute('data-main', col);
+                        subColBox.setAttribute('data-sub', subCol);
+
+                        subColBox.addEventListener('dragover', handleDragOver);
+                        subColBox.addEventListener('dragleave', handleDragLeave);
+                        subColBox.addEventListener('drop', (e) => handleDrop(e, col, subCol));
+
+                        const badgeColor = subCol === "Doing"
+                            ? 'bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+                        const badgeInner = `<span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span>`;
+
+                        let wipLimitPill = '';
+                        if (limit !== null && limit !== undefined) {
+                            const pillClass = isOverWip
+                                ? 'bg-red-600 text-white border-red-700 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 animate-pulse cursor-pointer hover:bg-red-700 dark:hover:bg-red-500/30'
+                                : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700/50 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700';
+                            const warnIcon = isOverWip ? `<i class="fa-solid fa-triangle-exclamation mr-1 text-white dark:text-red-400"></i>` : '';
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="Klicken, um WIP Limit anzupassen">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
+                        } else {
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="Klicken, um WIP Limit anzupassen">${globalSubCount} (Kein Limit)</span>`;
+                        }
+
+                        const subColBadgeHtml = `<div class="flex items-center gap-1.5 justify-between w-full">${badgeInner} ${wipLimitPill}</div>`;
+                        subColBox.innerHTML = `<div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800 mb-1">${subColBadgeHtml}</div>`;
+
+                        const targetTasks = row.tasks
+                            .filter(t => t.column === col && t.subColumn === subCol)
+                            .sort(sortTasksByPriority);
+                        targetTasks.forEach(task => subColBox.appendChild(createCard(task)));
+                        subColsContainer.appendChild(subColBox);
+                    });
+                    colBody.appendChild(subColsContainer);
                 });
 
-                colWrapper.appendChild(subColsContainer);
+                colWrapper.appendChild(colBody);
                 boardGrid.appendChild(colWrapper);
             });
 
             return boardGrid;
         }
 
-        function createBoardElement(title, boardTasks) {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = `<h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-list-check mr-2"></i>${title}</h2>`;
-            wrapper.appendChild(createBoardStructure(boardTasks));
-            return wrapper;
-        }
-
         function createCard(task) {
             const card = document.createElement('div');
-            let cardClasses = "bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 rounded-lg p-3 shadow-md hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
+            let cardClasses = "board-task-card bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 rounded-lg p-3 hover:border-blue-500/50 cursor-pointer transition-all select-none relative group";
             if (task.isArchived) {
                 cardClasses += " card-archived";
             }
@@ -1877,6 +2232,9 @@
             if (!task.isArchived) {
                 const allowedCols = workflowPaths[task.taskType]?.path || [];
                 const moveOptions = [];
+                if (task.column !== "Backlog") {
+                    moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', 'Backlog', 'Backlog')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">Backlog</button>`);
+                }
                 allowedCols.forEach(col => {
                     ["Doing", "Done"].forEach(subCol => {
                         if (!(task.column === col && task.subColumn === subCol)) {
@@ -1935,7 +2293,7 @@
                         </div>
                     </div>
                 </div>
-                <h4 class="text-sm font-semibold text-slate-800 dark:text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
+                <h4 class="text-xs font-semibold text-slate-800 dark:text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
                 ${tagsHtml}
                 <div class="space-y-1.5 border-t border-slate-200 dark:border-slate-700/40 pt-2 mt-2 text-[10px]">
                     <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>Owner: <strong class="text-slate-800 dark:text-white">${task.owner}</strong></span></div>
@@ -1978,38 +2336,39 @@
             renderBoard();
         }
 
-        window.configureWipLimit = async function(col) {
+        window.configureWipLimit = async function(col, subCol) {
             if (!ensureAuthenticatedOrToast('WIP Limits zu ändern')) return;
-            const currentLimit = wipLimits[col];
-            const input = prompt(`Neues WIP Limit für die Subspalte "${getColLabel(col)} (Doing)" eingeben (Leer oder 0 zum Deaktivieren):`, currentLimit !== null ? currentLimit : "");
+            const key = getWipLimitKey(col, subCol);
+            const currentLimit = wipLimits[key];
+            const input = prompt(`Neues WIP Limit für die Subspalte "${getColLabel(col)} (${subCol})" eingeben (Leer oder 0 zum Deaktivieren):`, currentLimit != null ? currentLimit : "");
             if (input === null) return;
             const num = parseInt(input.trim(), 10);
             if (input.trim() === "" || isNaN(num) || num <= 0) {
-                wipLimits[col] = null;
-                showToast(`WIP Limit für "${getColLabel(col)} (Doing)" wurde aufgehoben.`);
+                wipLimits[key] = null;
+                showToast(`WIP Limit für "${getColLabel(col)} (${subCol})" wurde aufgehoben.`);
             } else {
-                wipLimits[col] = num;
-                showToast(`WIP Limit für "${getColLabel(col)} (Doing)" auf ${num} gesetzt.`);
+                wipLimits[key] = num;
+                showToast(`WIP Limit für "${getColLabel(col)} (${subCol})" auf ${num} gesetzt.`);
             }
             saveAllState();
             await flushBoardConfigSync(false);
             renderBoard();
         }
 
-        function validateWorkflowMove(taskId, targetColumn) {
+        function validateWorkflowMove(taskId, targetColumn, targetSubColumn) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
 
             const allowedColumns = workflowPaths[task.taskType]?.path;
-            if (!allowedColumns || !allowedColumns.includes(targetColumn)) {
+            if (targetColumn !== "Backlog" && (!allowedColumns || !allowedColumns.includes(targetColumn))) {
                 showToast(`Fehler: Der Typ "${task.taskType}" darf die Spalte "${getColLabel(targetColumn)}" nicht nutzen!`);
                 return false;
             }
 
-            if (task.column !== targetColumn && wipLimits[targetColumn] !== null) {
-                const currentGlobalCount = tasks.filter(t => t.column === targetColumn && t.subColumn === "Doing").length;
-                if (currentGlobalCount >= wipLimits[targetColumn]) {
-                    showToast(`Achtung: WIP Limit für "${getColLabel(targetColumn)} (Doing)" (${wipLimits[targetColumn]}) wird überschritten!`);
+            const limit = targetColumn === "Backlog" ? null : wipLimits[getWipLimitKey(targetColumn, targetSubColumn)];
+            if ((task.column !== targetColumn || task.subColumn !== targetSubColumn) && limit != null) {
+                if (getWipTaskCount(targetColumn, targetSubColumn) >= limit) {
+                    showToast(`Achtung: WIP Limit für "${getColLabel(targetColumn)} (${targetSubColumn})" (${limit}) wird überschritten!`);
                 }
             }
             return true;
@@ -2060,7 +2419,7 @@
             if (task) {
                 const allowedCols = workflowPaths[task.taskType]?.path || [];
                 document.querySelectorAll('[data-main]').forEach(el => {
-                    if (allowedCols.includes(el.dataset.main)) {
+                    if (el.dataset.main === "Backlog" || allowedCols.includes(el.dataset.main)) {
                         el.classList.add('column-allowed');
                     } else {
                         el.classList.add('column-disabled');
@@ -2158,7 +2517,7 @@
             cleanupDraggingCards();
             clearDropIndicators();
 
-            if (validateWorkflowMove(draggedTaskId, targetMain)) {
+            if (validateWorkflowMove(draggedTaskId, targetMain, targetSub)) {
                 const success = await reorderTaskAndPersist(draggedTaskId, targetMain, targetSub, beforeTaskId);
                 if (!success) {
                     draggedTaskId = null;
@@ -2171,7 +2530,7 @@
         }
 
         window.manualMoveTask = async function(taskId, mainCol, subCol) {
-            if (validateWorkflowMove(taskId, mainCol)) {
+            if (validateWorkflowMove(taskId, mainCol, subCol)) {
                 await reorderTaskAndPersist(taskId, mainCol, subCol, null);
             }
         }
@@ -2203,7 +2562,7 @@
 
             if (taskId) {
                 const task = tasks.find(t => t.id === taskId);
-                if (task && task.taskType !== taskData.taskType) {
+                if (task && task.column !== "Backlog" && task.taskType !== taskData.taskType) {
                     const allowed = workflowPaths[taskData.taskType]?.path;
                     if (!allowed || !allowed.includes(task.column)) {
                         showToast(`Änderung des Typs verweigert: Die aktuelle Spalte "${getColLabel(task.column)}" ist für den neuen Typ nicht zulässig!`);
@@ -2214,27 +2573,28 @@
                 if (!success) return;
                 showToast(`Task ${taskId.slice(0,8)}... wurde aktualisiert.`);
             } else {
-                if (wipLimits["ToDo"] !== null) {
-                    const currentGlobalCount = tasks.filter(t => t.column === "ToDo" && t.subColumn === "Doing").length;
+                if (newTaskColumn === "ToDo" && wipLimits["ToDo"] !== null) {
+                    const currentGlobalCount = getWipTaskCount("ToDo", "Doing");
                     if (currentGlobalCount >= wipLimits["ToDo"]) {
                         showToast(`Achtung: WIP Limit für "To Do (Doing)" wird durch den neuen Task überschritten!`);
                     }
                 }
-                taskData.column = "ToDo";
+                taskData.column = newTaskColumn;
                 taskData.isArchived = false;
-                taskData.subColumn = "Doing";
-                taskData.order = computeNewOrder("ToDo", "Doing", null, null);
+                taskData.subColumn = newTaskColumn === "Backlog" ? "Backlog" : "Doing";
+                taskData.order = computeNewOrder(taskData.column, taskData.subColumn, null, null);
                 const newId = await addTaskToCloud(taskData);
                 if (!newId) return;
-                showToast(`Task ${newId.slice(0,8)}... wurde im To Do erstellt.`);
+                showToast(`Task ${newId.slice(0,8)}... wurde in ${getColLabel(newTaskColumn)} erstellt.`);
             }
 
             closeAddTaskModal();
             await loadTasksFromCloud();
         }
 
-        window.openAddTaskModal = function() {
-            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> Neuen Task erstellen`;
+        window.openAddTaskModal = function(column = "ToDo") {
+            newTaskColumn = column;
+            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> ${column === "Backlog" ? "Neuen Backlog-Task erstellen" : "Neuen Task erstellen"}`;
             document.getElementById('task-form').reset();
             document.getElementById('modal-task-id').value = "";
             selectedTaskId = null;
@@ -2728,6 +3088,41 @@
 
         async function initDOMAndAuth() {
             // Add event listeners for controls
+            const backlogPanel = document.getElementById('backlog-panel');
+            const backlogToggle = document.getElementById('backlog-toggle');
+            const backlogContent = document.getElementById('backlog-content');
+            const backlogTasks = document.getElementById('backlog-tasks');
+            function setBacklogOpen(isOpen) {
+                backlogPanel.classList.toggle('is-open', isOpen);
+                backlogToggle.setAttribute('aria-expanded', String(isOpen));
+                backlogContent.setAttribute('aria-hidden', String(!isOpen));
+            }
+            function setAllPanelsOpen(isOpen) {
+                setBacklogOpen(isOpen);
+                boardColumns.forEach(column => setBoardColumnCollapsed(column, !isOpen));
+            }
+            document.getElementById('expand-all-panels').addEventListener('click', () => setAllPanelsOpen(true));
+            document.getElementById('collapse-all-panels').addEventListener('click', () => setAllPanelsOpen(false));
+            backlogToggle.addEventListener('click', () => setBacklogOpen(!backlogPanel.classList.contains('is-open')));
+            backlogToggle.addEventListener('dragenter', () => {
+                if (draggedTaskId) setBacklogOpen(true);
+            });
+            backlogToggle.addEventListener('dragover', e => {
+                if (draggedTaskId) e.preventDefault();
+            });
+            backlogToggle.addEventListener('drop', async e => {
+                e.preventDefault();
+                if (!draggedTaskId) return;
+                const taskId = draggedTaskId;
+                cleanupDraggingCards();
+                clearDropIndicators();
+                draggedTaskId = null;
+                dragSource = null;
+                await window.manualMoveTask(taskId, 'Backlog', 'Backlog');
+            });
+            backlogTasks.addEventListener('dragover', handleDragOver);
+            backlogTasks.addEventListener('dragleave', handleDragLeave);
+            backlogTasks.addEventListener('drop', e => handleDrop(e, 'Backlog', 'Backlog'));
             groupPrimary.addEventListener('change', () => {
                 if (groupPrimary.value === 'NONE') {
                     groupSecondary.value = 'NONE';

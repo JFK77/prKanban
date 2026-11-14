@@ -1,14 +1,14 @@
 # 🐛 Known Bugs & Session Handoff
 
 **Datum**: 14. November 2026, 02:54 Uhr  
-**Status**: Migration Complete, 2 Critical Bugs identifiziert  
+**Status**: Migration Complete, Bug #1 behoben, Bug #2 offen  
 **Branch**: `feature/migrate-firebase-to-sqlite`
 
 ---
 
 ## Critical Bugs Identifiziert
 
-### 🔴 Bug #1: Task Type wird nicht gespeichert
+### ✅ Bug #1: Task Type wird nicht gespeichert (behoben)
 
 **Beschreibung**:  
 Wenn ein Benutzer den Task Type ändert (z.B. von "Feature" zu "Bug"), wird die Änderung nicht in der Datenbank persistiert.
@@ -20,10 +20,10 @@ Wenn ein Benutzer den Task Type ändert (z.B. von "Feature" zu "Bug"), wird die 
 4. Task Type ändern (z.B. "Feature" → "Bug")
 5. Task speichern
 6. **Erwartet**: Task Type sollte "Bug" sein
-7. **Aktuell**: Task Type zeigt noch "Feature"
+7. **Vor dem Fix**: Task Type zeigte noch "Feature"
 
 **Ursache**:  
-Die `UpdateTask()` Methode in `TasksController.cs` (Zeile ~150-165) aktualisiert das TaskType Feld nicht:
+Die `UpdateTask()` Methode aktualisierte das TaskType Feld nicht; auch das Update-DTO enthielt es nicht:
 
 ```csharp
 // FEHLT: if (!string.IsNullOrEmpty(request.TaskType))
@@ -31,7 +31,7 @@ Die `UpdateTask()` Methode in `TasksController.cs` (Zeile ~150-165) aktualisiert
 ```
 
 **Lösung**:
-Zeile nach `request.Customer` hinzufügen:
+`TaskType` zum Update-DTO hinzufügen und beim Update übernehmen:
 ```csharp
 if (!string.IsNullOrEmpty(request.TaskType))
     task.TaskType = request.TaskType;
@@ -49,7 +49,7 @@ curl.exe -s -X PUT "http://localhost:5000/api/v1/tasks/$id" \
 ```
 
 **Priority**: 🟡 MEDIUM  
-**Complexity**: ⭐ EASY (1 Zeile Code)  
+**Complexity**: ⭐ EASY  
 **Estimated Fix Time**: 5 Minuten
 
 ---
@@ -157,7 +157,7 @@ Write-Host "SubColumnName: $($result.data.subColumnName)"
 | Login | ✅ | ASP.NET Identity |
 | Task Load | ✅ | 14+ tasks werden angezeigt |
 | Task Create | ✅ | Neue Tasks erstellen funktioniert |
-| Task Update | ⚠️ | Funktioniert, aber TaskType wird nicht persistiert |
+| Task Update | ✅ | TaskType wird persistiert |
 | Task Delete | ✅ | Löschen funktioniert |
 | Drag TODO → ANALYSIS | ✅ | Funktioniert perfekt |
 | Drag ANALYSIS → INPROGRESS | ✅ | Funktioniert perfekt |
@@ -165,9 +165,6 @@ Write-Host "SubColumnName: $($result.data.subColumnName)"
 | API Format Conversion | ✅ | columnName ↔ column mapping works |
 
 ### Bekannte Workarounds
-**Bis Bug #1 gefixt ist**:
-- Änderung von Task Type müssen über API gemacht werden (nicht über UI)
-
 **Bis Bug #2 gefixt ist**:
 - Tasks können nicht in DONE Spalte gezogen werden
 - Workaround: Über API direkt updaten
@@ -177,7 +174,7 @@ Write-Host "SubColumnName: $($result.data.subColumnName)"
 ## Nächste Session - Priorität
 
 ```
-[ ] BUG FIX #1: TaskType Update Handler (5 Min)
+[x] BUG FIX #1: TaskType Update Handler
     Datei: Backend/PrKanban.Backend/Controllers/TasksController.cs
     Zeile: ~157
     Code: if (!string.IsNullOrEmpty(request.TaskType)) task.TaskType = request.TaskType;
