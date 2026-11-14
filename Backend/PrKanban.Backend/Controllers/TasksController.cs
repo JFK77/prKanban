@@ -150,12 +150,22 @@ namespace PrKanban.Controllers
                 task.Title = request.Title;
             if (!string.IsNullOrEmpty(request.Owner))
                 task.Owner = request.Owner;
+            if (!string.IsNullOrEmpty(request.Customer))
+                task.Customer = request.Customer;
+            if (request.Description != null)
+                task.Description = request.Description;
             if (!string.IsNullOrEmpty(request.ColumnName))
                 task.ColumnName = request.ColumnName;
+            if (request.SubColumnName != null)
+                task.SubColumnName = request.SubColumnName;
             if (request.Tags != null)
                 task.Tags = request.Tags;
 
             await _context.SaveChangesAsync();
+            
+            // Reload the task to get updated values
+            task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+            
             _logger.LogInformation($"Task {task.Id} updated by user {userId}");
 
             return Ok(new { success = true, data = task });
