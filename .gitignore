@@ -67,3 +67,21 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# .NET build artifacts
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.userprefs
+*.suo
+
+# Local environment
+local.env
+appsettings.local.json
