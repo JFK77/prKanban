@@ -1049,6 +1049,39 @@
             return base;
         }
 
+        // Konvertiert API-Task-Format zum Frontend-Format
+        function normalizeTaskFromAPI(apiTask) {
+            return {
+                id: apiTask.id,
+                title: apiTask.title,
+                description: apiTask.description || "",
+                owner: apiTask.owner || "Unassigned",
+                customer: apiTask.customer || "No Customer",
+                taskType: apiTask.taskType || "Task",
+                column: normalizeColumnName(apiTask.columnName || "ToDo"),
+                subColumn: apiTask.subColumnName || "Doing",
+                isArchived: apiTask.isArchived || false,
+                tags: apiTask.tags || [],
+                taskTypeColor: undefined, // Wird von Frontend berechnet
+                d365Link: apiTask.d365Link || "",
+                timeLink: apiTask.timeLink || "",
+                userId: apiTask.userId,
+                createdAt: apiTask.createdAt,
+                updatedAt: apiTask.updatedAt
+            };
+        }
+
+        function normalizeColumnName(columnName) {
+            if (!columnName) return "ToDo";
+            const mapping = {
+                "todo": "ToDo",
+                "analysis": "Analysis",
+                "inprogress": "InProgress",
+                "done": "Done"
+            };
+            return mapping[columnName.toLowerCase()] || columnName;
+        }
+
         // --- REST API INTEGRATION ---
         async function loadTasksFromCloud() {
             if (!window.currentUser) {
@@ -1060,8 +1093,9 @@
             try {
                 const response = await window.TaskAPI.getTasks();
                 console.log("Raw response from TaskAPI:", response);
-                const cloudTasks = response.data?.tasks || response.tasks || [];
-                console.log("Extracted cloudTasks:", cloudTasks);
+                const apiTasks = response.tasks || response.data?.tasks || [];
+                const cloudTasks = apiTasks.map(t => normalizeTaskFromAPI(t));
+                console.log("Extracted and normalized cloudTasks:", cloudTasks);
 
 
                 updateDynamicListsFromTasks(cloudTasks);
