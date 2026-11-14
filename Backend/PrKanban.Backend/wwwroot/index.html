@@ -1046,6 +1046,17 @@
                 base.createdAt = base.createdAt || now;
             }
             base.updatedAt = now;
+            
+            // Convert frontend field names to API field names
+            if (base.column !== undefined) {
+                base.columnName = base.column;
+                delete base.column;
+            }
+            if (base.subColumn !== undefined) {
+                base.subColumnName = base.subColumn;
+                delete base.subColumn;
+            }
+            
             return base;
         }
 
@@ -1124,9 +1135,11 @@
             try {
                 const payload = normalizeTaskPayload(taskData, false);
                 const newTask = await window.TaskAPI.createTask(payload);
-                tasks = [...tasks, newTask];
+                // Convert API response back to frontend format
+                const normalizedNewTask = normalizeTaskFromAPI(newTask);
+                tasks = [...tasks, normalizedNewTask];
                 persistTaskSnapshot();
-                console.log("Task added with ID: ", newTask.id);
+                console.log("Task added with ID: ", normalizedNewTask.id);
                 return newTask.id;
             } catch (e) {
                 console.error("Error adding task: ", e);
@@ -1141,9 +1154,15 @@
                 const payload = normalizeTaskPayload(taskData, true);
                 await window.TaskAPI.updateTask(taskId, payload);
 
+                // Normalize the payload back to frontend format for local state update
+                const frontendPayload = {
+                    ...taskData, // Keep the original frontend format fields
+                    updatedAt: payload.updatedAt // But update the timestamp
+                };
+
                 const taskIndex = tasks.findIndex((task) => task.id === taskId);
                 if (taskIndex !== -1) {
-                    tasks[taskIndex] = { ...tasks[taskIndex], ...payload };
+                    tasks[taskIndex] = { ...tasks[taskIndex], ...frontendPayload };
                 }
                 persistTaskSnapshot();
                 console.log(`Task ${taskId} updated.`);
@@ -1505,19 +1524,21 @@
             if (!taskUpdates || taskUpdates.length === 0) return true;
 
             try {
-                const batch = writeBatch(db);
-                taskUpdates.forEach((item) => {
+                // Update multiple tasks via API
+                // Make individual update calls for each task
+                const updatePromises = taskUpdates.map((item) => {
                     const payload = normalizeTaskPayload(item.data, true);
-                    batch.update(doc(db, "tasks", item.id), payload);
+                    return window.TaskAPI.updateTask(item.id, payload);
                 });
 
-                await batch.commit();
+                await Promise.all(updatePromises);
 
+                // Update local state - use original frontend format
                 taskUpdates.forEach((item) => {
-                    const payload = normalizeTaskPayload(item.data, true);
                     const index = tasks.findIndex(task => task.id === item.id);
                     if (index !== -1) {
-                        tasks[index] = { ...tasks[index], ...payload };
+                        // Keep the original item.data which is in frontend format
+                        tasks[index] = { ...tasks[index], ...item.data };
                     }
                 });
 
