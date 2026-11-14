@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="de" class="">
-<!-- CACHE-BUST: 20261114013956 --> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
+<!-- CACHE-BUST: 20261114010653 --> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
     
 <head>
     <meta charset="UTF-8">
@@ -24,6 +24,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- API Client (must load before other scripts) -->
     <script src="api-client.js"></script>
+    <script>
+        // Initialization callback that module script will call
+        window.moduleInitCallback = null;
+        window.moduleInitialized = false;
+        
+        window.setModuleInitialized = function() {
+            window.moduleInitialized = true;
+            if (typeof window.moduleInitCallback === 'function') {
+                window.moduleInitCallback();
+            }
+        };
+        
+        window.addEventListener('error', (event) => {
+            console.error("GLOBAL ERROR:", event.message, "at", event.filename, "line", event.lineno);
+        });
+    </script>
     <style>
         /* Custom scrollbar */
         ::-webkit-scrollbar {
@@ -697,6 +713,41 @@
         });
     </script>
 
+    <!-- Prepare for module script to set up auth -->
+    <script>
+        console.log("Pre-module initialization script loaded");
+        
+        // This will be called by the module script
+        window.performInitAuth = function(initAuthFunc) {
+            console.log("performInitAuth called with initAuth function");
+            console.log("document.readyState:", document.readyState);
+            
+            const doInitAuth = async () => {
+                try {
+                    console.log("Calling initAuth...");
+                    await initAuthFunc();
+                    console.log("initAuth completed successfully");
+                } catch (error) {
+                    console.error("initAuth failed:", error);
+                }
+            };
+            
+            // Call immediately if DOM is ready
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                console.log("DOM already interactive, calling initAuth immediately");
+                doInitAuth();
+            } else {
+                console.log("DOM still loading, waiting for DOMContentLoaded");
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log("DOMContentLoaded fired, calling initAuth");
+                    doInitAuth();
+                });
+            }
+        };
+        
+        console.log("window.performInitAuth defined");
+    </script>
+
     <script type="module">
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
@@ -748,8 +799,10 @@
         }
 
         async function initAuth() {
+            console.log("initAuth() called");
             try {
                 const user = await window.AuthAPI.getCurrentUser();
+                console.log("getCurrentUser() result:", user);
                 window.currentUser = user;
                 updateConnectionUI();
 
@@ -772,6 +825,9 @@
                 authReadyResolver = null;
             }
         }
+        
+        // Export immediately after definition
+        window.initAuth_internal = initAuth;
 
         window.loginWithGoogle = async function() {
             showLoginModal();
@@ -942,7 +998,7 @@
         }
 
         async function loadBoardConfigFromCloud() {
-            if (!currentUser) return;
+            if (!window.currentUser) return;
             try {
                 const response = await window.BoardConfigAPI.getBoardConfig();
                 if (!response || !response.data) {
@@ -1003,7 +1059,9 @@
             }
             try {
                 const response = await window.TaskAPI.getTasks();
+                console.log("Raw response from TaskAPI:", response);
                 const cloudTasks = response.data?.tasks || response.tasks || [];
+                console.log("Extracted cloudTasks:", cloudTasks);
 
 
                 updateDynamicListsFromTasks(cloudTasks);
@@ -2603,7 +2661,17 @@
         }
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            // DOM is still loading, wait for DOMContentLoaded
+            document.addEventListener('DOMContentLoaded', initDOMAndAuth);
+        } else {
+            // DOM is already loaded (interactive or complete)
+            // Call initialization immediately
+            initDOMAndAuth();
+        }
+
+        async function initDOMAndAuth() {
             // Add event listeners for controls
             groupPrimary.addEventListener('change', () => {
                 if (groupPrimary.value === 'NONE') {
@@ -2712,9 +2780,8 @@
                     }
                 }
             });
-        });
-
-        // --- Resizable Panel Logic ---
+        }
+        // 
         const resizer = document.getElementById('details-resizer');
         const panel = document.getElementById('task-details-panel');
         let isResizing = false;
@@ -2755,6 +2822,15 @@
         window.updateAllDropdowns = updateAllDropdowns;
         window.renderBoard = renderBoard;
         window.updateConnectionUI = updateConnectionUI;
+        window.initAuth_internal = initAuth;
+        
+        // Call performInitAuth if it's defined (set by regular script)
+        if (typeof window.performInitAuth === 'function') {
+            console.log("Module script: calling performInitAuth...");
+            window.performInitAuth(initAuth);
+        } else {
+            console.log("Module script: window.performInitAuth not found");
+        }
     </script>
 
     <!-- LOGIN MODAL DIALOG -->
