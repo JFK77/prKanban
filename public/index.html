@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="de" class=""> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
+<html lang="de" class="">
+<!-- CACHE-BUST: 20261114013956 --> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
     
 <head>
     <meta charset="UTF-8">
@@ -577,6 +578,123 @@
 
     <!-- Main Script Block -->
     <script src="api-client.js"></script>
+
+    <!-- MODAL INITIALIZATION SCRIPT (runs before module) -->
+    <script>
+        // Initialize login modal functions early
+        window.showLoginModal = null;
+        window.hideLoginModal = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginModal = document.getElementById('login-modal');
+            const loginEmailInput = document.getElementById('login-email');
+            const loginPasswordInput = document.getElementById('login-password');
+            const loginSubmitBtn = document.getElementById('login-submit-btn');
+            const loginCancelBtn = document.getElementById('login-cancel-btn');
+            const loginErrorMessage = document.getElementById('login-error-message');
+            const loginErrorText = document.getElementById('login-error-text');
+            const loginLoading = document.getElementById('login-loading');
+            const loginEmailError = document.getElementById('login-email-error');
+            const loginPasswordError = document.getElementById('login-password-error');
+
+            // Show login modal
+            window.showLoginModal = function() {
+                loginEmailInput.value = '';
+                loginPasswordInput.value = '';
+                loginErrorMessage.classList.add('hidden');
+                loginEmailError.classList.add('hidden');
+                loginPasswordError.classList.add('hidden');
+                loginLoading.classList.add('hidden');
+                loginSubmitBtn.disabled = false;
+                loginSubmitBtn.classList.remove('opacity-50 cursor-not-allowed');
+                loginModal.classList.remove('hidden');
+                loginEmailInput.focus();
+            };
+
+            // Hide login modal
+            window.hideLoginModal = function() {
+                loginModal.classList.add('hidden');
+            };
+
+            // Validate email format
+            function validateEmail(email) {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(email);
+            }
+
+            // Handle login submission
+            async function handleLoginSubmit() {
+                // Clear previous errors
+                loginErrorMessage.classList.add('hidden');
+                loginEmailError.classList.add('hidden');
+                loginPasswordError.classList.add('hidden');
+
+                // Get values
+                const email = loginEmailInput.value.trim();
+                const password = loginPasswordInput.value;
+
+                // Validate inputs
+                let hasError = false;
+
+                if (!email) {
+                    loginEmailError.textContent = 'Email-Adresse ist erforderlich';
+                    loginEmailError.classList.remove('hidden');
+                    hasError = true;
+                } else if (!validateEmail(email)) {
+                    loginEmailError.textContent = 'Ungültige Email-Adresse';
+                    loginEmailError.classList.remove('hidden');
+                    hasError = true;
+                }
+
+                if (!password) {
+                    loginPasswordError.textContent = 'Passwort ist erforderlich';
+                    loginPasswordError.classList.remove('hidden');
+                    hasError = true;
+                } else if (password.length < 6) {
+                    loginPasswordError.textContent = 'Passwort muss mindestens 6 Zeichen lang sein';
+                    loginPasswordError.classList.remove('hidden');
+                    hasError = true;
+                }
+
+                if (hasError) return;
+
+                // Show loading state
+                loginLoading.classList.remove('hidden');
+                loginSubmitBtn.disabled = true;
+                loginSubmitBtn.classList.add('opacity-50 cursor-not-allowed');
+
+                try {
+                    const user = await AuthAPI.login(email, password);
+                    window.currentUser = user;
+                    window.updateConnectionUI();
+                    await window.loadBoardConfigFromCloud();
+                    await window.loadTasksFromCloud();
+                    window.showToast('Erfolgreich angemeldet!');
+                    hideLoginModal();
+                } catch (error) {
+                    console.error('Login failed:', error);
+                    loginErrorText.textContent = error.message || 'Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.';
+                    loginErrorMessage.classList.remove('hidden');
+                    loginLoading.classList.add('hidden');
+                    loginSubmitBtn.disabled = false;
+                    loginSubmitBtn.classList.remove('opacity-50 cursor-not-allowed');
+                }
+            }
+
+            // Event listeners
+            loginSubmitBtn.addEventListener('click', handleLoginSubmit);
+            loginCancelBtn.addEventListener('click', hideLoginModal);
+
+            // Enter key to submit
+            loginEmailInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loginPasswordInput.focus();
+            });
+            loginPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLoginSubmit();
+            });
+        });
+    </script>
+
     <script type="module">
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
@@ -586,6 +704,13 @@
         const authReady = new Promise((resolve) => {
             authReadyResolver = resolve;
         });
+
+
+        // Legacy function for compatibility (no-op, we use REST API now)
+        async function setupFirestorePersistence() {
+            // Firebase persistence not needed - using REST API with server-side storage
+            return Promise.resolve();
+        }
 
         function ensureAuthenticatedOrToast(operationName) {
             if (currentUser) return true;
@@ -647,23 +772,7 @@
         }
 
         window.loginWithGoogle = async function() {
-            try {
-                const email = prompt('Email:');
-                const password = prompt('Password:');
-                if (!email || !password) {
-                    showToast('Login abgebrochen.');
-                    return;
-                }
-                const user = await AuthAPI.login(email, password);
-                currentUser = user;
-                updateConnectionUI();
-                await loadBoardConfigFromCloud();
-                await loadTasksFromCloud();
-                showToast('Erfolgreich angemeldet!');
-            } catch (error) {
-                console.error('Login failed:', error);
-                showToast('Login fehlgeschlagen: ' + (error.message || 'Benutzerdaten ungültig'));
-            }
+            showLoginModal();
         }
 
         window.loginAsGuest = async function() {
@@ -2637,5 +2746,74 @@
             document.removeEventListener('mouseup', stopResize);
         }
     </script>
+
+    <!-- LOGIN MODAL DIALOG -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-md mx-4">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-lg">
+                <h2 class="text-2xl font-bold text-white">Anmelden</h2>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4">
+                <!-- Email Input -->
+                <div>
+                    <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Email-Adresse
+                    </label>
+                    <input
+                        type="email"
+                        id="login-email"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white outline-none transition"
+                        placeholder="admin@prkanban.local"
+                    >
+                    <p id="login-email-error" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+
+                <!-- Password Input -->
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Passwort
+                    </label>
+                    <input
+                        type="password"
+                        id="login-password"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white outline-none transition"
+                        placeholder="Ihr Passwort"
+                    >
+                    <p id="login-password-error" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="login-error-message" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg hidden">
+                    <p class="text-sm font-medium" id="login-error-text"></p>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="login-loading" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg hidden flex items-center space-x-3">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span class="text-sm">Anmelden...</span>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 dark:bg-slate-700 px-6 py-4 rounded-b-lg flex gap-3">
+                <button
+                    id="login-cancel-btn"
+                    class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition font-medium"
+                >
+                    Abbrechen
+                </button>
+                <button
+                    id="login-submit-btn"
+                    class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium"
+                >
+                    Anmelden
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
