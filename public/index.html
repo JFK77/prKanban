@@ -576,28 +576,10 @@
     </div>
 
     <!-- Main Script Block -->
+    <script src="api-client.js"></script>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, enableIndexedDbPersistence, collection, getDocs, getDoc, setDoc, addDoc, updateDoc, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDE2TQ0t5TlhiBYnsdYOZbXM3iuBTAU2OM", // This is a placeholder, ensure it's your actual key
-            authDomain: "prkanban.firebaseapp.com",
-            projectId: "prkanban",
-            storageBucket: "prkanban.firebasestorage.app",
-            messagingSenderId: "345953337349",
-            appId: "1:345953337349:web:6a998e063e171d9bf19c6c",
-            measurementId: "G-YKRZB7MX7H"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const boardConfigRef = doc(db, "boardConfig", "main");
-        const googleProvider = new GoogleAuthProvider();
+        // API Configuration
+        const API_BASE_URL = "http://localhost:5000/api/v1";
 
         let currentUser = null;
         let authReadyResolver = null;
@@ -611,21 +593,19 @@
             return false;
         }
 
-        function updateFirebaseConnectionUi() {
+        function updateConnectionUI() {
             const projectPill = document.getElementById('firebase-project-pill');
             const userPill = document.getElementById('firebase-user-pill');
             const statusBox = document.getElementById('firebase-connection-status');
             const loginGoogleBtn = document.getElementById('firebase-login-google');
             const loginGuestBtn = document.getElementById('firebase-login-guest');
             const logoutBtn = document.getElementById('firebase-logout');
-            const projectText = `Projekt: ${firebaseConfig.projectId}`;
+            const projectText = `API: REST (ASP.NET Core)`;
 
             projectPill.textContent = projectText;
 
             if (currentUser) {
-                const userLabel = currentUser.isAnonymous
-                    ? `User: Gast (${currentUser.uid.slice(0, 8)}...)`
-                    : `User: ${currentUser.email || currentUser.uid}`;
+                const userLabel = `User: ${currentUser.email || currentUser.username}`;
                 userPill.textContent = userLabel;
                 statusBox.classList.remove('hidden');
                 loginGoogleBtn.classList.add('hidden');
@@ -641,9 +621,10 @@
         }
 
         async function initAuth() {
-            onAuthStateChanged(auth, async (user) => {
+            try {
+                const user = await AuthAPI.getCurrentUser();
                 currentUser = user;
-                updateFirebaseConnectionUi();
+                updateConnectionUI();
 
                 if (currentUser) {
                     await loadBoardConfigFromCloud();
@@ -653,35 +634,62 @@
                     updateAllDropdowns();
                     renderBoard();
                 }
+            } catch (error) {
+                console.log('User not authenticated:', error);
+                currentUser = null;
+                updateConnectionUI();
+            }
 
-                if (authReadyResolver) {
-                    authReadyResolver();
-                    authReadyResolver = null;
-                }
-            });
+            if (authReadyResolver) {
+                authReadyResolver();
+                authReadyResolver = null;
+            }
         }
 
         window.loginWithGoogle = async function() {
             try {
-                await signInWithPopup(auth, googleProvider);
+                const email = prompt('Email:');
+                const password = prompt('Password:');
+                if (!email || !password) {
+                    showToast('Login abgebrochen.');
+                    return;
+                }
+                const user = await AuthAPI.login(email, password);
+                currentUser = user;
+                updateConnectionUI();
+                await loadBoardConfigFromCloud();
+                await loadTasksFromCloud();
+                showToast('Erfolgreich angemeldet!');
             } catch (error) {
-                console.error('Google login failed:', error);
-                showToast('Google-Login fehlgeschlagen. Bitte Authorised Domains prüfen.');
+                console.error('Login failed:', error);
+                showToast('Login fehlgeschlagen: ' + (error.message || 'Benutzerdaten ungültig'));
             }
         }
 
         window.loginAsGuest = async function() {
             try {
-                await signInAnonymously(auth);
+                const email = 'guest-' + Date.now() + '@local.dev';
+                const password = 'GuestPass123!';
+                const user = await AuthAPI.register(email, password);
+                currentUser = user;
+                updateConnectionUI();
+                await loadBoardConfigFromCloud();
+                await loadTasksFromCloud();
+                showToast('Als Gast angemeldet!');
             } catch (error) {
                 console.error('Guest login failed:', error);
-                showToast('Gast-Login fehlgeschlagen. Anonymous Auth aktivieren.');
+                showToast('Gast-Login fehlgeschlagen: ' + (error.message || 'Fehler'));
             }
         }
 
         window.logoutFromFirebase = async function() {
             try {
-                await signOut(auth);
+                await AuthAPI.logout();
+                currentUser = null;
+                updateConnectionUI();
+                tasks = [];
+                updateAllDropdowns();
+                renderBoard();
                 showToast('Abgemeldet.');
             } catch (error) {
                 console.error('Logout failed:', error);
@@ -785,14 +793,13 @@
 
             configSaveTimer = setTimeout(async () => {
                 try {
-                    await setDoc(boardConfigRef, {
+                    await BoardConfigAPI.updateBoardConfig({
                         tagsConfig,
                         workflowPaths,
-                        wipLimits,
-                        updatedAt: new Date().toISOString()
+                        wipLimits
                     });
                 } catch (error) {
-                    console.error("Could not sync board config to Firestore:", error);
+                    console.error("Could not sync board config to API:", error);
                 }
             }, 250);
         }
@@ -805,17 +812,16 @@
             }
 
             try {
-                await setDoc(boardConfigRef, {
+                await BoardConfigAPI.updateBoardConfig({
                     tagsConfig,
                     workflowPaths,
-                    wipLimits,
-                    updatedAt: new Date().toISOString()
+                    wipLimits
                 });
                 return true;
             } catch (error) {
-                console.error("Could not flush board config to Firestore:", error);
+                console.error("Could not flush board config to API:", error);
                 if (showErrorToast) {
-                    showToast("Konfiguration konnte nicht in Firebase gespeichert werden.");
+                    showToast("Konfiguration konnte nicht gespeichert werden.");
                 }
                 return false;
             }
@@ -824,12 +830,12 @@
         async function loadBoardConfigFromCloud() {
             if (!currentUser) return;
             try {
-                const configSnap = await getDoc(boardConfigRef);
-                if (!configSnap.exists()) {
+                const response = await BoardConfigAPI.getBoardConfig();
+                if (!response || !response.data) {
                     return;
                 }
 
-                const cloudConfig = configSnap.data();
+                const cloudConfig = response.data;
 
                 if (isPlainObject(cloudConfig.tagsConfig)) {
                     tagsConfig = normalizeLegacySampleTags(cloudConfig.tagsConfig);
@@ -859,11 +865,7 @@
                     queueBoardConfigSync();
                 }
             } catch (error) {
-                if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
-                    showToast("Board-Konfiguration gesperrt. Bitte erneut einloggen.");
-                    return;
-                }
-                console.warn("Could not load board config from Firestore. Using local settings.", error);
+                console.warn("Could not load board config from API. Using local settings.", error);
             }
         }
 
@@ -877,22 +879,7 @@
             return base;
         }
 
-        async function setupFirestorePersistence() {
-            try {
-                await enableIndexedDbPersistence(db);
-                console.log("Firestore offline persistence enabled.");
-            } catch (error) {
-                if (error.code === 'failed-precondition') {
-                    console.warn('Firestore persistence can only be enabled in one tab at a time.');
-                } else if (error.code === 'unimplemented') {
-                    console.warn('This browser does not support Firestore offline persistence.');
-                } else {
-                    console.warn('Firestore persistence could not be enabled:', error);
-                }
-            }
-        }
-
-        // --- FIRESTORE CRUD FUNCTIONS ---
+        // --- REST API INTEGRATION ---
         async function loadTasksFromCloud() {
             if (!currentUser) {
                 tasks = [];
@@ -901,35 +888,25 @@
                 return;
             }
             try {
-                const querySnapshot = await getDocs(collection(db, "tasks"));
-                const cloudTasks = [];
-                querySnapshot.forEach((docSnapshot) => {
-                    cloudTasks.push({ ...docSnapshot.data(), id: docSnapshot.id });
-                });
+                const response = await TaskAPI.getTasks();
+                const cloudTasks = response.data || [];
 
                 updateDynamicListsFromTasks(cloudTasks);
-                console.log("Tasks successfully loaded from Firestore:", cloudTasks);
+                console.log("Tasks successfully loaded from API:", cloudTasks);
                 tasks = cloudTasks;
                 persistTaskSnapshot();
 
                 if (tasks.length === 0) {
-                    console.log("No tasks found in Firestore. The board will be empty.");
+                    console.log("No tasks found. The board will be empty.");
                 }
 
                 updateAllDropdowns();
                 renderBoard();
             } catch (error) {
-                console.error("Error loading tasks from Firestore:", error);
-                if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
-                    tasks = [];
-                    updateAllDropdowns();
-                    renderBoard();
-                    showToast("Kein Zugriff auf Firebase-Daten. Bitte erneut einloggen.");
-                    return;
-                }
+                console.error("Error loading tasks from API:", error);
                 const localFallback = loadFromStorage('kanban_tasks', []);
                 tasks = Array.isArray(localFallback) ? localFallback : [];
-                showToast("Cloud momentan nicht erreichbar. Lokale Sicherung wird angezeigt.");
+                showToast("API momentan nicht erreichbar. Lokale Sicherung wird angezeigt.");
                 updateAllDropdowns();
                 renderBoard();
             }
@@ -939,15 +916,15 @@
             if (!ensureAuthenticatedOrToast('Tasks zu erstellen')) return null;
             try {
                 const payload = normalizeTaskPayload(taskData, false);
-                const docRef = await addDoc(collection(db, "tasks"), payload);
-                const newTask = { ...payload, id: docRef.id };
+                const response = await TaskAPI.createTask(payload);
+                const newTask = response.data;
                 tasks = [...tasks, newTask];
                 persistTaskSnapshot();
-                console.log("Task added with ID: ", docRef.id);
-                return docRef.id;
+                console.log("Task added with ID: ", newTask.id);
+                return newTask.id;
             } catch (e) {
-                console.error("Error adding document: ", e);
-                showToast("Task konnte nicht in Firebase gespeichert werden.");
+                console.error("Error adding task: ", e);
+                showToast("Task konnte nicht gespeichert werden.");
                 return null;
             }
         }
@@ -955,20 +932,19 @@
         async function updateTaskInCloud(taskId, taskData) {
             if (!ensureAuthenticatedOrToast('Tasks zu speichern')) return false;
             try {
-                const taskRef = doc(db, "tasks", taskId);
                 const payload = normalizeTaskPayload(taskData, true);
-                await updateDoc(taskRef, payload);
+                await TaskAPI.updateTask(taskId, payload);
 
                 const taskIndex = tasks.findIndex((task) => task.id === taskId);
                 if (taskIndex !== -1) {
                     tasks[taskIndex] = { ...tasks[taskIndex], ...payload };
                 }
                 persistTaskSnapshot();
-                console.log(`Task ${taskId} updated in Firestore.`);
+                console.log(`Task ${taskId} updated.`);
                 return true;
             } catch (e) {
-                console.error("Error updating document: ", e);
-                showToast(`Task ${taskId.slice(0, 8)}... konnte nicht gespeichert werden.`);
+                console.error("Error updating task: ", e);
+                showToast(`Task konnte nicht gespeichert werden.`);
                 return false;
             }
         }
@@ -976,14 +952,14 @@
         async function deleteTaskFromCloud(taskId) {
             if (!ensureAuthenticatedOrToast('Tasks zu löschen')) return false;
             try {
-                await deleteDoc(doc(db, "tasks", taskId));
+                await TaskAPI.deleteTask(taskId);
                 tasks = tasks.filter((task) => task.id !== taskId);
                 persistTaskSnapshot();
-                console.log(`Task ${taskId} deleted from Firestore.`);
+                console.log(`Task ${taskId} deleted.`);
                 return true;
             } catch (e) {
-                console.error("Error deleting document: ", e);
-                showToast(`Task ${taskId.slice(0, 8)}... konnte nicht gelöscht werden.`);
+                console.error("Error deleting task: ", e);
+                showToast(`Task konnte nicht gelöscht werden.`);
                 return false;
             }
         }

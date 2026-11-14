@@ -49,13 +49,20 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Development", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.WithOrigins("http://localhost:3000", "http://localhost:5000")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        }
+        // Allow localhost on all common dev ports
+        policy.WithOrigins(
+            "http://localhost:3000",  // Frontend dev server (Vite, CRA)
+            "http://localhost:5000",  // Backend API (this server)
+            "http://localhost:5173",  // Vite default
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5000",
+            "http://127.0.0.1:5173",
+            "file://",                // Local file:// protocol for desktop apps
+            "http://localhost"        // Without port
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();       // Required for httpOnly cookies
     });
 });
 
@@ -67,11 +74,52 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Auto-create database if it doesn't exist
-using (var scope = app.Services.CreateScope())
+// Auto-create database and initialize roles
+try
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<PrKanbanContext>();
-    dbContext.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<PrKanbanContext>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        
+        logger.LogInformation("Attempting database initialization...");
+        
+        // Create database if not exists
+        dbContext.Database.EnsureCreated();
+        logger.LogInformation("✅ Database created");
+        
+        // Apply migrations
+        dbContext.Database.Migrate();
+        logger.LogInformation("✅ Database migrations applied");
+        
+        // Create default roles
+        string[] roleNames = { "Admin", "User" };
+        IdentityResult roleResult;
+        
+        foreach (var roleName in roleNames)
+        {
+            var roleExist = roleManager.RoleExistsAsync(roleName).GetAwaiter().GetResult();
+            if (!roleExist)
+            {
+                roleResult = roleManager.CreateAsync(new IdentityRole(roleName)).GetAwaiter().GetResult();
+                if (roleResult.Succeeded)
+                {
+                    logger.LogInformation($"✅ Created role: {roleName}");
+                }
+            }
+            else
+            {
+                logger.LogInformation($"ℹ️  Role already exists: {roleName}");
+            }
+        }
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogError($"❌ Database initialization failed: {ex.Message}");
+    app.Logger.LogError($"Stack trace: {ex.StackTrace}");
+    // Don't throw - let the app start anyway
 }
 
 // Middleware
