@@ -907,7 +907,7 @@
 
             configSaveTimer = setTimeout(async () => {
                 try {
-                    await BoardConfigAPI.updateBoardConfig({
+                    await window.BoardConfigAPI.updateBoardConfig({
                         tagsConfig,
                         workflowPaths,
                         wipLimits
@@ -926,7 +926,7 @@
             }
 
             try {
-                await BoardConfigAPI.updateBoardConfig({
+                await window.BoardConfigAPI.updateBoardConfig({
                     tagsConfig,
                     workflowPaths,
                     wipLimits
@@ -944,7 +944,7 @@
         async function loadBoardConfigFromCloud() {
             if (!currentUser) return;
             try {
-                const response = await BoardConfigAPI.getBoardConfig();
+                const response = await window.BoardConfigAPI.getBoardConfig();
                 if (!response || !response.data) {
                     return;
                 }
@@ -1002,8 +1002,9 @@
                 return;
             }
             try {
-                const response = await TaskAPI.getTasks();
-                const cloudTasks = response.data || [];
+                const response = await window.TaskAPI.getTasks();
+                const cloudTasks = response.data?.tasks || response.tasks || [];
+
 
                 updateDynamicListsFromTasks(cloudTasks);
                 console.log("Tasks successfully loaded from API:", cloudTasks);
@@ -1030,8 +1031,7 @@
             if (!ensureAuthenticatedOrToast('Tasks zu erstellen')) return null;
             try {
                 const payload = normalizeTaskPayload(taskData, false);
-                const response = await TaskAPI.createTask(payload);
-                const newTask = response.data;
+                const newTask = await window.TaskAPI.createTask(payload);
                 tasks = [...tasks, newTask];
                 persistTaskSnapshot();
                 console.log("Task added with ID: ", newTask.id);
@@ -1047,7 +1047,7 @@
             if (!ensureAuthenticatedOrToast('Tasks zu speichern')) return false;
             try {
                 const payload = normalizeTaskPayload(taskData, true);
-                await TaskAPI.updateTask(taskId, payload);
+                await window.TaskAPI.updateTask(taskId, payload);
 
                 const taskIndex = tasks.findIndex((task) => task.id === taskId);
                 if (taskIndex !== -1) {
@@ -1066,7 +1066,7 @@
         async function deleteTaskFromCloud(taskId) {
             if (!ensureAuthenticatedOrToast('Tasks zu löschen')) return false;
             try {
-                await TaskAPI.deleteTask(taskId);
+                await window.TaskAPI.deleteTask(taskId);
                 tasks = tasks.filter((task) => task.id !== taskId);
                 persistTaskSnapshot();
                 console.log(`Task ${taskId} deleted.`);
