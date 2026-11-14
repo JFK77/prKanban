@@ -701,7 +701,7 @@
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
 
-        let currentUser = null;
+        window.currentUser = null;
         let authReadyResolver = null;
         const authReady = new Promise((resolve) => {
             authReadyResolver = resolve;
@@ -715,7 +715,7 @@
         }
 
         function ensureAuthenticatedOrToast(operationName) {
-            if (currentUser) return true;
+            if (window.currentUser) return true;
             showToast(`Bitte zuerst einloggen, um ${operationName} auszuführen.`);
             return false;
         }
@@ -731,8 +731,8 @@
 
             projectPill.textContent = projectText;
 
-            if (currentUser) {
-                const userLabel = `User: ${currentUser.email || currentUser.username}`;
+            if (window.currentUser) {
+                const userLabel = `User: ${window.currentUser.email || window.currentUser.username}`;
                 userPill.textContent = userLabel;
                 statusBox.classList.remove('hidden');
                 loginGoogleBtn.classList.add('hidden');
@@ -749,11 +749,11 @@
 
         async function initAuth() {
             try {
-                const user = await AuthAPI.getCurrentUser();
-                currentUser = user;
+                const user = await window.AuthAPI.getCurrentUser();
+                window.currentUser = user;
                 updateConnectionUI();
 
-                if (currentUser) {
+                if (window.currentUser) {
                     await loadBoardConfigFromCloud();
                     await loadTasksFromCloud();
                 } else {
@@ -763,7 +763,7 @@
                 }
             } catch (error) {
                 console.log('User not authenticated:', error);
-                currentUser = null;
+                window.currentUser = null;
                 updateConnectionUI();
             }
 
@@ -782,10 +782,10 @@
                 const email = 'guest-' + Date.now() + '@local.dev';
                 const password = 'GuestPass123!';
                 // Register guest account
-                await AuthAPI.register(email, password);
+                await window.AuthAPI.register(email, password);
                 // Automatically login
-                const user = await AuthAPI.login(email, password);
-                currentUser = user;
+                const user = await window.AuthAPI.login(email, password);
+                window.currentUser = user;
                 updateConnectionUI();
                 await loadBoardConfigFromCloud();
                 await loadTasksFromCloud();
@@ -798,8 +798,8 @@
 
         window.logoutFromFirebase = async function() {
             try {
-                await AuthAPI.logout();
-                currentUser = null;
+                await window.AuthAPI.logout();
+                window.currentUser = null;
                 updateConnectionUI();
                 tasks = [];
                 updateAllDropdowns();
@@ -995,7 +995,7 @@
 
         // --- REST API INTEGRATION ---
         async function loadTasksFromCloud() {
-            if (!currentUser) {
+            if (!window.currentUser) {
                 tasks = [];
                 updateAllDropdowns();
                 renderBoard();
