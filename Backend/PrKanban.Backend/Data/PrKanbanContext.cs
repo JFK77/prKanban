@@ -22,6 +22,8 @@ namespace PrKanban.Data
         /// </summary>
         public DbSet<BoardConfig> BoardConfigs { get; set; }
 
+        public DbSet<TranslationEntry> AppTranslations { get; set; }
+
         /// <summary>
         /// Constructor accepting options
         /// </summary>
@@ -36,6 +38,15 @@ namespace PrKanban.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<TranslationEntry>(entity =>
+            {
+                entity.HasKey(e => e.Key);
+                entity.Property(e => e.Key).HasMaxLength(120);
+                entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.German).IsRequired().HasMaxLength(2048);
+                entity.Property(e => e.English).IsRequired().HasMaxLength(2048);
+            });
 
             // Configure ApplicationUser (extends IdentityUser)
             modelBuilder.Entity<ApplicationUser>(entity =>

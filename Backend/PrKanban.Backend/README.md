@@ -116,6 +116,20 @@ stored as an Identity claim; it prevents sign-in and invalidates existing sessio
 on their next request. It does not delete the account or its tasks. Administrators
 cannot deactivate themselves or remove their own administrator role.
 
+### Languages and translations
+
+The board language selector is immediately before the theme button. German is
+the default; signed-in users' choices are saved with their accounts, while a
+signed-out choice lasts for the current page. Administrators can edit German and
+English texts in Administration > Translations. Reload the app to pick up saved
+changes; deleted built-in keys fall back to their original texts. Text templates
+may contain placeholders such as `{count}` which should be retained.
+
+- `GET /api/v1/translations` - Read UI texts and built-in fallbacks
+- `PUT /api/v1/auth/language` - Save `{"language":"de"}` or `{"language":"en"}` for the signed-in user
+- `GET /api/v1/admin/translations` - List translations (administrator only)
+- `GET`, `POST`, `PUT`, `DELETE /api/v1/admin/translations/:key` - Manage a translation (administrator only)
+
 ---
 
 ## 🔐 SECURITY FEATURES CONFIGURED

@@ -65,7 +65,9 @@ const AuthAPI = {
 
       if (!response.ok) {
         const errorMessage = data.error?.message || data.error || 'Login failed';
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        error.code = data.error?.code;
+        throw error;
       }
 
       return data.data || data;

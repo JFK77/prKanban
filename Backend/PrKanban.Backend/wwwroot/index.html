@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Multi-Level Kanban Board</title>
+    <title data-i18n="board.pageTitle">Dynamic Multi-Level Kanban Board</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -23,7 +23,8 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- API Client (must load before other scripts) -->
-    <script src="api-client.js?v=archive-put-1"></script>
+    <script src="api-client.js?v=language-1"></script>
+    <script src="i18n.js?v=3" defer></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -252,6 +253,10 @@
             border-color: #334155;
         }
 
+        #language-selector-dropdown {
+            width: max(100%, 80px);
+        }
+
         .board-area {
             --board-panel-gap: 12px;
             --board-grid-gaps: calc(var(--board-panel-gap) + var(--board-panel-gap) + var(--board-panel-gap));
@@ -478,7 +483,7 @@
             box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
         }
         .board-column-panel:not(.is-collapsed) .board-subcolumn:not(:has(> [data-task-id]))::after {
-            content: 'Keine Aufgaben';
+            content: var(--board-empty-label, 'Keine Aufgaben');
             display: flex;
             min-height: 72px;
             align-items: center;
@@ -543,7 +548,7 @@
                 <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center">
                     <i class="fa-regular fa-file-lines" aria-hidden="true"></i>
                 </div>
-                <h1 class="text-sm font-bold text-slate-900 dark:text-white">Dynamic Workflow Kanban</h1>
+                <h1 data-i18n="board.title" class="text-sm font-bold text-slate-900 dark:text-white">Dynamic Workflow Kanban</h1>
             </div>
             <div class="flex flex-wrap items-center gap-2 min-w-0">
                 <div id="firebase-connection-status" class="hidden flex items-center gap-2 min-w-0 max-w-full text-xs bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -553,47 +558,60 @@
                     <span id="firebase-user-pill" class="min-w-0 break-all text-slate-600 dark:text-slate-300"></span>
                 </div>
                 <button id="firebase-login-google" type="button" onclick="window.loginWithGoogle && window.loginWithGoogle()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
-                    <i class="fa-brands fa-google mr-1.5"></i>Login
+                    <i class="fa-brands fa-google mr-1.5"></i><span data-i18n="auth.loginButton">Login</span>
                 </button>
                 <button id="firebase-login-guest" type="button" onclick="window.loginAsGuest && window.loginAsGuest()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
-                    <i class="fa-regular fa-user mr-1.5"></i>Gast
+                    <i class="fa-regular fa-user mr-1.5"></i><span data-i18n="board.guest">Gast</span>
                 </button>
                 <button id="firebase-logout" type="button" onclick="window.logoutFromFirebase && window.logoutFromFirebase()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
-                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Logout
+                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i><span data-i18n="auth.logout">Logout</span>
                 </button>
-                <a id="admin-link" href="admin.html" aria-label="Administration" title="Administration" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 py-2 rounded-lg">
+                <a id="admin-link" href="admin.html" aria-label="Administration" title="Administration" data-i18n-aria-label="common.administration" data-i18n-title="common.administration" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 py-2 rounded-lg">
                     <i class="fa-solid fa-gear" aria-hidden="true"></i>
                 </a>
             </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-            <button id="theme-toggle" type="button" aria-label="Farbschema wechseln" class="text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg text-xs w-9 h-9">
+            <div class="relative" id="language-selector-container">
+                <label for="language-selector" class="sr-only">Sprache / Language</label>
+                <select id="language-selector" aria-label="Sprache / Language" class="h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 text-xs text-slate-800 dark:text-slate-200">
+                    <option value="de">DE</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="language-selector-trigger" type="button" aria-label="Sprache / Language" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-selector-dropdown" class="hidden h-9 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="language-selector-label"></span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="language-selector-dropdown" role="listbox" aria-label="Sprache / Language" class="tag-filter-dropdown hidden"></div>
+            </div>
+            <button id="theme-toggle" type="button" aria-label="Farbschema wechseln" data-i18n-aria-label="board.theme" class="text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg text-xs w-9 h-9">
                 <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden" aria-hidden="true"></i>
                 <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden" aria-hidden="true"></i>
             </button>
             <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-tag text-slate-500" aria-hidden="true"></i> Tags verwalten
+                <i class="fa-solid fa-tag text-slate-500" aria-hidden="true"></i> <span data-i18n="board.manageTags">Tags verwalten</span>
             </button>
             <button onclick="openTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-sliders text-slate-500" aria-hidden="true"></i> Typen verwalten
+                <i class="fa-solid fa-sliders text-slate-500" aria-hidden="true"></i> <span data-i18n="board.manageTypes">Typen verwalten</span>
             </button>
             <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-plus" aria-hidden="true"></i> Task hinzufügen
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="board.addTask">Task hinzufügen</span>
             </button>
         </div>
     </header>
+    <div id="language-error" hidden role="alert" class="px-4 py-2 text-sm text-red-700 bg-red-50"></div>
 
     <!-- Controls Panel: Filters & Grouping -->
-    <section aria-label="Board-Einstellungen" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+    <section aria-label="Board-Einstellungen" data-i18n-aria-label="board.settings" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         <!-- Filters -->
         <div class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                <i class="fa-solid fa-filter mr-1" aria-hidden="true"></i>Filter:
+                <i class="fa-solid fa-filter mr-1" aria-hidden="true"></i><span data-i18n="board.filters">Filter:</span>
             </span>
             <div class="relative" id="filter-owner-container">
                 <button id="filter-owner-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                    <span class="sr-only">Owner filtern: </span>
+                    <span class="sr-only" data-i18n="board.filterOwner">Owner filtern:</span>
                     <span id="filter-owner-label" class="max-w-[140px] truncate">Alle Owner</span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
@@ -603,7 +621,7 @@
             </div>
             <div class="relative" id="filter-customer-container">
                 <button id="filter-customer-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                    <span class="sr-only">Kunde filtern: </span>
+                    <span class="sr-only" data-i18n="board.filterCustomer">Kunde filtern:</span>
                     <span id="filter-customer-label" class="max-w-[140px] truncate">Alle Kunden</span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
@@ -613,7 +631,7 @@
             </div>
             <div class="relative" id="filter-type-container">
                 <button id="filter-type-trigger" type="button" class="min-w-[108px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                    <span class="sr-only">Task Typ filtern: </span>
+                    <span class="sr-only" data-i18n="board.filterType">Task Typ filtern:</span>
                     <span id="filter-type-label" class="max-w-[140px] truncate">Alle Typen</span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
@@ -623,7 +641,7 @@
             </div>
             <div class="relative" id="filter-tags-container">
                 <button id="filter-tags-trigger" type="button" class="min-w-[104px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                    <span class="sr-only">Tags filtern: </span>
+                    <span class="sr-only" data-i18n="board.filterTags">Tags filtern:</span>
                     <span id="filter-tags-label" class="max-w-[140px] truncate">Alle Tags</span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
@@ -636,47 +654,47 @@
         <!-- Groupings / Swimlanes -->
         <div class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Swimlanes:
+                <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i><span data-i18n="board.swimlanes">Swimlanes:</span>
             </span>
             <div class="relative" id="group-primary-container">
-                <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
-                    <option value="NONE">Keine Gruppierung</option>
-                    <option value="customer">Kunde</option>
-                    <option value="taskType">Task Typ</option>
-                    <option value="owner">Owner</option>
+                <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" data-i18n-aria-label="board.primaryGroup" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
+                    <option value="NONE" data-i18n="board.noGrouping">Keine Gruppierung</option>
+                    <option value="customer" data-i18n="board.customer">Kunde</option>
+                    <option value="taskType" data-i18n="board.taskType">Task Typ</option>
+                    <option value="owner" data-i18n="board.owner">Owner</option>
                 </select>
                 <button id="group-primary-trigger" type="button" aria-labelledby="group-primary-name group-primary-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="group-primary-dropdown" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span id="group-primary-name" class="sr-only">Primäre Gruppe (Swimlane):</span>
+                    <span id="group-primary-name" data-i18n="board.primaryGroupLabel" class="sr-only">Primäre Gruppe (Swimlane):</span>
                     <span id="group-primary-label"></span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
-                <div id="group-primary-dropdown" role="listbox" aria-label="Primäre Gruppe (Swimlane)" class="tag-filter-dropdown hidden"></div>
+                <div id="group-primary-dropdown" role="listbox" aria-label="Primäre Gruppe (Swimlane)" data-i18n-aria-label="board.primaryGroup" class="tag-filter-dropdown hidden"></div>
             </div>
             <div class="relative" id="group-secondary-container">
-                <select id="group-secondary" aria-label="Sub-Gruppe (Innere Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
-                    <option value="NONE">Keine Untergruppierung</option>
-                    <option value="customer">Kunde</option>
-                    <option value="taskType">Task Typ</option>
-                    <option value="owner">Owner</option>
+                <select id="group-secondary" aria-label="Sub-Gruppe (Innere Swimlane)" data-i18n-aria-label="board.secondaryGroup" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
+                    <option value="NONE" data-i18n="board.noSubgrouping">Keine Untergruppierung</option>
+                    <option value="customer" data-i18n="board.customer">Kunde</option>
+                    <option value="taskType" data-i18n="board.taskType">Task Typ</option>
+                    <option value="owner" data-i18n="board.owner">Owner</option>
                 </select>
                 <button id="group-secondary-trigger" type="button" aria-labelledby="group-secondary-name group-secondary-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="group-secondary-dropdown" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span id="group-secondary-name" class="sr-only">Sub-Gruppe (Innere Swimlane):</span>
+                    <span id="group-secondary-name" data-i18n="board.secondaryGroupLabel" class="sr-only">Sub-Gruppe (Innere Swimlane):</span>
                     <span id="group-secondary-label"></span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
-                <div id="group-secondary-dropdown" role="listbox" aria-label="Sub-Gruppe (Innere Swimlane)" class="tag-filter-dropdown hidden"></div>
+                <div id="group-secondary-dropdown" role="listbox" aria-label="Sub-Gruppe (Innere Swimlane)" data-i18n-aria-label="board.secondaryGroup" class="tag-filter-dropdown hidden"></div>
             </div>
             <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i> Öffnen
+                <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" data-i18n-aria-label="board.expandPanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i> <span data-i18n="board.expand">Öffnen</span>
                 </button>
-                <button id="collapse-all-panels" type="button" aria-label="Alle Panels einklappen" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i> Einklappen
+                <button id="collapse-all-panels" type="button" aria-label="Alle Panels einklappen" data-i18n-aria-label="board.collapsePanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i> <span data-i18n="board.collapse">Einklappen</span>
                 </button>
             </div>
             <label for="filter-archived" class="h-8 inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
                 <i class="fa-solid fa-box-archive text-slate-400" aria-hidden="true"></i>
-                <span>Archiv</span>
+                <span data-i18n="board.archive">Archiv</span>
                 <span class="relative inline-flex items-center">
                     <input type="checkbox" id="filter-archived" class="sr-only peer">
                     <span class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-4 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></span>
@@ -687,19 +705,19 @@
 
     <!-- Board Area -->
     <div class="board-area flex flex-1 overflow-hidden">
-        <aside id="backlog-panel" class="bg-white dark:bg-slate-900" aria-label="Backlog">
-            <button type="button" id="backlog-toggle" aria-label="Backlog" aria-expanded="false" aria-controls="backlog-content" title="Backlog auf- oder zuklappen" class="font-semibold tracking-wide">
+        <aside id="backlog-panel" class="bg-white dark:bg-slate-900" aria-label="Backlog" data-i18n-aria-label="board.backlog">
+            <button type="button" id="backlog-toggle" aria-label="Backlog" data-i18n-aria-label="board.backlog" aria-expanded="false" aria-controls="backlog-content" title="Backlog auf- oder zuklappen" data-i18n-title="board.toggleBacklog" class="font-semibold tracking-wide">
                 <i id="backlog-chevron" class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                <span id="backlog-toggle-label">Backlog</span>
+                <span id="backlog-toggle-label" data-i18n="board.backlog">Backlog</span>
                 <span id="backlog-toggle-count"></span>
                 <i id="backlog-toggle-icon" class="fa-solid fa-inbox text-lg" aria-hidden="true"></i>
             </button>
             <div id="backlog-content" aria-hidden="true">
                 <div class="flex items-center justify-between gap-2 p-4 border-b border-slate-200 dark:border-slate-800">
-                    <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">Backlog <span id="backlog-count" class="text-slate-500"></span></h2>
-                    <button type="button" onclick="openAddTaskModal('Backlog')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg">+ Task</button>
+                    <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200"><span data-i18n="board.backlog">Backlog</span> <span id="backlog-count" class="text-slate-500"></span></h2>
+                    <button type="button" onclick="openAddTaskModal('Backlog')" data-i18n="board.addBacklogTask" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg">+ Task</button>
                 </div>
-                <div id="backlog-tasks" data-main="Backlog" data-sub="Backlog" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[140px]" aria-label="Backlog-Aufgaben"></div>
+                <div id="backlog-tasks" data-main="Backlog" data-sub="Backlog" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[140px]" aria-label="Backlog-Aufgaben" data-i18n-aria-label="board.backlogTasks"></div>
             </div>
         </aside>
         <main class="flex-1 min-w-0 overflow-auto" id="board-container">
@@ -724,21 +742,21 @@
                 <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
                     <input type="hidden" id="modal-task-id">
                     <div>
-                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Titel der Aufgabe</label>
-                        <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label data-i18n="task.title" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Titel der Aufgabe</label>
+                        <input type="text" id="modal-title" required placeholder="z.B. Hardware verkabeln" data-i18n-placeholder="task.titlePlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Typ</label>
+                            <label data-i18n="board.taskType" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Typ</label>
                             <select id="modal-type" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <!-- Filled dynamically -->
                             </select>
                         </div>
                         <div>
-                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Owner</label>
+                        <label data-i18n="board.owner" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Owner</label>
                         <div id="modal-owner-container" class="combobox-container">
                             <div class="relative">
-                                <input type="text" id="modal-owner" list="owner-list" required placeholder="Owner auswählen oder neu erstellen" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="modal-owner" list="owner-list" required placeholder="Owner auswählen oder neu erstellen" data-i18n-placeholder="task.ownerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <div id="owner-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
@@ -749,10 +767,10 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde</label>
+                        <label data-i18n="board.customer" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde</label>
                         <div id="modal-customer-container" class="combobox-container">
                             <div class="relative">
-                                <input type="text" id="modal-customer" list="customer-list" required placeholder="Kunden auswählen oder neu erstellen" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="modal-customer" list="customer-list" required placeholder="Kunden auswählen oder neu erstellen" data-i18n-placeholder="task.customerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <div id="customer-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
@@ -764,13 +782,13 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Beschreibung</label>
+                        <label data-i18n="task.description" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Beschreibung</label>
                         <div class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
                             <div id="description-toolbar" class="flex items-center border-b border-slate-300 dark:border-slate-700 divide-x divide-slate-300 dark:divide-slate-700">
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('bold')" title="Fett"><i class="fa-solid fa-bold"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('italic')" title="Kursiv"><i class="fa-solid fa-italic"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('underline')" title="Unterstrichen"><i class="fa-solid fa-underline"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('removeFormat')" title="Formatierung entfernen"><i class="fa-solid fa-text-slash"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('bold')" title="Fett" data-i18n-title="task.bold"><i class="fa-solid fa-bold"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('italic')" title="Kursiv" data-i18n-title="task.italic"><i class="fa-solid fa-italic"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('underline')" title="Unterstrichen" data-i18n-title="task.underline"><i class="fa-solid fa-underline"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('removeFormat')" title="Formatierung entfernen" data-i18n-title="task.clearFormatting"><i class="fa-solid fa-text-slash"></i></button>
                             </div>
                             <div id="modal-description" contenteditable="true" class="w-full p-3 text-sm text-slate-800 dark:text-white"></div>
                         </div>
@@ -778,16 +796,16 @@
                     <!-- Integration Links (D365 & Zeiterfassung) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-500 dark:text-blue-400 mr-1"></i> D365 Task Link</label>
+                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-up-right-from-square text-blue-500 dark:text-blue-400 mr-1"></i> <span data-i18n="task.d365Link">D365 Task Link</span></label>
                             <input type="url" id="modal-d365-link" placeholder="https://dynamics.microsoft.com/..." class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-500 dark:text-emerald-400 mr-1"></i> Zeiterfassung Link</label>
+                            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-clock text-emerald-500 dark:text-emerald-400 mr-1"></i> <span data-i18n="task.timeLink">Zeiterfassung Link</span></label>
                             <input type="url" id="modal-time-link" placeholder="https://zeiterfassung.local/..." class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
+                        <label data-i18n="task.selectTags" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Tags (Klicken zum Auswählen / Zuweisen)</label>
                         <div id="modal-tags-selection" class="flex flex-wrap gap-2 p-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg max-h-[120px] overflow-y-auto">
                             <!-- Clickable tags dynamically populated here -->
                         </div>
@@ -797,10 +815,10 @@
             <div class="p-4 border-t border-slate-200 dark:border-slate-800">
                 <div class="grid grid-cols-2 gap-3">
                     <button type="button" onclick="closeDetailsPanel()" class="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
-                        Schließen
+                        <span data-i18n="common.close">Schließen</span>
                     </button>
                     <button type="submit" form="task-form" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
-                        Speichern
+                        <span data-i18n="common.save">Speichern</span>
                     </button>
                 </div>
             </div>
@@ -808,7 +826,7 @@
     </div>
     <!-- Footer -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
-        Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits & Collapsible Swimlanes implementiert.
+        <span data-i18n="board.footer">Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits &amp; Collapsible Swimlanes implementiert.</span>
     </footer>
 
     <!-- Task Add / Edit Modal -->
@@ -819,7 +837,7 @@
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-tags text-blue-500"></i> Tags verwalten
+                    <i class="fa-solid fa-tags text-blue-500"></i> <span data-i18n="board.manageTags">Tags verwalten</span>
                 </h3>
                 <button onclick="closeTagsModal()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -828,11 +846,11 @@
             
             <!-- Quick Creator for Tags -->
             <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4 space-y-3">
-                <h4 class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Tag erstellen</h4>
+                <h4 data-i18n="tags.create" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Tag erstellen</h4>
                 <div class="flex gap-2">
-                    <input type="text" id="new-tag-name" placeholder="Tag Name (z.B. Prio A)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
+                    <input type="text" id="new-tag-name" placeholder="Tag Name (z.B. Prio A)" data-i18n-placeholder="tags.namePlaceholder" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
                     <input type="color" id="new-tag-color" value="#3b82f6" class="w-10 h-8 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer">
-                    <button onclick="addNewTag()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg">Erstellen</button>
+                    <button onclick="addNewTag()" data-i18n="common.create" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg">Erstellen</button>
                 </div>
             </div>
 
@@ -843,7 +861,7 @@
 
             <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
                 <button onclick="closeTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
-                    Schließen
+                    <span data-i18n="common.close">Schließen</span>
                 </button>
             </div>
         </div>
@@ -854,7 +872,7 @@
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-gears text-blue-500"></i> Task Typen verwalten
+                    <i class="fa-solid fa-gears text-blue-500"></i> <span data-i18n="types.manage">Task Typen verwalten</span>
                 </h3>
                 <button onclick="closeTypesModal()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -863,32 +881,32 @@
 
             <!-- Creator for Types -->
             <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4 space-y-3">
-                <h4 class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Typ erstellen</h4>
+                <h4 data-i18n="types.create" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Typ erstellen</h4>
                 <div class="space-y-2">
-                    <input type="text" id="new-type-name" placeholder="z.B. Hardware Test" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
+                    <input type="text" id="new-type-name" placeholder="z.B. Hardware Test" data-i18n-placeholder="types.namePlaceholder" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
                     <div>
-                        <span class="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">Erlaubter Workflow-Pfad (Spalten):</span>
+                        <span data-i18n="types.workflowPath" class="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">Erlaubter Workflow-Pfad (Spalten):</span>
                         <div class="flex flex-wrap gap-4">
                             <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-todo" checked disabled class="accent-blue-500"> To Do
+                                <input type="checkbox" id="path-todo" checked disabled class="accent-blue-500"> <span data-i18n="board.todo">To Do</span>
                             </label>
                             <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-analysis" checked class="accent-blue-500"> Analysis
+                                <input type="checkbox" id="path-analysis" checked class="accent-blue-500"> <span data-i18n="board.analysis">Analysis</span>
                             </label>
                             <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-inprogress" checked class="accent-blue-500"> In Progress
+                                <input type="checkbox" id="path-inprogress" checked class="accent-blue-500"> <span data-i18n="board.inProgress">In Progress</span>
                             </label>
                             <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-done" checked disabled class="accent-blue-500"> Done
+                                <input type="checkbox" id="path-done" checked disabled class="accent-blue-500"> <span data-i18n="board.done">Done</span>
                             </label>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                            Farbe:
+                            <span data-i18n="common.color">Farbe:</span>
                             <input type="color" id="new-type-color" value="#8b5cf6" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
                         </label>
-                        <button onclick="addNewType()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-lg">Typ erstellen</button>
+                        <button onclick="addNewType()" data-i18n="types.createButton" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-lg">Typ erstellen</button>
                     </div>
                 </div>
             </div>
@@ -900,7 +918,7 @@
 
             <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
                 <button onclick="closeTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
-                    Schließen
+                    <span data-i18n="common.close">Schließen</span>
                 </button>
             </div>
         </div>
@@ -973,21 +991,21 @@
                 let hasError = false;
 
                 if (!email) {
-                    loginEmailError.textContent = 'Email-Adresse ist erforderlich';
+                    loginEmailError.textContent = window.i18n.text('auth.emailRequired', 'Email-Adresse ist erforderlich');
                     loginEmailError.classList.remove('hidden');
                     hasError = true;
                 } else if (!validateEmail(email)) {
-                    loginEmailError.textContent = 'Ungültige Email-Adresse';
+                    loginEmailError.textContent = window.i18n.text('auth.emailInvalid', 'Ungültige Email-Adresse');
                     loginEmailError.classList.remove('hidden');
                     hasError = true;
                 }
 
                 if (!password) {
-                    loginPasswordError.textContent = 'Passwort ist erforderlich';
+                    loginPasswordError.textContent = window.i18n.text('auth.passwordRequired', 'Passwort ist erforderlich');
                     loginPasswordError.classList.remove('hidden');
                     hasError = true;
                 } else if (password.length < 6) {
-                    loginPasswordError.textContent = 'Passwort muss mindestens 6 Zeichen lang sein';
+                    loginPasswordError.textContent = window.i18n.text('auth.passwordLength', 'Passwort muss mindestens 6 Zeichen lang sein');
                     loginPasswordError.classList.remove('hidden');
                     hasError = true;
                 }
@@ -1003,14 +1021,22 @@
                 try {
                     const user = await window.AuthAPI.login(email, password);
                     window.currentUser = user;
+                    window.i18n.setUser(user);
                     window.updateConnectionUI();
                     await window.loadBoardConfigFromCloud();
                     await window.loadTasksFromCloud();
-                    window.showToast('Erfolgreich angemeldet!');
+                    window.showToast(window.i18n.text('auth.loginSuccess', 'Erfolgreich angemeldet!'));
                     hideLoginModal();
                 } catch (error) {
                     console.error('Login failed:', error);
-                    loginErrorText.textContent = error.message || 'Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.';
+                    if (error.code === 'ACCOUNT_LOCKED')
+                        loginErrorText.textContent = window.i18n.text('auth.accountLocked', 'Das Konto ist vorübergehend gesperrt.');
+                    else if (error.code === 'ACCOUNT_INACTIVE')
+                        loginErrorText.textContent = window.i18n.text('auth.accountInactive', 'Das Konto ist deaktiviert.');
+                    else if (error.code === 'INVALID_CREDENTIALS')
+                        loginErrorText.textContent = window.i18n.text('auth.loginFailed', 'Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
+                    else
+                        loginErrorText.textContent = error.message || window.i18n.text('auth.loginFailed', 'Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
                     loginErrorMessage.classList.remove('hidden');
                     loginLoading.classList.add('hidden');
                     loginSubmitBtn.disabled = false;
@@ -1069,6 +1095,7 @@
     </script>
 
     <script type="module">
+        const t = window.i18n.text;
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
 
@@ -1087,7 +1114,7 @@
 
         function ensureAuthenticatedOrToast(operationName) {
             if (window.currentUser) return true;
-            showToast(`Bitte zuerst einloggen, um ${operationName} auszuführen.`);
+            showToast(t('auth.required', 'Bitte zuerst einloggen, um {operation} auszuführen.', { operation: operationName }));
             return false;
         }
 
@@ -1111,7 +1138,7 @@
                 loginGuestBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
             } else {
-                userPill.textContent = 'User: Nicht angemeldet';
+                userPill.textContent = t('auth.notSignedIn', 'User: Nicht angemeldet');
                 statusBox.classList.remove('hidden');
                 loginGoogleBtn.classList.remove('hidden');
                 loginGuestBtn.classList.remove('hidden');
@@ -1122,6 +1149,7 @@
         async function initAuth() {
             console.log("initAuth() called");
             try {
+                await window.i18n.ready;
                 const user = await window.AuthAPI.getCurrentUser();
                 console.log("getCurrentUser() result:", user);
                 window.currentUser = user;
@@ -1163,13 +1191,14 @@
                 // Automatically login
                 const user = await window.AuthAPI.login(email, password);
                 window.currentUser = user;
+                window.i18n.setUser(user);
                 updateConnectionUI();
                 await loadBoardConfigFromCloud();
                 await loadTasksFromCloud();
-                showToast('Als Gast angemeldet!');
+                showToast(t('auth.guestSuccess', 'Als Gast angemeldet!'));
             } catch (error) {
                 console.error('Guest login failed:', error);
-                showToast('Gast-Login fehlgeschlagen: ' + (error.message || 'Fehler'));
+                showToast(t('auth.guestFailed', 'Gast-Login fehlgeschlagen: {error}', { error: error.message || t('common.error', 'Fehler') }));
             }
         }
 
@@ -1177,14 +1206,15 @@
             try {
                 await window.AuthAPI.logout();
                 window.currentUser = null;
+                window.i18n.setUser(null);
                 updateConnectionUI();
                 tasks = [];
                 updateAllDropdowns();
                 renderBoard();
-                showToast('Abgemeldet.');
+                showToast(t('auth.loggedOut', 'Abgemeldet.'));
             } catch (error) {
                 console.error('Logout failed:', error);
-                showToast('Logout fehlgeschlagen.');
+                showToast(t('auth.logoutFailed', 'Logout fehlgeschlagen.'));
             }
         }
 
@@ -1296,7 +1326,7 @@
         }
 
         async function flushBoardConfigSync(showErrorToast = true) {
-            if (!ensureAuthenticatedOrToast('Board-Konfiguration zu speichern')) return false;
+            if (!ensureAuthenticatedOrToast(t('auth.operationSaveBoard', 'Board-Konfiguration zu speichern'))) return false;
             if (configSaveTimer) {
                 clearTimeout(configSaveTimer);
                 configSaveTimer = null;
@@ -1312,7 +1342,7 @@
             } catch (error) {
                 console.error("Could not flush board config to API:", error);
                 if (showErrorToast) {
-                    showToast("Konfiguration konnte nicht gespeichert werden.");
+                    showToast(t('board.configSaveFailed', 'Konfiguration konnte nicht gespeichert werden.'));
                 }
                 return false;
             }
@@ -1447,14 +1477,14 @@
                 console.error("Error loading tasks from API:", error);
                 const localFallback = loadFromStorage('kanban_tasks', []);
                 tasks = Array.isArray(localFallback) ? localFallback : [];
-                showToast("API momentan nicht erreichbar. Lokale Sicherung wird angezeigt.");
+                showToast(t('board.offline', 'API momentan nicht erreichbar. Lokale Sicherung wird angezeigt.'));
                 updateAllDropdowns();
                 renderBoard();
             }
         }
 
         async function addTaskToCloud(taskData) {
-            if (!ensureAuthenticatedOrToast('Tasks zu erstellen')) return null;
+            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTasks', 'Tasks zu erstellen'))) return null;
             try {
                 const payload = normalizeTaskPayload(taskData, false);
                 const newTask = await window.TaskAPI.createTask(payload);
@@ -1466,13 +1496,13 @@
                 return newTask.id;
             } catch (e) {
                 console.error("Error adding task: ", e);
-                showToast("Task konnte nicht gespeichert werden.");
+                showToast(t('task.saveFailed', 'Task konnte nicht gespeichert werden.'));
                 return null;
             }
         }
 
         async function updateTaskInCloud(taskId, taskData) {
-            if (!ensureAuthenticatedOrToast('Tasks zu speichern')) return false;
+            if (!ensureAuthenticatedOrToast(t('auth.operationSaveTasks', 'Tasks zu speichern'))) return false;
             try {
                 const payload = normalizeTaskPayload(taskData, true);
                 await window.TaskAPI.updateTask(taskId, payload);
@@ -1492,13 +1522,13 @@
                 return true;
             } catch (e) {
                 console.error("Error updating task: ", e);
-                showToast(`Task konnte nicht gespeichert werden.`);
+                showToast(t('task.saveFailed', 'Task konnte nicht gespeichert werden.'));
                 return false;
             }
         }
 
         async function deleteTaskFromCloud(taskId) {
-            if (!ensureAuthenticatedOrToast('Tasks zu löschen')) return false;
+            if (!ensureAuthenticatedOrToast(t('auth.operationDeleteTasks', 'Tasks zu löschen'))) return false;
             try {
                 await window.TaskAPI.deleteTask(taskId);
                 tasks = tasks.filter((task) => task.id !== taskId);
@@ -1507,7 +1537,7 @@
                 return true;
             } catch (e) {
                 console.error("Error deleting task: ", e);
-                showToast(`Task konnte nicht gelöscht werden.`);
+                showToast(t('task.deleteFailed', 'Task konnte nicht gelöscht werden.'));
                 return false;
             }
         }
@@ -1588,8 +1618,8 @@
         }
 
         function getColLabel(col) {
-            const labels = { "ToDo": "To Do", "Analysis": "Analysis", "InProgress": "In Progress", "Done": "Done" };
-            return labels[col] || col;
+            const labels = { ToDo: ['board.todo', 'To Do'], Analysis: ['board.analysis', 'Analysis'], InProgress: ['board.inProgress', 'In Progress'], Done: ['board.done', 'Done'], Backlog: ['board.backlog', 'Backlog'] };
+            return labels[col] ? t(...labels[col]) : col;
         }
 
         function sanitizeSelectedFilterTags() {
@@ -1635,12 +1665,12 @@
             const allOptionHtml = `
                 <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700" onclick="${onReset}()">
                     <input type="checkbox" ${allOptionChecked ? 'checked' : ''} class="pointer-events-none">
-                    <span class="font-semibold text-slate-700 dark:text-slate-200">${resetLabel}</span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">${escapeHtml(resetLabel)}</span>
                 </button>
             `;
 
             const optionsHtml = options.length === 0
-                ? `<div class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Keine Einträge vorhanden</div>`
+                ? `<div class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(t('board.noEntries', 'Keine Einträge vorhanden'))}</div>`
                 : options.map((option) => {
                     const checked = selectedItems.includes(option);
                     const safeOption = option.replace(/'/g, "\\'");
@@ -1671,14 +1701,14 @@
             if (overflow > 0) dropdown.style.left = `${-overflow}px`;
         }
 
-        function closeSwimlaneDropdowns() {
-            [groupPrimary, groupSecondary].forEach(select => {
+        function closeSelectDropdowns() {
+            [groupPrimary, groupSecondary, document.getElementById('language-selector')].forEach(select => {
                 document.getElementById(`${select.id}-dropdown`).classList.add('hidden');
                 document.getElementById(`${select.id}-trigger`).setAttribute('aria-expanded', 'false');
             });
         }
 
-        function setupSwimlaneDropdown(select) {
+        function setupStyledSelect(select) {
             const container = document.getElementById(`${select.id}-container`);
             const trigger = document.getElementById(`${select.id}-trigger`);
             const label = document.getElementById(`${select.id}-label`);
@@ -1695,7 +1725,7 @@
                         select.value = option.value;
                         select.dispatchEvent(new Event('change'));
                     }
-                    closeSwimlaneDropdowns();
+                    closeSelectDropdowns();
                     trigger.focus();
                 });
                 dropdown.appendChild(button);
@@ -1706,17 +1736,18 @@
                 label.textContent = select.selectedOptions[0].textContent;
                 trigger.disabled = select.disabled;
                 buttons.forEach((button, index) => {
+                    button.textContent = select.options[index].textContent;
                     const selected = select.options[index].selected;
                     button.disabled = select.options[index].disabled;
                     button.setAttribute('aria-selected', String(selected));
                     button.classList.toggle('bg-blue-50', selected);
                     button.classList.toggle('dark:bg-blue-900/30', selected);
                 });
-                if (select.disabled) closeSwimlaneDropdowns();
+                if (select.disabled) closeSelectDropdowns();
             }
 
             function open() {
-                closeSwimlaneDropdowns();
+                closeSelectDropdowns();
                 closeAllFilterDropdowns();
                 dropdown.classList.remove('hidden');
                 trigger.setAttribute('aria-expanded', 'true');
@@ -1728,7 +1759,7 @@
             trigger.addEventListener('click', event => {
                 event.stopPropagation();
                 if (dropdown.classList.contains('hidden')) open();
-                else closeSwimlaneDropdowns();
+                else closeSelectDropdowns();
             });
             trigger.addEventListener('keydown', event => {
                 if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -1746,7 +1777,7 @@
                 else if (event.key === 'End') next = enabled[enabled.length - 1];
                 else if (event.key === 'Escape') {
                     event.preventDefault();
-                    closeSwimlaneDropdowns();
+                    closeSelectDropdowns();
                     trigger.focus();
                     return;
                 }
@@ -1776,11 +1807,11 @@
                 options: [...owners].sort(),
                 onReset: 'resetOwnerFilterToAll',
                 onToggle: 'toggleFilterOwner',
-                resetLabel: 'Alle Owner anzeigen',
+                resetLabel: t('board.showAllOwners', 'Alle Owner anzeigen'),
                 labelId: 'filter-owner-label',
-                allLabel: 'Alle Owner',
-                singularSuffix: 'Owner',
-                pluralSuffix: 'Owner'
+                allLabel: t('board.allOwners', 'Alle Owner'),
+                singularSuffix: t('board.owner', 'Owner'),
+                pluralSuffix: t('board.owner', 'Owner')
             });
         }
 
@@ -1792,11 +1823,11 @@
                 options: [...customers].sort(),
                 onReset: 'resetCustomerFilterToAll',
                 onToggle: 'toggleFilterCustomer',
-                resetLabel: 'Alle Kunden anzeigen',
+                resetLabel: t('board.showAllCustomers', 'Alle Kunden anzeigen'),
                 labelId: 'filter-customer-label',
-                allLabel: 'Alle Kunden',
-                singularSuffix: 'Kunde',
-                pluralSuffix: 'Kunden'
+                allLabel: t('board.allCustomers', 'Alle Kunden'),
+                singularSuffix: t('board.customer', 'Kunde'),
+                pluralSuffix: t('board.customers', 'Kunden')
             });
         }
 
@@ -1809,16 +1840,16 @@
                 options: typeOptions,
                 onReset: 'resetTypeFilterToAll',
                 onToggle: 'toggleFilterType',
-                resetLabel: 'Alle Typen anzeigen',
+                resetLabel: t('board.showAllTypes', 'Alle Typen anzeigen'),
                 labelId: 'filter-type-label',
-                allLabel: 'Alle Typen',
-                singularSuffix: 'Typ',
-                pluralSuffix: 'Typen'
+                allLabel: t('board.allTypes', 'Alle Typen'),
+                singularSuffix: t('board.type', 'Typ'),
+                pluralSuffix: t('board.types', 'Typen')
             });
         }
 
         function updateTagFilterLabel() {
-            updateMultiFilterLabel('filter-tags-label', selectedFilterTags, 'Alle Tags', 'Tag', 'Tags');
+            updateMultiFilterLabel('filter-tags-label', selectedFilterTags, t('board.allTags', 'Alle Tags'), t('board.tag', 'Tag'), t('board.tags', 'Tags'));
         }
 
         function renderTagFilterDropdown() {
@@ -1831,12 +1862,12 @@
             const allOptionHtml = `
                 <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700" onclick="resetTagFilterToAll()">
                     <input type="checkbox" ${allOptionChecked ? 'checked' : ''} class="pointer-events-none">
-                    <span class="font-semibold text-slate-700 dark:text-slate-200">Alle Tags anzeigen</span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">${escapeHtml(t('board.showAllTags', 'Alle Tags anzeigen'))}</span>
                 </button>
             `;
 
             const tagsHtml = tagEntries.length === 0
-                ? `<div class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Keine Tags vorhanden</div>`
+                ? `<div class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(t('board.noTags', 'Keine Tags vorhanden'))}</div>`
                 : tagEntries.map((tag) => {
                     const checked = selectedFilterTags.includes(tag);
                     return `
@@ -1962,7 +1993,7 @@
         }
 
         async function updateTaskSetInCloud(taskUpdates) {
-            if (!ensureAuthenticatedOrToast('Prioritäten zu speichern')) return false;
+            if (!ensureAuthenticatedOrToast(t('auth.operationSavePriorities', 'Prioritäten zu speichern'))) return false;
             if (!taskUpdates || taskUpdates.length === 0) return true;
 
             try {
@@ -1988,7 +2019,7 @@
                 return true;
             } catch (error) {
                 console.error("Error updating task order set:", error);
-                showToast("Priorisierung konnte nicht gespeichert werden.");
+                showToast(t('board.prioritySaveFailed', 'Priorisierung konnte nicht gespeichert werden.'));
                 return false;
             }
         }
@@ -2137,7 +2168,7 @@
             if (backlogTasks.length === 0) {
                 const empty = document.createElement('p');
                 empty.className = "text-xs text-slate-500 dark:text-slate-400";
-                empty.textContent = "Keine Aufgaben im Backlog.";
+                empty.textContent = t('board.emptyBacklog', 'Keine Aufgaben im Backlog.');
                 container.appendChild(empty);
             } else {
                 backlogTasks.forEach(task => container.appendChild(createCard(task)));
@@ -2233,10 +2264,12 @@
             icon.setAttribute('aria-hidden', 'true');
             const label = document.createElement('span');
             label.className = 'board-swimlane-label';
-            label.textContent = `${row.group.toUpperCase()}: ${row.value}`;
+            const groupLabels = { customer: ['board.customer', 'Kunde'], taskType: ['board.taskType', 'Task Typ'], owner: ['board.owner', 'Owner'] };
+            const groupLabel = groupLabels[row.group] ? t(...groupLabels[row.group]) : row.group;
+            label.textContent = `${groupLabel.toUpperCase()}: ${row.value}`;
             const count = document.createElement('span');
             count.className = 'text-[10px] text-slate-500';
-            count.textContent = `(${row.tasks.filter(task => task.column === column).length} Tasks)`;
+            count.textContent = t('board.taskCount', '({count} Tasks)', { count: row.tasks.filter(task => task.column === column).length });
             button.append(icon, label, count);
             return button;
         }
@@ -2266,9 +2299,9 @@
                 toggle.type = 'button';
                 toggle.className = 'board-column-toggle';
                 toggle.setAttribute('aria-expanded', String(!collapsed));
-                toggle.setAttribute('aria-label', `Spalte ${getColLabel(col)}`);
-                toggle.title = 'Spalte auf- oder zuklappen';
-                toggle.innerHTML = `<i class="fa-solid fa-chevron-right board-column-chevron" aria-hidden="true"></i><span class="board-column-toggle-label">${getColLabel(col)}</span><span class="board-column-toggle-count">${globalTotalCount}</span>`;
+                toggle.setAttribute('aria-label', t('board.column', 'Spalte {column}', { column: getColLabel(col) }));
+                toggle.title = t('board.toggleColumn', 'Spalte auf- oder zuklappen');
+                toggle.innerHTML = `<i class="fa-solid fa-chevron-right board-column-chevron" aria-hidden="true"></i><span class="board-column-toggle-label">${escapeHtml(getColLabel(col))}</span><span class="board-column-toggle-count">${globalTotalCount}</span>`;
                 toggle.addEventListener('click', () => setBoardColumnCollapsed(col, !collapsedBoardColumns.has(col)));
                 toggle.addEventListener('dragenter', () => {
                     const task = getTaskById(draggedTaskId);
@@ -2285,8 +2318,8 @@
                 header.className = 'board-column-header flex justify-between items-center gap-2';
                 header.style.gridRow = '1';
                 header.innerHTML = `
-                        <span class="text-xs font-bold text-slate-600 dark:text-slate-200 tracking-wide uppercase">${getColLabel(col)}</span>
-                        <span class="bg-slate-200 dark:bg-slate-900/80 text-[10px] text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-800/50 font-medium">Gesamt: ${globalTotalCount}</span>
+                        <span class="text-xs font-bold text-slate-600 dark:text-slate-200 tracking-wide uppercase">${escapeHtml(getColLabel(col))}</span>
+                        <span class="bg-slate-200 dark:bg-slate-900/80 text-[10px] text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-800/50 font-medium">${escapeHtml(t('board.total', 'Gesamt: {count}', { count: globalTotalCount }))}</span>
                 `;
                 colBody.appendChild(header);
 
@@ -2322,7 +2355,8 @@
                         const badgeColor = subCol === "Doing"
                             ? 'bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
                             : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
-                        const badgeInner = `<span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${subCol}</span>`;
+                        const subColLabel = subCol === 'Doing' ? t('board.doing', 'Doing') : t('board.done', 'Done');
+                        const badgeInner = `<span class="px-1.5 py-0.5 rounded border font-semibold ${badgeColor}">${escapeHtml(subColLabel)}</span>`;
 
                         let wipLimitPill = '';
                         if (limit !== null && limit !== undefined) {
@@ -2330,9 +2364,9 @@
                                 ? 'bg-red-600 text-white border-red-700 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 animate-pulse cursor-pointer hover:bg-red-700 dark:hover:bg-red-500/30'
                                 : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700/50 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700';
                             const warnIcon = isOverWip ? `<i class="fa-solid fa-triangle-exclamation mr-1 text-white dark:text-red-400"></i>` : '';
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="Klicken, um WIP Limit anzupassen">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
                         } else {
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="Klicken, um WIP Limit anzupassen">${globalSubCount} (Kein Limit)</span>`;
+                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}">${globalSubCount} (${escapeHtml(t('board.noLimit', 'Kein Limit'))})</span>`;
                         }
 
                         const subColBadgeHtml = `<div class="flex items-center gap-1.5 justify-between w-full">${badgeInner} ${wipLimitPill}</div>`;
@@ -2377,21 +2411,22 @@
                 const allowedCols = workflowPaths[task.taskType]?.path || [];
                 const moveOptions = [];
                 if (task.column !== "Backlog") {
-                    moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', 'Backlog', 'Backlog')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">Backlog</button>`);
+                    moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', 'Backlog', 'Backlog')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(t('board.backlog', 'Backlog'))}</button>`);
                 }
                 allowedCols.forEach(col => {
                     ["Doing", "Done"].forEach(subCol => {
                         if (!(task.column === col && task.subColumn === subCol)) {
-                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${getColLabel(col)} (${subCol})</button>`);
+                            const subColLabel = subCol === 'Doing' ? t('board.doing', 'Doing') : t('board.done', 'Done');
+                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(getColLabel(col))} (${escapeHtml(subColLabel)})</button>`);
                         }
                     });
                 });
-                moveOptionsHtml = `<div class="text-[9px] px-3 py-1 text-slate-500 uppercase font-semibold">Verschieben nach:</div>${moveOptions.join('')}`;
+                moveOptionsHtml = `<div class="text-[9px] px-3 py-1 text-slate-500 uppercase font-semibold">${escapeHtml(t('task.moveTo', 'Verschieben nach:'))}</div>${moveOptions.join('')}`;
             }
 
             const archiveButtonHtml = task.isArchived
-                ? `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', false)" class="w-full text-left px-3 py-1.5 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-open w-4 mr-1"></i> Wiederherstellen</button>`
-                : `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', true)" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-archive w-4 mr-1"></i> Archivieren</button>`;
+                ? `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', false)" class="w-full text-left px-3 py-1.5 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-open w-4 mr-1"></i> ${escapeHtml(t('task.restore', 'Wiederherstellen'))}</button>`
+                : `<button onclick="event.stopPropagation(); toggleArchiveTask('${task.id}', true)" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors"><i class="fa-solid fa-box-archive w-4 mr-1"></i> ${escapeHtml(t('task.archive', 'Archivieren'))}</button>`;
 
             let tagsHtml = '';
             if (task.tags && task.tags.length > 0) {
@@ -2404,15 +2439,15 @@
             let descriptionIconHtml = '';
             // Check for description content beyond empty tags
             if (task.description && task.description.replace(/<[^>]*>/g, '').trim().length > 0) {
-                descriptionIconHtml = `<i class="fa-solid fa-align-left text-slate-400 dark:text-slate-500" title="Diese Aufgabe hat eine Beschreibung"></i>`;
+                descriptionIconHtml = `<i class="fa-solid fa-align-left text-slate-400 dark:text-slate-500" title="${escapeHtml(t('task.hasDescription', 'Diese Aufgabe hat eine Beschreibung'))}"></i>`;
             }
 
             let linksHtml = '';
             if (task.d365Link) {
-                linksHtml += `<a href="${task.d365Link}" target="_blank" title="D365 Task öffnen" onclick="event.stopPropagation()" class="text-blue-400 hover:text-blue-300 transition-colors"><i class="fa-solid fa-up-right-from-square text-xs"></i></a>`;
+                linksHtml += `<a href="${task.d365Link}" target="_blank" title="${escapeHtml(t('task.openD365', 'D365 Task öffnen'))}" onclick="event.stopPropagation()" class="text-blue-400 hover:text-blue-300 transition-colors"><i class="fa-solid fa-up-right-from-square text-xs"></i></a>`;
             }
             if (task.timeLink) {
-                linksHtml += `<a href="${task.timeLink}" target="_blank" title="Zeiterfassung öffnen" onclick="event.stopPropagation()" class="text-emerald-400 hover:text-emerald-300 transition-colors"><i class="fa-solid fa-clock text-xs"></i></a>`;
+                linksHtml += `<a href="${task.timeLink}" target="_blank" title="${escapeHtml(t('task.openTimeTracking', 'Zeiterfassung öffnen'))}" onclick="event.stopPropagation()" class="text-emerald-400 hover:text-emerald-300 transition-colors"><i class="fa-solid fa-clock text-xs"></i></a>`;
             }
 
             card.innerHTML = `
@@ -2432,7 +2467,7 @@
                             ${archiveButtonHtml}
                             <div class="border-t border-slate-200 dark:border-slate-700/50 my-1"></div>
                             <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="w-full text-left px-3 py-1.5 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-[11px] font-medium transition-colors">
-                                <i class="fa-solid fa-trash-can w-4 mr-1"></i> Endgültig Löschen
+                                <i class="fa-solid fa-trash-can w-4 mr-1"></i> ${escapeHtml(t('task.deletePermanently', 'Endgültig Löschen'))}
                             </button>
                         </div>
                     </div>
@@ -2440,9 +2475,9 @@
                 <h4 class="text-xs font-semibold text-slate-800 dark:text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
                 ${tagsHtml}
                 <div class="space-y-1.5 border-t border-slate-200 dark:border-slate-700/40 pt-2 mt-2 text-[10px]">
-                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>Owner: <strong class="text-slate-800 dark:text-white">${task.owner}</strong></span></div>
-                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-building-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>Kunde: <strong class="text-slate-800 dark:text-white">${task.customer}</strong></span></div>
-                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-gears text-[9px] text-slate-400 dark:text-slate-500"></i><span>Typ: <strong class="text-slate-800 dark:text-white">${task.taskType}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.owner', 'Owner'))}: <strong class="text-slate-800 dark:text-white">${task.owner}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-building-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.customer', 'Kunde'))}: <strong class="text-slate-800 dark:text-white">${task.customer}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-gears text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.type', 'Typ'))}: <strong class="text-slate-800 dark:text-white">${task.taskType}</strong></span></div>
                 </div>
             `;
             return card;
@@ -2481,18 +2516,18 @@
         }
 
         window.configureWipLimit = async function(col, subCol) {
-            if (!ensureAuthenticatedOrToast('WIP Limits zu ändern')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationChangeWip', 'WIP Limits zu ändern'))) return;
             const key = getWipLimitKey(col, subCol);
             const currentLimit = wipLimits[key];
-            const input = prompt(`Neues WIP Limit für die Subspalte "${getColLabel(col)} (${subCol})" eingeben (Leer oder 0 zum Deaktivieren):`, currentLimit != null ? currentLimit : "");
+            const input = prompt(t('wip.prompt', 'Neues WIP Limit für die Subspalte "{column} ({subcolumn})" eingeben (Leer oder 0 zum Deaktivieren):', { column: getColLabel(col), subcolumn: subCol }), currentLimit != null ? currentLimit : "");
             if (input === null) return;
             const num = parseInt(input.trim(), 10);
             if (input.trim() === "" || isNaN(num) || num <= 0) {
                 wipLimits[key] = null;
-                showToast(`WIP Limit für "${getColLabel(col)} (${subCol})" wurde aufgehoben.`);
+                showToast(t('wip.removed', 'WIP Limit für "{column} ({subcolumn})" wurde aufgehoben.', { column: getColLabel(col), subcolumn: subCol }));
             } else {
                 wipLimits[key] = num;
-                showToast(`WIP Limit für "${getColLabel(col)} (${subCol})" auf ${num} gesetzt.`);
+                showToast(t('wip.changed', 'WIP Limit für "{column} ({subcolumn})" auf {limit} gesetzt.', { column: getColLabel(col), subcolumn: subCol, limit: num }));
             }
             saveAllState();
             await flushBoardConfigSync(false);
@@ -2505,14 +2540,14 @@
 
             const allowedColumns = workflowPaths[task.taskType]?.path;
             if (targetColumn !== "Backlog" && (!allowedColumns || !allowedColumns.includes(targetColumn))) {
-                showToast(`Fehler: Der Typ "${task.taskType}" darf die Spalte "${getColLabel(targetColumn)}" nicht nutzen!`);
+                showToast(t('task.invalidMove', 'Fehler: Der Typ "{type}" darf die Spalte "{column}" nicht nutzen!', { type: task.taskType, column: getColLabel(targetColumn) }));
                 return false;
             }
 
             const limit = targetColumn === "Backlog" ? null : wipLimits[getWipLimitKey(targetColumn, targetSubColumn)];
             if ((task.column !== targetColumn || task.subColumn !== targetSubColumn) && limit != null) {
                 if (getWipTaskCount(targetColumn, targetSubColumn) >= limit) {
-                    showToast(`Achtung: WIP Limit für "${getColLabel(targetColumn)} (${targetSubColumn})" (${limit}) wird überschritten!`);
+                    showToast(t('wip.exceeded', 'Achtung: WIP Limit für "{column} ({subcolumn})" ({limit}) wird überschritten!', { column: getColLabel(targetColumn), subcolumn: targetSubColumn, limit }));
                 }
             }
             return true;
@@ -2522,8 +2557,12 @@
             const taskTitle = tasks.find(t => t.id === taskId)?.title || 'diesen Task';
             const actionText = shouldArchive ? 'archivieren' : 'wiederherstellen';
 
-            if (confirm(`Möchten Sie "${taskTitle}" wirklich ${actionText}?`)) {
-                if (!ensureAuthenticatedOrToast(`Tasks zu ${actionText}`)) return;
+            if (confirm(shouldArchive
+                ? t('task.confirmArchive', 'Möchten Sie "{title}" wirklich archivieren?', { title: taskTitle })
+                : t('task.confirmRestore', 'Möchten Sie "{title}" wirklich wiederherstellen?', { title: taskTitle }))) {
+                if (!ensureAuthenticatedOrToast(shouldArchive
+                    ? t('auth.operationArchiveTasks', 'Tasks zu archivieren')
+                    : t('auth.operationRestoreTasks', 'Tasks zu wiederherstellen'))) return;
                 if (selectedTaskId === taskId) {
                     closeDetailsPanel();
                 }
@@ -2535,23 +2574,26 @@
                     }
                 } catch (error) {
                     console.error(`Error during task ${actionText}:`, error);
-                    showToast(`Task konnte nicht ${shouldArchive ? 'archiviert' : 'wiederhergestellt'} werden: ${error.message || 'Unbekannter Fehler'}`);
+                    const errorMessage = error.message || t('common.unknownError', 'Unbekannter Fehler');
+                    showToast(shouldArchive
+                        ? t('task.archiveFailed', 'Task konnte nicht archiviert werden: {error}', { error: errorMessage })
+                        : t('task.restoreFailed', 'Task konnte nicht wiederhergestellt werden: {error}', { error: errorMessage }));
                     return;
                 }
-                showToast(`Task wurde ${shouldArchive ? 'archiviert' : 'wiederhergestellt'}.`);
+                showToast(shouldArchive ? t('task.archived', 'Task wurde archiviert.') : t('task.restored', 'Task wurde wiederhergestellt.'));
                 await loadTasksFromCloud();
             }
         }
 
         window.deleteTask = async function(taskId) {
             const taskTitle = tasks.find(t => t.id === taskId)?.title || 'diesen Task';
-            if (!confirm(`Möchten Sie "${taskTitle}" endgültig löschen?`)) {
+            if (!confirm(t('task.confirmDelete', 'Möchten Sie "{title}" endgültig löschen?', { title: taskTitle }))) {
                 return;
             }
 
             const success = await deleteTaskFromCloud(taskId);
             if (!success) return;
-            showToast('Task wurde endgültig gelöscht.');
+            showToast(t('task.deleted', 'Task wurde endgültig gelöscht.'));
             await loadTasksFromCloud();
         }
         // Drag & Drop Handlers
@@ -2719,18 +2761,18 @@
                 if (task && task.column !== "Backlog" && task.taskType !== taskData.taskType) {
                     const allowed = workflowPaths[taskData.taskType]?.path;
                     if (!allowed || !allowed.includes(task.column)) {
-                        showToast(`Änderung des Typs verweigert: Die aktuelle Spalte "${getColLabel(task.column)}" ist für den neuen Typ nicht zulässig!`);
+                        showToast(t('task.invalidTypeChange', 'Änderung des Typs verweigert: Die aktuelle Spalte "{column}" ist für den neuen Typ nicht zulässig!', { column: getColLabel(task.column) }));
                         return;
                     }
                 }
                 const success = await updateTaskInCloud(taskId, taskData);
                 if (!success) return;
-                showToast(`Task ${taskId.slice(0,8)}... wurde aktualisiert.`);
+                showToast(t('task.updated', 'Task {id}... wurde aktualisiert.', { id: taskId.slice(0,8) }));
             } else {
                 if (newTaskColumn === "ToDo" && wipLimits["ToDo"] !== null) {
                     const currentGlobalCount = getWipTaskCount("ToDo", "Doing");
                     if (currentGlobalCount >= wipLimits["ToDo"]) {
-                        showToast(`Achtung: WIP Limit für "To Do (Doing)" wird durch den neuen Task überschritten!`);
+                        showToast(t('wip.newTaskExceeded', 'Achtung: WIP Limit für "To Do (Doing)" wird durch den neuen Task überschritten!'));
                     }
                 }
                 taskData.column = newTaskColumn;
@@ -2739,7 +2781,7 @@
                 taskData.order = computeNewOrder(taskData.column, taskData.subColumn, null, null);
                 const newId = await addTaskToCloud(taskData);
                 if (!newId) return;
-                showToast(`Task ${newId.slice(0,8)}... wurde in ${getColLabel(newTaskColumn)} erstellt.`);
+                showToast(t('task.created', 'Task {id}... wurde in {column} erstellt.', { id: newId.slice(0,8), column: getColLabel(newTaskColumn) }));
             }
 
             closeAddTaskModal();
@@ -2748,7 +2790,7 @@
 
         window.openAddTaskModal = function(column = "ToDo") {
             newTaskColumn = column;
-            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> ${column === "Backlog" ? "Neuen Backlog-Task erstellen" : "Neuen Task erstellen"}`;
+            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> ${escapeHtml(column === "Backlog" ? t('task.createBacklog', 'Neuen Backlog-Task erstellen') : t('task.create', 'Neuen Task erstellen'))}`;
             document.getElementById('task-form').reset();
             document.getElementById('modal-task-id').value = "";
             selectedTaskId = null;
@@ -2766,7 +2808,7 @@
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
 
-            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500"></i> Task bearbeiten (${task.id.slice(0,8)}...)`;
+            document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500"></i> ${escapeHtml(t('task.edit', 'Task bearbeiten ({id}...)', { id: task.id.slice(0,8) }))}`;
             const form = document.getElementById('task-form');
             form.querySelector('#modal-task-id').value = task.id;
             form.querySelector('#modal-title').value = task.title;
@@ -2888,7 +2930,7 @@
         }
 
         window.addNewTag = async function() {
-            if (!ensureAuthenticatedOrToast('Tags zu erstellen')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTags', 'Tags zu erstellen'))) return;
             const nameInput = document.getElementById('new-tag-name');
             const name = nameInput.value.trim();
             if (!name) return;
@@ -2902,7 +2944,7 @@
         }
 
         window.updateTagColor = async function(tag, newColor) {
-            if (!ensureAuthenticatedOrToast('Tag-Farben zu ändern')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationChangeTagColors', 'Tag-Farben zu ändern'))) return;
             tagsConfig[tag] = newColor;
             saveAllState();
             const saved = await flushBoardConfigSync();
@@ -2917,16 +2959,16 @@
         }
 
         window.renameTagInline = async function(inputElement, oldTag) {
-            if (!ensureAuthenticatedOrToast('Tags umzubenennen')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationRenameTags', 'Tags umzubenennen'))) return;
             const newTag = inputElement.value.trim();
             if (!newTag) {
-                showToast('Tag-Name darf nicht leer sein.');
+                showToast(t('tags.emptyName', 'Tag-Name darf nicht leer sein.'));
                 inputElement.value = oldTag;
                 return;
             }
             if (newTag === oldTag) return;
             if (Object.prototype.hasOwnProperty.call(tagsConfig, newTag)) {
-                showToast('Tag-Name existiert bereits.');
+                showToast(t('tags.duplicateName', 'Tag-Name existiert bereits.'));
                 inputElement.value = oldTag;
                 return;
             }
@@ -2947,7 +2989,7 @@
             });
             const updateResults = await Promise.all(updatePromises);
             if (updateResults.some(result => result === false)) {
-                showToast('Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.');
+                showToast(t('task.manyUpdateFailed', 'Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.'));
             }
 
             saveAllState();
@@ -2958,11 +3000,11 @@
             renderTagsManagerList();
             renderModalTagsSelection();
             await loadTasksFromCloud();
-            showToast(`Tag "${oldTag}" wurde in "${newTag}" umbenannt.`);
+            showToast(t('tags.renamed', 'Tag "{old}" wurde in "{new}" umbenannt.', { old: oldTag, new: newTag }));
         }
 
         window.deleteTag = async function(tag) {
-            if (!ensureAuthenticatedOrToast('Tags zu löschen')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationDeleteTags', 'Tags zu löschen'))) return;
             const tasksToUpdate = tasks.filter(task => task.tags && task.tags.includes(tag));
             delete tagsConfig[tag];
             selectedFilterTags = selectedFilterTags.filter(t => t !== tag);
@@ -3001,7 +3043,7 @@
                         <input type="color" onchange="updateTypeColor('${escapedType}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
                         <button onclick="deleteType('${escapedType}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                     </div>
-                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block pl-5">Pfad: ${cols}</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block pl-5">${escapeHtml(t('types.path', 'Pfad: {path}', { path: cols }))}</span>
                 </div>`;
             }).join('');
         }
@@ -3013,17 +3055,17 @@
         }
 
         window.renameTypeInline = async function(inputElement, oldType) {
-            if (!ensureAuthenticatedOrToast('Task-Typen umzubenennen')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationRenameTypes', 'Task-Typen umzubenennen'))) return;
 
             const newType = inputElement.value.trim();
             if (!newType) {
-                showToast('Typ-Name darf nicht leer sein.');
+                showToast(t('types.emptyName', 'Typ-Name darf nicht leer sein.'));
                 inputElement.value = oldType;
                 return;
             }
             if (newType === oldType) return;
             if (Object.prototype.hasOwnProperty.call(workflowPaths, newType)) {
-                showToast('Typ-Name existiert bereits.');
+                showToast(t('types.duplicateName', 'Typ-Name existiert bereits.'));
                 inputElement.value = oldType;
                 return;
             }
@@ -3045,7 +3087,7 @@
             }));
             const updateResults = await Promise.all(updatePromises);
             if (updateResults.some(result => result === false)) {
-                showToast('Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.');
+                showToast(t('task.manyUpdateFailed', 'Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.'));
             }
 
             saveAllState();
@@ -3057,11 +3099,11 @@
             renderTypeFilterDropdown();
             renderBoard();
             await loadTasksFromCloud();
-            showToast(`Task-Typ "${oldType}" wurde in "${newType}" umbenannt.`);
+            showToast(t('types.renamed', 'Task-Typ "{old}" wurde in "{new}" umbenannt.', { old: oldType, new: newType }));
         }
 
         window.addNewType = async function() {
-            if (!ensureAuthenticatedOrToast('Task-Typen zu erstellen')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTypes', 'Task-Typen zu erstellen'))) return;
             const nameInput = document.getElementById('new-type-name');
             const name = nameInput.value.trim();
             const color = document.getElementById('new-type-color').value;
@@ -3081,7 +3123,7 @@
         }
 
         window.updateTypeColor = async function(type, newColor) {
-            if (!ensureAuthenticatedOrToast('Task-Typ Farben zu ändern')) return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationChangeTypeColors', 'Task-Typ Farben zu ändern'))) return;
             if (workflowPaths[type]) {
                 workflowPaths[type].color = newColor;
             }
@@ -3102,7 +3144,7 @@
 
         window.deleteType = async function(type) {
             if (Object.keys(workflowPaths).length <= 1) {
-                return showToast("Mindestens ein Task-Typ muss auf dem Board erhalten bleiben!");
+                return showToast(t('types.oneRequired', 'Mindestens ein Task-Typ muss auf dem Board erhalten bleiben!'));
             }
             const tasksToDelete = tasks.filter(task => task.taskType === type);
             await Promise.all(tasksToDelete.map(task => deleteTaskFromCloud(task.id)));
@@ -3277,8 +3319,34 @@
             backlogTasks.addEventListener('dragover', handleDragOver);
             backlogTasks.addEventListener('dragleave', handleDragLeave);
             backlogTasks.addEventListener('drop', e => handleDrop(e, 'Backlog', 'Backlog'));
-            const syncPrimarySwimlane = setupSwimlaneDropdown(groupPrimary);
-            const syncSecondarySwimlane = setupSwimlaneDropdown(groupSecondary);
+            const languageSelector = document.getElementById('language-selector');
+            const syncLanguageSelector = setupStyledSelect(languageSelector);
+            const syncPrimarySwimlane = setupStyledSelect(groupPrimary);
+            const syncSecondarySwimlane = setupStyledSelect(groupSecondary);
+            languageSelector.addEventListener('language-selector-update', syncLanguageSelector);
+            window.addEventListener('languagechange', () => {
+                syncLanguageSelector();
+                syncPrimarySwimlane();
+                syncSecondarySwimlane();
+                updateConnectionUI();
+                renderOwnerFilterDropdown();
+                renderCustomerFilterDropdown();
+                renderTypeFilterDropdown();
+                renderTagFilterDropdown();
+                renderBoard();
+                highlightSelectedCard();
+                if (!document.getElementById('task-details-panel').classList.contains('hidden')) {
+                    const taskId = document.getElementById('modal-task-id').value;
+                    const heading = taskId
+                        ? t('task.edit', 'Task bearbeiten ({id}...)', { id: taskId.slice(0, 8) })
+                        : newTaskColumn === 'Backlog'
+                            ? t('task.createBacklog', 'Neuen Backlog-Task erstellen')
+                            : t('task.create', 'Neuen Task erstellen');
+                    const icon = document.createElement('i');
+                    icon.className = taskId ? 'fa-solid fa-pen-to-square text-blue-500' : 'fa-solid fa-square-plus text-blue-500';
+                    document.getElementById('panel-heading').replaceChildren(icon, document.createTextNode(` ${heading}`));
+                }
+            });
             groupPrimary.addEventListener('change', () => {
                 if (groupPrimary.value === 'NONE') {
                     groupSecondary.value = 'NONE';
@@ -3301,7 +3369,7 @@
             });
             filterOwnerTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
-                closeSwimlaneDropdowns();
+                closeSelectDropdowns();
                 renderOwnerFilterDropdown();
                 filterOwnerDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterOwnerDropdown);
@@ -3311,7 +3379,7 @@
             });
             filterCustomerTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
-                closeSwimlaneDropdowns();
+                closeSelectDropdowns();
                 renderCustomerFilterDropdown();
                 filterCustomerDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterCustomerDropdown);
@@ -3321,7 +3389,7 @@
             });
             filterTypeTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
-                closeSwimlaneDropdowns();
+                closeSelectDropdowns();
                 renderTypeFilterDropdown();
                 filterTypeDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterTypeDropdown);
@@ -3331,7 +3399,7 @@
             });
             filterTagsTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
-                closeSwimlaneDropdowns();
+                closeSelectDropdowns();
                 renderTagFilterDropdown();
                 filterTagsDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterTagsDropdown);
@@ -3345,14 +3413,15 @@
             filterTagsDropdown.addEventListener('click', (e) => e.stopPropagation());
             window.addEventListener('resize', () => {
                 [filterOwnerDropdown, filterCustomerDropdown, filterTypeDropdown, filterTagsDropdown,
-                    document.getElementById('group-primary-dropdown'), document.getElementById('group-secondary-dropdown')]
+                    document.getElementById('group-primary-dropdown'), document.getElementById('group-secondary-dropdown'),
+                    document.getElementById('language-selector-dropdown')]
                     .forEach(fitFilterDropdown);
             });
             document.getElementById('filter-archived').addEventListener('change', renderBoard);
             window.addEventListener('click', () => {
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
                 closeAllFilterDropdowns();
-                closeSwimlaneDropdowns();
+                closeSelectDropdowns();
             });
 
             document.getElementById('firebase-login-google').addEventListener('click', window.loginWithGoogle);
@@ -3464,7 +3533,7 @@
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-md mx-4">
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-lg">
-                <h2 class="text-2xl font-bold text-white">Anmelden</h2>
+                <h2 data-i18n="auth.login" class="text-2xl font-bold text-white">Anmelden</h2>
             </div>
 
             <!-- Modal Body -->
@@ -3472,7 +3541,7 @@
                 <!-- Email Input -->
                 <div>
                     <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email-Adresse
+                        <span data-i18n="auth.email">Email-Adresse</span>
                     </label>
                     <input
                         type="email"
@@ -3486,13 +3555,13 @@
                 <!-- Password Input -->
                 <div>
                     <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Passwort
+                        <span data-i18n="common.password">Passwort</span>
                     </label>
                     <input
                         type="password"
                         id="login-password"
                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white outline-none transition"
-                        placeholder="Ihr Passwort"
+                        placeholder="Ihr Passwort" data-i18n-placeholder="auth.passwordPlaceholder"
                     >
                     <p id="login-password-error" class="text-red-500 text-sm mt-1 hidden"></p>
                 </div>
@@ -3505,7 +3574,7 @@
                 <!-- Loading Indicator -->
                 <div id="login-loading" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg hidden flex items-center space-x-3">
                     <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                    <span class="text-sm">Anmelden...</span>
+                    <span data-i18n="auth.loggingIn" class="text-sm">Anmelden...</span>
                 </div>
             </div>
 
@@ -3515,13 +3584,13 @@
                     id="login-cancel-btn"
                     class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition font-medium"
                 >
-                    Abbrechen
+                    <span data-i18n="common.cancel">Abbrechen</span>
                 </button>
                 <button
                     id="login-submit-btn"
                     class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium"
                 >
-                    Anmelden
+                    <span data-i18n="auth.login">Anmelden</span>
                 </button>
             </div>
         </div>

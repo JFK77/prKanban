@@ -8,6 +8,8 @@ using PrKanban.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IDatabaseInformationService, DatabaseInformationService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<ITranslationService, TranslationService>();
+builder.Services.AddScoped<IUserLanguageService, UserLanguageService>();
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>
@@ -95,6 +97,7 @@ try
         
         // Apply migrations
         dbContext.Database.Migrate();
+        _ = dbContext.AppTranslations.AsNoTracking().Take(1).ToList();
         logger.LogInformation("✅ Database migrations applied");
         
         // Create default roles
@@ -123,7 +126,7 @@ catch (Exception ex)
 {
     app.Logger.LogError($"❌ Database initialization failed: {ex.Message}");
     app.Logger.LogError($"Stack trace: {ex.StackTrace}");
-    // Don't throw - let the app start anyway
+    throw;
 }
 
 // Middleware

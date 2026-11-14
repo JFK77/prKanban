@@ -17,15 +17,18 @@ namespace PrKanban.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AuthController> _logger;
+        private readonly IUserLanguageService _language;
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ILogger<AuthController> logger)
+            ILogger<AuthController> logger,
+            IUserLanguageService language)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _language = language;
         }
 
         /// <summary>
@@ -144,6 +147,7 @@ namespace PrKanban.Controllers
                         email = user.Email,
                         name = user.FullName,
                         isAdmin = await _userManager.IsInRoleAsync(user, "Admin"),
+                        language = await _language.GetAsync(user),
                         message = "Logged in successfully"
                     }
                 });
@@ -199,10 +203,30 @@ namespace PrKanban.Controllers
                     email = user.Email,
                     name = user.FullName,
                     isAdmin = await _userManager.IsInRoleAsync(user, "Admin"),
+                    language = await _language.GetAsync(user),
                     createdAt = user.CreatedAt,
                     lastLoginAt = user.LastLoginAt
                 }
             });
+        }
+
+        /// <summary>Updates the signed-in user's language preference.</summary>
+        [HttpPut("language")]
+        [Authorize]
+        public async Task<IActionResult> SetLanguage([FromBody] SetLanguageRequest request)
+        {
+            if (request.Language is not ("de" or "en"))
+                return Problem(statusCode: 400, detail: "Language must be de or en.");
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Unauthorized();
+            var result = await _language.SetAsync(user, request.Language);
+            if (!result.Succeeded)
+            {
+                _logger.LogWarning("Could not save language preference for user {UserId}: {Errors}",
+                    user.Id, string.Join(", ", result.Errors.Select(error => error.Code)));
+                return Problem(statusCode: 409, detail: "Could not save the language preference.");
+            }
+            return Ok(new { language = request.Language });
         }
     }
 
@@ -234,4 +258,7 @@ namespace PrKanban.Controllers
         [Required]
         public string Password { get; set; } = string.Empty;
     }
+
+    /// <summary>Requested application language.</summary>
+    public sealed record SetLanguageRequest([Required] string Language);
 }

@@ -30,3 +30,17 @@ Content-Type: application/json
   "role": "User",
   "active": false
 }
+
+### Get the application translation catalogue
+GET {{baseUrl}}/api/v1/translations
+
+### Save the signed-in user's language (requires an authenticated cookie)
+PUT {{baseUrl}}/api/v1/auth/language
+Content-Type: application/json
+
+{
+  "language": "en"
+}
+
+### List administrator-editable translations
+GET {{baseUrl}}/api/v1/admin/translations

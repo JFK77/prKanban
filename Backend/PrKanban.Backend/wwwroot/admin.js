@@ -1,5 +1,6 @@
 'use strict';
 
+const t = window.i18n.text;
 const statusMessage = document.getElementById('status');
 const form = document.getElementById('user-form');
 const userList = document.getElementById('user-list');
@@ -7,7 +8,12 @@ const userPanel = document.getElementById('user-panel');
 const panelResizer = document.getElementById('user-panel-resizer');
 const panelStatus = document.getElementById('user-panel-status');
 let users = [];
+let translations = [];
+const translationDrafts = new Map();
+const pendingTranslations = new Set();
 let panelOpener = null;
+
+class FeatureUnavailableError extends Error {}
 
 async function request(path, options = {}) {
     const response = await fetch(`/api/v1/admin/${path}`, {
@@ -16,15 +22,18 @@ async function request(path, options = {}) {
         headers: options.body ? { 'Content-Type': 'application/json' } : {}
     });
     if (response.redirected || response.status === 401)
-        throw new Error('Bitte als Administrator anmelden.');
+        throw new Error(t('admin.signInRequired', 'Bitte als Administrator anmelden.'));
     if (response.status === 403)
-        throw new Error('Nur Administratoren können diesen Bereich öffnen.');
+        throw new Error(t('admin.adminOnly', 'Nur Administratoren können diesen Bereich öffnen.'));
     if (!response.ok) {
         const contentType = response.headers.get('content-type') || '';
         const error = contentType.includes('json') ? await response.json() : null;
         const validation = error?.errors ? Object.values(error.errors).flat().join(' ') : '';
-        throw new Error(error?.detail || validation || `Anfrage fehlgeschlagen (HTTP ${response.status}).`);
+        throw new Error(error?.detail || validation || t('admin.requestFailed', 'Anfrage fehlgeschlagen (HTTP {status}).', { status: response.status }));
     }
+    if (response.status === 204) return null;
+    if (!(response.headers.get('content-type') || '').includes('json'))
+        throw new FeatureUnavailableError(t('admin.featureUnavailable', 'Diese Funktion ist auf dem laufenden Server noch nicht verfügbar.'));
     return response.json();
 }
 
@@ -66,17 +75,128 @@ function renderUsers() {
         role.textContent = user.role;
         const active = document.createElement('td');
         active.className = 'p-4';
-        active.textContent = user.active ? 'Aktiv' : 'Inaktiv';
+        active.textContent = user.active ? t('common.active', 'Aktiv') : t('common.inactive', 'Inaktiv');
         const action = document.createElement('td');
         action.className = 'p-4';
         const edit = document.createElement('button');
         edit.type = 'button';
         edit.className = 'text-blue-700 font-semibold hover:underline';
-        edit.textContent = 'Bearbeiten';
+        edit.textContent = t('common.edit', 'Bearbeiten');
         edit.addEventListener('click', () => editUser(user));
         action.append(edit);
         row.append(identity, role, active, action);
         userList.append(row);
+    }
+}
+
+function renderTranslations() {
+    const search = document.getElementById('translation-search').value.trim().toLocaleLowerCase();
+    const filtered = translations.filter(item => {
+        const draft = translationDrafts.get(item.key) || item;
+        return [item.key, draft.category, draft.german, draft.english]
+            .some(value => value.toLocaleLowerCase().includes(search));
+    });
+    const list = document.getElementById('translation-list');
+    list.replaceChildren();
+    document.getElementById('empty-translations').classList.toggle('hidden', filtered.length !== 0);
+    for (const item of filtered) {
+        const draft = translationDrafts.get(item.key) || { ...item };
+        const row = document.createElement('tr');
+        row.className = 'border-t border-slate-100';
+        const keyCell = document.createElement('td');
+        keyCell.className = 'p-4';
+        const key = document.createElement('code');
+        key.textContent = item.key;
+        const category = document.createElement('input');
+        category.value = draft.category;
+        category.maxLength = 100;
+        category.required = true;
+        category.setAttribute('aria-label', `${t('admin.category', 'Kategorie')} ${item.key}`);
+        category.className = 'block mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs';
+        keyCell.append(key, category);
+        const inputs = {};
+        for (const [field, label] of [['german', t('admin.german', 'Deutsch')], ['english', t('admin.english', 'Englisch')]]) {
+            const cell = document.createElement('td');
+            cell.className = 'p-3';
+            const input = document.createElement('input');
+            input.value = draft[field];
+            input.required = true;
+            input.maxLength = 2048;
+            input.setAttribute('aria-label', `${label} ${item.key}`);
+            input.className = 'w-full min-w-[160px] rounded-lg border border-slate-200 px-2 py-1 text-sm';
+            inputs[field] = input;
+            input.addEventListener('input', () => {
+                draft[field] = input.value;
+                translationDrafts.set(item.key, draft);
+            });
+            cell.append(input);
+            row.append(cell);
+        }
+        row.prepend(keyCell);
+        category.addEventListener('input', () => {
+            draft.category = category.value;
+            translationDrafts.set(item.key, draft);
+        });
+        const actions = document.createElement('td');
+        actions.className = 'p-4 whitespace-nowrap';
+        const save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'text-blue-700 font-semibold hover:underline';
+        save.textContent = t('common.save', 'Speichern');
+        save.disabled = pendingTranslations.has(item.key);
+        save.addEventListener('click', async () => {
+            if (![category, inputs.german, inputs.english].every(input => input.reportValidity())) return;
+            pendingTranslations.add(item.key);
+            save.disabled = true;
+            remove.disabled = true;
+            const submitted = { category: category.value, german: inputs.german.value, english: inputs.english.value };
+            try {
+                const updated = await request(`translations/${encodeURIComponent(item.key)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(Object.fromEntries(Object.entries(submitted).map(([field, value]) => [field, value.trim()])))
+                });
+                const current = translations.find(entry => entry.key === item.key);
+                if (current) Object.assign(current, updated);
+                const currentDraft = translationDrafts.get(item.key);
+                if (currentDraft && ['category', 'german', 'english'].every(field => currentDraft[field] === submitted[field]))
+                    translationDrafts.delete(item.key);
+                renderTranslations();
+                showStatus(t('admin.translationSaved', 'Übersetzung gespeichert.'));
+            } catch (error) {
+                console.error('Übersetzung konnte nicht gespeichert werden:', error);
+                showStatus(error.message, true);
+            } finally {
+                pendingTranslations.delete(item.key);
+                renderTranslations();
+            }
+        });
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'ml-3 text-red-700 hover:underline';
+        remove.textContent = t('common.delete', 'Löschen');
+        remove.disabled = pendingTranslations.has(item.key);
+        remove.addEventListener('click', async () => {
+            if (!window.confirm(t('admin.confirmDeleteKey', 'Schlüssel "{key}" löschen?', { key: item.key }))) return;
+            pendingTranslations.add(item.key);
+            remove.disabled = true;
+            save.disabled = true;
+            try {
+                await request(`translations/${encodeURIComponent(item.key)}`, { method: 'DELETE' });
+                translations = translations.filter(entry => entry.key !== item.key);
+                translationDrafts.delete(item.key);
+                renderTranslations();
+                showStatus(t('admin.translationDeleted', 'Übersetzung gelöscht.'));
+            } catch (error) {
+                console.error('Übersetzung konnte nicht gelöscht werden:', error);
+                showStatus(error.message, true);
+            } finally {
+                pendingTranslations.delete(item.key);
+                renderTranslations();
+            }
+        });
+        actions.append(save, remove);
+        row.append(actions);
+        list.append(row);
     }
 }
 
@@ -93,7 +213,7 @@ function editUser(user = null) {
     form.elements.password.required = !user;
     document.getElementById('password-label').classList.toggle('hidden', !!user);
     document.getElementById('active-label').classList.toggle('hidden', !user);
-    document.getElementById('form-title').textContent = user ? 'Benutzer bearbeiten' : 'Neuer Benutzer';
+    document.getElementById('form-title').textContent = user ? t('admin.editUser', 'Benutzer bearbeiten') : t('admin.newUser', 'Neuer Benutzer');
     userPanel.classList.remove('hidden');
     userPanel.classList.add('flex');
     panelResizer.classList.remove('hidden');
@@ -101,11 +221,14 @@ function editUser(user = null) {
 }
 
 async function showView(view) {
-    showStatus('Informationen werden geladen …');
+    showStatus(t('admin.loading', 'Informationen werden geladen …'));
     try {
         if (view === 'users') {
             users = await request('users');
             renderUsers();
+        } else if (view === 'translations') {
+            translations = await request('translations');
+            renderTranslations();
         } else {
             const database = await request('database');
             document.getElementById('provider').textContent = database.provider;
@@ -119,6 +242,7 @@ async function showView(view) {
         });
         document.getElementById('users-view').classList.toggle('hidden', view !== 'users');
         document.getElementById('database-view').classList.toggle('hidden', view !== 'database');
+        document.getElementById('translations-view').classList.toggle('hidden', view !== 'translations');
         closeUserPanel();
         showStatus('');
         return true;
@@ -126,6 +250,7 @@ async function showView(view) {
         console.error('Administration konnte nicht geladen werden:', error);
         document.getElementById('users-view').classList.add('hidden');
         document.getElementById('database-view').classList.add('hidden');
+        document.getElementById('translations-view').classList.add('hidden');
         closeUserPanel();
         showStatus(error.message, true);
         return false;
@@ -142,7 +267,7 @@ form.addEventListener('submit', async event => {
     };
     if (id) {
         body.active = form.elements.active.checked;
-        if (!body.active && !window.confirm('Konto deaktivieren? Die zugehörigen Tasks bleiben erhalten.')) return;
+        if (!body.active && !window.confirm(t('admin.confirmDeactivate', 'Konto deaktivieren? Die zugehörigen Tasks bleiben erhalten.'))) return;
     } else {
         body.password = form.elements.password.value;
     }
@@ -154,7 +279,7 @@ form.addEventListener('submit', async event => {
             body: JSON.stringify(body)
         });
         if (await showView('users'))
-            showStatus('Benutzer gespeichert.');
+            showStatus(t('admin.userSaved', 'Benutzer gespeichert.'));
     } catch (error) {
         console.error('Benutzer konnte nicht gespeichert werden:', error);
         showStatus(error.message, true);
@@ -165,6 +290,33 @@ form.addEventListener('submit', async event => {
 
 document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => showView(button.dataset.view)));
 document.getElementById('user-search').addEventListener('input', renderUsers);
+document.getElementById('translation-search').addEventListener('input', renderTranslations);
+window.addEventListener('beforeunload', event => {
+    if (translationDrafts.size) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
+document.getElementById('translation-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const target = event.currentTarget;
+    const key = target.elements.key.value.trim();
+    const body = {
+        category: target.elements.category.value.trim(),
+        german: target.elements.german.value.trim(),
+        english: target.elements.english.value.trim()
+    };
+    const submit = target.querySelector('[type=submit]');
+    submit.disabled = true;
+    try {
+        await request(`translations/${encodeURIComponent(key)}`, { method: 'POST', body: JSON.stringify(body) });
+        target.reset();
+        if (await showView('translations')) showStatus(t('admin.keyAdded', 'Schlüssel hinzugefügt.'));
+    } catch (error) {
+        console.error('Schlüssel konnte nicht hinzugefügt werden:', error);
+        showStatus(error.message, true);
+    } finally { submit.disabled = false; }
+});
 document.getElementById('new-user').addEventListener('click', () => editUser());
 document.getElementById('cancel-user').addEventListener('click', closeUserPanel);
 document.getElementById('close-user-panel').addEventListener('click', closeUserPanel);
@@ -196,4 +348,16 @@ panelResizer.addEventListener('keydown', event => {
     event.preventDefault();
     setPanelWidth(parseInt(userPanel.style.width, 10) + (event.key === 'ArrowLeft' ? 20 : -20));
 });
-showView('users');
+async function initializeAdmin() {
+    await window.i18n.ready;
+    if (!await showView('users')) return;
+    try {
+        await request('translations');
+        document.querySelector('[data-view="translations"]').classList.remove('hidden');
+    } catch (error) {
+        console.warn('Übersetzungsverwaltung ist auf diesem Server nicht verfügbar:', error);
+        if (!(error instanceof FeatureUnavailableError))
+            showStatus(`Übersetzungsverwaltung konnte nicht geladen werden: ${error.message}`, true);
+    }
+}
+initializeAdmin();
