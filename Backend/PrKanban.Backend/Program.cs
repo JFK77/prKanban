@@ -130,7 +130,14 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Enable static files and serve default document (index.html)
+var staticFileOptions = new StaticFileOptions();
+app.UseStaticFiles(staticFileOptions);
+
+// Fallback to index.html for SPA routing
+app.MapFallbackToFile("index.html");
+
 app.UseCors("Development");
 app.UseRouting();
 
