@@ -670,7 +670,10 @@
             try {
                 const email = 'guest-' + Date.now() + '@local.dev';
                 const password = 'GuestPass123!';
-                const user = await AuthAPI.register(email, password);
+                // Register guest account
+                await AuthAPI.register(email, password);
+                // Automatically login
+                const user = await AuthAPI.login(email, password);
                 currentUser = user;
                 updateConnectionUI();
                 await loadBoardConfigFromCloud();
