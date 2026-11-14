@@ -378,12 +378,18 @@ const BoardConfigAPI = {
       return { success: false }; // Fail gracefully
     }
   }
-  }
 };
 
 /**
  * Export APIs for use in main application
  */
+// Make APIs global for browser environment
+if (typeof window !== 'undefined') {
+  window.AuthAPI = AuthAPI;
+  window.TaskAPI = TaskAPI;
+  window.BoardConfigAPI = BoardConfigAPI;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AuthAPI, TaskAPI, BoardConfigAPI };
 }

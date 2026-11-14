@@ -22,6 +22,8 @@
     </script>
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- API Client (must load before other scripts) -->
+    <script src="api-client.js"></script>
     <style>
         /* Custom scrollbar */
         ::-webkit-scrollbar {
@@ -239,13 +241,13 @@
                 <span class="text-slate-400">|</span>
                 <span id="firebase-user-pill" class="text-slate-600 dark:text-slate-300"></span>
             </div>
-            <button id="firebase-login-google" type="button" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+            <button id="firebase-login-google" type="button" onclick="window.loginWithGoogle && window.loginWithGoogle()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
                 <i class="fa-brands fa-google mr-1.5"></i>Login
             </button>
-            <button id="firebase-login-guest" type="button" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+            <button id="firebase-login-guest" type="button" onclick="window.loginAsGuest && window.loginAsGuest()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
                 <i class="fa-solid fa-user-clock mr-1.5"></i>Gast
             </button>
-            <button id="firebase-logout" type="button" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
+            <button id="firebase-logout" type="button" onclick="window.logoutFromFirebase && window.logoutFromFirebase()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
                 <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Logout
             </button>
             <!-- Theme Toggle Button -->
@@ -576,9 +578,6 @@
         </div>
     </div>
 
-    <!-- Main Script Block -->
-    <script src="api-client.js"></script>
-
     <!-- MODAL INITIALIZATION SCRIPT (runs before module) -->
     <script>
         // Initialize login modal functions early
@@ -606,7 +605,8 @@
                 loginPasswordError.classList.add('hidden');
                 loginLoading.classList.add('hidden');
                 loginSubmitBtn.disabled = false;
-                loginSubmitBtn.classList.remove('opacity-50 cursor-not-allowed');
+                loginSubmitBtn.classList.remove('opacity-50');
+                loginSubmitBtn.classList.remove('cursor-not-allowed');
                 loginModal.classList.remove('hidden');
                 loginEmailInput.focus();
             };
@@ -661,10 +661,11 @@
                 // Show loading state
                 loginLoading.classList.remove('hidden');
                 loginSubmitBtn.disabled = true;
-                loginSubmitBtn.classList.add('opacity-50 cursor-not-allowed');
+                loginSubmitBtn.classList.add('opacity-50');
+                loginSubmitBtn.classList.add('cursor-not-allowed');
 
                 try {
-                    const user = await AuthAPI.login(email, password);
+                    const user = await window.AuthAPI.login(email, password);
                     window.currentUser = user;
                     window.updateConnectionUI();
                     await window.loadBoardConfigFromCloud();
@@ -677,7 +678,8 @@
                     loginErrorMessage.classList.remove('hidden');
                     loginLoading.classList.add('hidden');
                     loginSubmitBtn.disabled = false;
-                    loginSubmitBtn.classList.remove('opacity-50 cursor-not-allowed');
+                    loginSubmitBtn.classList.remove('opacity-50');
+                    loginSubmitBtn.classList.remove('cursor-not-allowed');
                 }
             }
 
@@ -2745,6 +2747,14 @@
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', stopResize);
         }
+
+        // Export functions to global scope for cross-module access
+        window.loadBoardConfigFromCloud = loadBoardConfigFromCloud;
+        window.loadTasksFromCloud = loadTasksFromCloud;
+        window.showToast = showToast;
+        window.updateAllDropdowns = updateAllDropdowns;
+        window.renderBoard = renderBoard;
+        window.updateConnectionUI = updateConnectionUI;
     </script>
 
     <!-- LOGIN MODAL DIALOG -->
