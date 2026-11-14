@@ -160,7 +160,7 @@ Frontend JavaScript Initialization:
 
 2. User enters credentials
    Email: admin@prkanban.local
-   Password: kennwort1234
+   Password: [ADMIN_PASSWORD]
    → Clicks login button
 
 3. Backend authenticates user
@@ -232,7 +232,7 @@ Frontend JavaScript Initialization:
 1. Navigate to `Backend/PrKanban.Backend/`
 2. Run `dotnet run --urls http://localhost:5000`
 3. Open browser to `http://localhost:5000`
-4. Login with: admin@prkanban.local / kennwort1234
+4. Login with: admin@prkanban.local / [ADMIN_PASSWORD]
 
 ### Database
 - SQLite database: `Data/prkanban.db`

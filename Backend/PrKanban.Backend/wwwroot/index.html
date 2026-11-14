@@ -561,6 +561,9 @@
                 <button id="firebase-logout" type="button" onclick="window.logoutFromFirebase && window.logoutFromFirebase()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-all">
                     <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Logout
                 </button>
+                <a id="admin-link" href="admin.html" aria-label="Administration" title="Administration" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 py-2 rounded-lg">
+                    <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                </a>
             </div>
         </div>
 
@@ -1095,6 +1098,7 @@
             const loginGoogleBtn = document.getElementById('firebase-login-google');
             const loginGuestBtn = document.getElementById('firebase-login-guest');
             const logoutBtn = document.getElementById('firebase-logout');
+            document.getElementById('admin-link').classList.toggle('hidden', !window.currentUser?.isAdmin);
             const projectText = `API: REST (ASP.NET Core)`;
 
             projectPill.textContent = projectText;

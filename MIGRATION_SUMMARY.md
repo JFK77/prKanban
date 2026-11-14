@@ -9,7 +9,7 @@ Successfully completed full migration of prKanban from Firebase backend to ASP.N
 #### Authentication
 - ✅ ASP.NET Core Identity with built-in users
 - ✅ JWT token-based authentication
-- ✅ Admin user created: dmin@prkanban.local / kennwort1234
+- ✅ Admin user created: dmin@prkanban.local / [ADMIN_PASSWORD]
 - ✅ Session persistence via HTTP-only cookies
 
 #### API (REST)

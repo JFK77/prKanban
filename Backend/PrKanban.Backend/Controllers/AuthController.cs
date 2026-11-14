@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PrKanban.Models;
+using PrKanban.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace PrKanban.Controllers
@@ -113,6 +114,15 @@ namespace PrKanban.Controllers
                 });
             }
 
+            if (!await AccountStatus.IsActiveAsync(_userManager, user))
+            {
+                return StatusCode(403, new
+                {
+                    success = false,
+                    error = new { code = "ACCOUNT_INACTIVE", message = "Account is inactive" }
+                });
+            }
+
             var result = await _signInManager.PasswordSignInAsync(
                 request.Email,
                 request.Password,
@@ -133,6 +143,7 @@ namespace PrKanban.Controllers
                         userId = user.Id,
                         email = user.Email,
                         name = user.FullName,
+                        isAdmin = await _userManager.IsInRoleAsync(user, "Admin"),
                         message = "Logged in successfully"
                     }
                 });
@@ -187,6 +198,7 @@ namespace PrKanban.Controllers
                     userId = user.Id,
                     email = user.Email,
                     name = user.FullName,
+                    isAdmin = await _userManager.IsInRoleAsync(user, "Admin"),
                     createdAt = user.CreatedAt,
                     lastLoginAt = user.LastLoginAt
                 }

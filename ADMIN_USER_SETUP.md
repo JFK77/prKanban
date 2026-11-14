@@ -7,7 +7,7 @@ An admin user has been created for the prKanban application.
 ## Login Credentials
 
 **Email:** `admin@prkanban.local`  
-**Password:** `kennwort1234`
+**Password:** Use the password configured for the account.
 
 ## Access URLs
 
@@ -20,7 +20,7 @@ An admin user has been created for the prKanban application.
 2. Click the **Login** button
 3. When prompted, enter:
    - Email: `admin@prkanban.local`
-   - Password: `kennwort1234`
+   - Password: The password configured for the account
 4. Click **Login**
 5. You should now see the Kanban board
 

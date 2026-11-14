@@ -105,6 +105,17 @@ tasks.
 - ✅ `PUT /api/v1/tasks/:id/archive` - Archive task
 - ✅ `PUT /api/v1/tasks/:id/restore` - Restore archived task
 
+### Administration
+- `GET /api/v1/admin/database` - Read the database provider and location
+- `GET /api/v1/admin/users` and `GET /api/v1/admin/users/:id` - List or retrieve accounts
+- `POST /api/v1/admin/users` - Create an account with the User or Admin role
+- `PUT /api/v1/admin/users/:id` - Update account details, role and active status
+
+These endpoints require an authenticated, active administrator. Deactivation is
+stored as an Identity claim; it prevents sign-in and invalidates existing sessions
+on their next request. It does not delete the account or its tasks. Administrators
+cannot deactivate themselves or remove their own administrator role.
+
 ---
 
 ## 🔐 SECURITY FEATURES CONFIGURED

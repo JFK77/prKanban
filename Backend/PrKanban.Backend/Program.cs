@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using PrKanban.Data;
 using PrKanban.Models;
+using PrKanban.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IDatabaseInformationService, DatabaseInformationService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>
@@ -142,6 +146,21 @@ app.UseCors("Development");
 app.UseRouting();
 
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        await using var statusScope = context.RequestServices.CreateAsyncScope();
+        var users = statusScope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await users.GetUserAsync(context.User);
+        if (user is null || !await AccountStatus.IsActiveAsync(users, user))
+        {
+            await context.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>().SignOutAsync();
+            context.User = new ClaimsPrincipal(new ClaimsIdentity());
+        }
+    }
+    await next();
+});
 app.UseAuthorization();
 
 // Map controllers

@@ -119,7 +119,7 @@ handleLoginSubmit() {
 - [ ] All errors clear when user edits fields
 
 ### Authentication Tests
-- [ ] Valid credentials (admin@prkanban.local / kennwort1234) logs in successfully
+- [ ] Valid credentials (admin@prkanban.local / [ADMIN_PASSWORD]) logs in successfully
 - [ ] Invalid credentials show error message
 - [ ] Loading state appears during login
 - [ ] Modal closes after successful login
@@ -147,7 +147,7 @@ handleLoginSubmit() {
 
 **Admin User (Created)**
 - Email: `admin@prkanban.local`
-- Password: `kennwort1234`
+- Password: `[ADMIN_PASSWORD]`
 
 **Guest Login**
 - Available via separate "Gast" button

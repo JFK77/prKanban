@@ -168,7 +168,7 @@ USER SEES: Full Kanban board with all tasks loaded and displayed!
 
 1. User opens http://localhost:5000/ in browser
 2. Sees login modal (not authenticated yet)
-3. Enters credentials: `admin@prkanban.local` / `kennwort1234`
+3. Enters credentials: `admin@prkanban.local` / `[ADMIN_PASSWORD]`
 4. Clicks login button
 5. Page reloads with authentication cookie
 6. **Automatic initialization triggers**:

@@ -1,0 +1,32 @@
+@baseUrl = http://localhost:5000
+
+### Read database information (requires an authenticated Admin cookie)
+GET {{baseUrl}}/api/v1/admin/database
+
+### List users (requires an authenticated Admin cookie)
+GET {{baseUrl}}/api/v1/admin/users
+
+### Get a user
+GET {{baseUrl}}/api/v1/admin/users/example-id
+
+### Create a user
+POST {{baseUrl}}/api/v1/admin/users
+Content-Type: application/json
+
+{
+  "email": "new-user@example.test",
+  "name": "New User",
+  "password": "Example123",
+  "role": "User"
+}
+
+### Update or deactivate a user without deleting tasks
+PUT {{baseUrl}}/api/v1/admin/users/example-id
+Content-Type: application/json
+
+{
+  "email": "new-user@example.test",
+  "name": "New User",
+  "role": "User",
+  "active": false
+}

@@ -15,7 +15,7 @@ Wenn ein Benutzer den Task Type ändert (z.B. von "Feature" zu "Bug"), wird die 
 
 **Reproduzierungsschritte**:
 1. Board öffnen (http://localhost:5000)
-2. Login mit `admin@prkanban.local` / `kennwort1234`
+2. Login mit `admin@prkanban.local` / `[ADMIN_PASSWORD]`
 3. Auf einen Task klicken
 4. Task Type ändern (z.B. "Feature" → "Bug")
 5. Task speichern
@@ -199,7 +199,7 @@ dotnet run
 
 **Login Credentials**:
 - Email: `admin@prkanban.local`
-- Password: `kennwort1234`
+- Password: `[ADMIN_PASSWORD]`
 
 **Wichtige Dateien**:
 - Frontend Code: `Backend/PrKanban.Backend/wwwroot/index.html`

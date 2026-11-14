@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administration – Dynamic Workflow Kanban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="admin.js?v=user-panel-1" defer></script>
+    <style>
+        #user-panel-resizer {
+            width: 8px;
+            flex-shrink: 0;
+            cursor: col-resize;
+            background: #e2e8f0;
+        }
+        #user-panel-resizer:hover, #user-panel-resizer:focus-visible { background: #3b82f6; }
+        .is-resizing * { user-select: none; }
+        @media (max-width: 767px) {
+            #user-panel {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                max-width: calc(100vw - 24px);
+                z-index: 60;
+                box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
+            }
+            #user-panel-resizer { display: none; }
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden bg-slate-50 text-slate-800">
+    <div class="h-full flex flex-col md:flex-row">
+        <aside class="w-full md:w-64 bg-white border-r border-slate-200 p-5 flex flex-col gap-6">
+            <div>
+                <div class="font-bold text-sm">Dynamic Workflow Kanban</div>
+                <div class="text-xs font-semibold uppercase text-blue-600 mt-1">Administration</div>
+            </div>
+            <nav aria-label="Administration" class="space-y-1">
+                <button type="button" data-view="users" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Benutzer</button>
+                <button type="button" data-view="database" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Datenbank</button>
+            </nav>
+            <a href="index.html" class="mt-auto rounded-xl border border-slate-200 px-3 py-2 text-sm text-center hover:bg-slate-50">← Zurück zum Board</a>
+        </aside>
+        <div class="flex flex-1 min-w-0 min-h-0">
+        <main class="flex-1 overflow-auto p-6 md:p-8 min-w-0">
+            <div id="status" role="status" aria-live="polite" class="mb-4 text-sm text-slate-600">Informationen werden geladen …</div>
+            <section id="users-view" class="hidden">
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                    <div><h1 class="text-xl font-bold">Benutzerverwaltung</h1><p class="text-sm text-slate-500 mt-1">Konten, Rollen und Status verwalten.</p></div>
+                    <button id="new-user" type="button" class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">+ Neuer Benutzer</button>
+                </div>
+                <label class="block mt-6 text-sm text-slate-600" for="user-search">Benutzer suchen</label>
+                <input id="user-search" type="search" class="mt-1 w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Name, E-Mail oder Rolle">
+                <div class="mt-4 bg-white border border-slate-200 rounded-2xl overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="p-4">Name / E-Mail</th><th class="p-4">Rolle</th><th class="p-4">Status</th><th class="p-4">Aktion</th></tr></thead>
+                        <tbody id="user-list"></tbody>
+                    </table>
+                    <p id="empty-users" class="hidden p-6 text-sm text-slate-500">Keine passenden Benutzer gefunden.</p>
+                </div>
+            </section>
+            <section id="database-view" class="hidden">
+                <h1 class="text-xl font-bold">Datenbankinformationen</h1>
+                <p class="text-sm text-slate-500 mt-1">Die Verbindung wird hier nur angezeigt und kann nicht bearbeitet werden.</p>
+                <dl class="mt-6 bg-white border border-slate-200 rounded-2xl p-6 max-w-3xl space-y-4">
+                    <div><dt class="text-xs font-semibold uppercase text-slate-500">Datenbanktyp</dt><dd id="provider" class="mt-1 text-sm"></dd></div>
+                    <div><dt class="text-xs font-semibold uppercase text-slate-500">Speicherort</dt><dd id="location" class="mt-1 text-sm break-all"></dd></div>
+                </dl>
+            </section>
+        </main>
+        <div id="user-panel-resizer" class="hidden" role="separator" aria-label="Breite des Benutzerpanels ändern" aria-controls="user-panel" aria-orientation="vertical" aria-valuemin="350" aria-valuemax="800" aria-valuenow="450" tabindex="0"></div>
+        <aside id="user-panel" aria-labelledby="form-title" class="hidden bg-white border-l border-slate-200 flex-col shrink-0" style="width: 450px;">
+            <div class="flex justify-between items-center p-4 border-b border-slate-200">
+                <h2 id="form-title" class="text-base font-bold text-slate-900"></h2>
+                <button id="close-user-panel" type="button" aria-label="Benutzerpanel schließen" class="text-slate-500 hover:text-slate-800 text-xl leading-none">×</button>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div id="user-panel-status" role="alert" class="hidden mb-4 text-sm text-red-700"></div>
+                <form id="user-form" class="space-y-4">
+                    <input type="hidden" name="id">
+                    <label class="block text-xs text-slate-500">Name <input name="name" required maxlength="256" class="block mt-1 w-full bg-slate-100 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
+                    <label class="block text-xs text-slate-500">E-Mail <input name="email" type="email" required maxlength="256" class="block mt-1 w-full bg-slate-100 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
+                    <label id="password-label" class="block text-xs text-slate-500">Passwort <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" class="block mt-1 w-full bg-slate-100 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
+                    <label class="block text-xs text-slate-500">Rolle <select name="role" class="block mt-1 w-full bg-slate-100 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="User">User</option><option value="Admin">Admin</option></select></label>
+                    <label id="active-label" class="flex items-center gap-2 text-sm"><input name="active" type="checkbox"> Konto aktiv</label>
+                    <p class="text-xs text-slate-500">Inaktive Konten können sich nicht anmelden. Ihre Tasks bleiben erhalten.</p>
+                </form>
+            </div>
+            <div class="p-4 border-t border-slate-200">
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="cancel-user" type="button" class="w-full bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-semibold py-2.5 rounded-lg text-sm">Schließen</button>
+                    <button id="save-user" type="submit" form="user-form" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm">Speichern</button>
+                </div>
+            </div>
+        </aside>
+        </div>
+    </div>
+</body>
+</html>

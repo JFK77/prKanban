@@ -77,7 +77,7 @@ dotnet run
 ### 2. Login (30 Sec)
 ```
 Email: admin@prkanban.local
-Passwort: kennwort1234
+Passwort: [ADMIN_PASSWORD]
 ```
 
 ### 3. Bugs reproduzieren (5 Min)

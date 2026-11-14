@@ -1,9 +1,18 @@
-# Script to create an admin user in the prKanban database
-# Usage: Run this script to create admin user with email "admin@prkanban.local" and password "kennwort1234"
+﻿# Script to create an admin user in the prKanban database
+# Usage: Run this script and enter the password when prompted.
 
 $baseUrl = "http://localhost:5000"
 $adminEmail = "admin@prkanban.local"
-$adminPassword = "kennwort1234"
+$securePassword = Read-Host "Admin password" -AsSecureString
+$passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+try {
+    $adminPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPointer)
+} finally {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer)
+}
+if ([string]::IsNullOrWhiteSpace($adminPassword)) {
+    throw "An admin password is required."
+}
 $adminDisplayName = "Admin User"
 
 Write-Host "╔════════════════════════════════════════════════════════════════╗" -ForegroundColor Green
@@ -28,7 +37,6 @@ Write-Host ""
 # Step 2: Register the admin user
 Write-Host "📝 Registering admin user..." -ForegroundColor Cyan
 Write-Host "   Email: $adminEmail" -ForegroundColor Gray
-Write-Host "   Password: $adminPassword" -ForegroundColor Gray
 Write-Host ""
 
 $registerPayload = @{
@@ -110,7 +118,6 @@ Write-Host "╚═════════════════════�
 Write-Host ""
 Write-Host "📋 Login Credentials:" -ForegroundColor Cyan
 Write-Host "   Email:    $adminEmail" -ForegroundColor Yellow
-Write-Host "   Password: $adminPassword" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "🌐 Access the app at: http://localhost:3000" -ForegroundColor Cyan
 Write-Host ""
@@ -118,7 +125,7 @@ Write-Host "📝 Test Steps:" -ForegroundColor Cyan
 Write-Host "   1. Open http://localhost:3000" -ForegroundColor Gray
 Write-Host "   2. Click Login" -ForegroundColor Gray
 Write-Host "   3. Enter email: $adminEmail" -ForegroundColor Gray
-Write-Host "   4. Enter password: $adminPassword" -ForegroundColor Gray
+Write-Host "   4. Enter the password you supplied" -ForegroundColor Gray
 Write-Host "   5. Click Login button" -ForegroundColor Gray
 Write-Host "   6. You should see the Kanban board!" -ForegroundColor Gray
 Write-Host ""
