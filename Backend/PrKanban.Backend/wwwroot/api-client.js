@@ -285,7 +285,7 @@ const TaskAPI = {
   async archiveTask(id) {
     try {
       const response = await fetch(`${API_BASE}/tasks/${id}/archive`, {
-        method: 'POST',
+        method: 'PUT',
         credentials: 'include'
       });
 
@@ -309,7 +309,7 @@ const TaskAPI = {
   async restoreTask(id) {
     try {
       const response = await fetch(`${API_BASE}/tasks/${id}/restore`, {
-        method: 'POST',
+        method: 'PUT',
         credentials: 'include'
       });
 

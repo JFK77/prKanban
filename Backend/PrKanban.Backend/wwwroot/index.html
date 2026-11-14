@@ -23,7 +23,7 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- API Client (must load before other scripts) -->
-    <script src="api-client.js"></script>
+    <script src="api-client.js?v=archive-put-1"></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -219,14 +219,32 @@
             position: absolute;
             top: calc(100% + 6px);
             left: 0;
-            right: 0;
             z-index: 70;
-            max-height: 220px;
+            width: max(100%, 220px);
+            max-width: calc(100vw - 32px);
+            max-height: min(280px, 50vh);
+            padding: 4px;
+            overflow-x: hidden;
             overflow-y: auto;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 0.75rem;
             box-shadow: 0 14px 30px -12px rgba(15, 23, 42, 0.35);
+        }
+
+        .tag-filter-dropdown > button,
+        .tag-filter-dropdown > label {
+            border-radius: 0.5rem;
+        }
+
+        .tag-filter-dropdown input {
+            flex-shrink: 0;
+            accent-color: #2563eb;
+        }
+
+        .tag-filter-dropdown span {
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
 
         .dark .tag-filter-dropdown {
@@ -617,18 +635,34 @@
             <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Swimlanes:
             </span>
-            <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
-                <option value="NONE">Keine Gruppierung</option>
-                <option value="customer">Kunde</option>
-                <option value="taskType">Task Typ</option>
-                <option value="owner">Owner</option>
-            </select>
-            <select id="group-secondary" aria-label="Sub-Gruppe (Innere Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
-                <option value="NONE">Keine Untergruppierung</option>
-                <option value="customer">Kunde</option>
-                <option value="taskType">Task Typ</option>
-                <option value="owner">Owner</option>
-            </select>
+            <div class="relative" id="group-primary-container">
+                <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
+                    <option value="NONE">Keine Gruppierung</option>
+                    <option value="customer">Kunde</option>
+                    <option value="taskType">Task Typ</option>
+                    <option value="owner">Owner</option>
+                </select>
+                <button id="group-primary-trigger" type="button" aria-labelledby="group-primary-name group-primary-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="group-primary-dropdown" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="group-primary-name" class="sr-only">Primäre Gruppe (Swimlane):</span>
+                    <span id="group-primary-label"></span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="group-primary-dropdown" role="listbox" aria-label="Primäre Gruppe (Swimlane)" class="tag-filter-dropdown hidden"></div>
+            </div>
+            <div class="relative" id="group-secondary-container">
+                <select id="group-secondary" aria-label="Sub-Gruppe (Innere Swimlane)" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200" disabled>
+                    <option value="NONE">Keine Untergruppierung</option>
+                    <option value="customer">Kunde</option>
+                    <option value="taskType">Task Typ</option>
+                    <option value="owner">Owner</option>
+                </select>
+                <button id="group-secondary-trigger" type="button" aria-labelledby="group-secondary-name group-secondary-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="group-secondary-dropdown" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="group-secondary-name" class="sr-only">Sub-Gruppe (Innere Swimlane):</span>
+                    <span id="group-secondary-label"></span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                </button>
+                <div id="group-secondary-dropdown" role="listbox" aria-label="Sub-Gruppe (Innere Swimlane)" class="tag-filter-dropdown hidden"></div>
+            </div>
             <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
                     <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i> Öffnen
@@ -1616,6 +1650,7 @@
 
             dropdownEl.innerHTML = allOptionHtml + optionsHtml;
             updateMultiFilterLabel(labelId, selectedItems, allLabel, singularSuffix, pluralSuffix);
+            fitFilterDropdown(dropdownEl);
         }
 
         function closeAllFilterDropdowns() {
@@ -1623,6 +1658,110 @@
             filterCustomerDropdown.classList.add('hidden');
             filterTypeDropdown.classList.add('hidden');
             filterTagsDropdown.classList.add('hidden');
+        }
+
+        function fitFilterDropdown(dropdown) {
+            if (dropdown.classList.contains('hidden')) return;
+            dropdown.style.left = '0px';
+            const overflow = dropdown.getBoundingClientRect().right - (window.innerWidth - 16);
+            if (overflow > 0) dropdown.style.left = `${-overflow}px`;
+        }
+
+        function closeSwimlaneDropdowns() {
+            [groupPrimary, groupSecondary].forEach(select => {
+                document.getElementById(`${select.id}-dropdown`).classList.add('hidden');
+                document.getElementById(`${select.id}-trigger`).setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function setupSwimlaneDropdown(select) {
+            const container = document.getElementById(`${select.id}-container`);
+            const trigger = document.getElementById(`${select.id}-trigger`);
+            const label = document.getElementById(`${select.id}-label`);
+            const dropdown = document.getElementById(`${select.id}-dropdown`);
+            const buttons = Array.from(select.options, option => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.tabIndex = -1;
+                button.setAttribute('role', 'option');
+                button.className = 'w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed';
+                button.textContent = option.textContent;
+                button.addEventListener('click', () => {
+                    if (select.value !== option.value) {
+                        select.value = option.value;
+                        select.dispatchEvent(new Event('change'));
+                    }
+                    closeSwimlaneDropdowns();
+                    trigger.focus();
+                });
+                dropdown.appendChild(button);
+                return button;
+            });
+
+            function sync() {
+                label.textContent = select.selectedOptions[0].textContent;
+                trigger.disabled = select.disabled;
+                buttons.forEach((button, index) => {
+                    const selected = select.options[index].selected;
+                    button.disabled = select.options[index].disabled;
+                    button.setAttribute('aria-selected', String(selected));
+                    button.classList.toggle('bg-blue-50', selected);
+                    button.classList.toggle('dark:bg-blue-900/30', selected);
+                });
+                if (select.disabled) closeSwimlaneDropdowns();
+            }
+
+            function open() {
+                closeSwimlaneDropdowns();
+                closeAllFilterDropdowns();
+                dropdown.classList.remove('hidden');
+                trigger.setAttribute('aria-expanded', 'true');
+                fitFilterDropdown(dropdown);
+                (buttons.find(button => button.getAttribute('aria-selected') === 'true' && !button.disabled)
+                    || buttons.find(button => !button.disabled)).focus();
+            }
+
+            trigger.addEventListener('click', event => {
+                event.stopPropagation();
+                if (dropdown.classList.contains('hidden')) open();
+                else closeSwimlaneDropdowns();
+            });
+            trigger.addEventListener('keydown', event => {
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    open();
+                }
+            });
+            dropdown.addEventListener('keydown', event => {
+                const enabled = buttons.filter(button => !button.disabled);
+                const index = enabled.indexOf(document.activeElement);
+                let next;
+                if (event.key === 'ArrowDown') next = enabled[Math.min(index + 1, enabled.length - 1)];
+                else if (event.key === 'ArrowUp') next = enabled[Math.max(index - 1, 0)];
+                else if (event.key === 'Home') next = enabled[0];
+                else if (event.key === 'End') next = enabled[enabled.length - 1];
+                else if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeSwimlaneDropdowns();
+                    trigger.focus();
+                    return;
+                }
+                if (next) {
+                    event.preventDefault();
+                    next.focus();
+                }
+            });
+            dropdown.addEventListener('click', event => event.stopPropagation());
+            container.addEventListener('focusout', event => {
+                if (!container.contains(event.relatedTarget)) {
+                    dropdown.classList.add('hidden');
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+            select.hidden = true;
+            trigger.classList.remove('hidden');
+            sync();
+            return sync;
         }
 
         function renderOwnerFilterDropdown() {
@@ -1706,6 +1845,7 @@
 
             filterTagsDropdown.innerHTML = allOptionHtml + tagsHtml;
             updateTagFilterLabel();
+            fitFilterDropdown(filterTagsDropdown);
         }
 
         window.toggleFilterTag = function(tag) {
@@ -2379,12 +2519,22 @@
             const actionText = shouldArchive ? 'archivieren' : 'wiederherstellen';
 
             if (confirm(`Möchten Sie "${taskTitle}" wirklich ${actionText}?`)) {
+                if (!ensureAuthenticatedOrToast(`Tasks zu ${actionText}`)) return;
                 if (selectedTaskId === taskId) {
                     closeDetailsPanel();
                 }
-                const success = await updateTaskInCloud(taskId, { isArchived: shouldArchive });
-                if (!success) return;
-                showToast(`Task wurde ${actionText}.`);
+                try {
+                    if (shouldArchive) {
+                        await window.TaskAPI.archiveTask(taskId);
+                    } else {
+                        await window.TaskAPI.restoreTask(taskId);
+                    }
+                } catch (error) {
+                    console.error(`Error during task ${actionText}:`, error);
+                    showToast(`Task konnte nicht ${shouldArchive ? 'archiviert' : 'wiederhergestellt'} werden: ${error.message || 'Unbekannter Fehler'}`);
+                    return;
+                }
+                showToast(`Task wurde ${shouldArchive ? 'archiviert' : 'wiederhergestellt'}.`);
                 await loadTasksFromCloud();
             }
         }
@@ -3123,6 +3273,8 @@
             backlogTasks.addEventListener('dragover', handleDragOver);
             backlogTasks.addEventListener('dragleave', handleDragLeave);
             backlogTasks.addEventListener('drop', e => handleDrop(e, 'Backlog', 'Backlog'));
+            const syncPrimarySwimlane = setupSwimlaneDropdown(groupPrimary);
+            const syncSecondarySwimlane = setupSwimlaneDropdown(groupSecondary);
             groupPrimary.addEventListener('change', () => {
                 if (groupPrimary.value === 'NONE') {
                     groupSecondary.value = 'NONE';
@@ -3133,38 +3285,52 @@
                         opt.disabled = (opt.value === groupPrimary.value && opt.value !== 'NONE');
                     });
                 }
+                syncPrimarySwimlane();
+                syncSecondarySwimlane();
                 collapsedSwimlanes.clear();
                 renderBoard();
             });
-            groupSecondary.addEventListener('change', () => { collapsedSwimlanes.clear(); renderBoard(); });
+            groupSecondary.addEventListener('change', () => {
+                syncSecondarySwimlane();
+                collapsedSwimlanes.clear();
+                renderBoard();
+            });
             filterOwnerTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
+                closeSwimlaneDropdowns();
                 renderOwnerFilterDropdown();
                 filterOwnerDropdown.classList.toggle('hidden');
+                fitFilterDropdown(filterOwnerDropdown);
                 filterCustomerDropdown.classList.add('hidden');
                 filterTypeDropdown.classList.add('hidden');
                 filterTagsDropdown.classList.add('hidden');
             });
             filterCustomerTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
+                closeSwimlaneDropdowns();
                 renderCustomerFilterDropdown();
                 filterCustomerDropdown.classList.toggle('hidden');
+                fitFilterDropdown(filterCustomerDropdown);
                 filterOwnerDropdown.classList.add('hidden');
                 filterTypeDropdown.classList.add('hidden');
                 filterTagsDropdown.classList.add('hidden');
             });
             filterTypeTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
+                closeSwimlaneDropdowns();
                 renderTypeFilterDropdown();
                 filterTypeDropdown.classList.toggle('hidden');
+                fitFilterDropdown(filterTypeDropdown);
                 filterOwnerDropdown.classList.add('hidden');
                 filterCustomerDropdown.classList.add('hidden');
                 filterTagsDropdown.classList.add('hidden');
             });
             filterTagsTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
+                closeSwimlaneDropdowns();
                 renderTagFilterDropdown();
                 filterTagsDropdown.classList.toggle('hidden');
+                fitFilterDropdown(filterTagsDropdown);
                 filterOwnerDropdown.classList.add('hidden');
                 filterCustomerDropdown.classList.add('hidden');
                 filterTypeDropdown.classList.add('hidden');
@@ -3173,10 +3339,16 @@
             filterCustomerDropdown.addEventListener('click', (e) => e.stopPropagation());
             filterTypeDropdown.addEventListener('click', (e) => e.stopPropagation());
             filterTagsDropdown.addEventListener('click', (e) => e.stopPropagation());
+            window.addEventListener('resize', () => {
+                [filterOwnerDropdown, filterCustomerDropdown, filterTypeDropdown, filterTagsDropdown,
+                    document.getElementById('group-primary-dropdown'), document.getElementById('group-secondary-dropdown')]
+                    .forEach(fitFilterDropdown);
+            });
             document.getElementById('filter-archived').addEventListener('change', renderBoard);
             window.addEventListener('click', () => {
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
                 closeAllFilterDropdowns();
+                closeSwimlaneDropdowns();
             });
 
             document.getElementById('firebase-login-google').addEventListener('click', window.loginWithGoogle);
