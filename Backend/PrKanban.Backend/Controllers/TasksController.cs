@@ -39,7 +39,7 @@ namespace PrKanban.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            var query = _context.Tasks.AsQueryable();
+            var query = _context.Tasks.Include(t => t.Ordering).AsQueryable();
 
             // Filter by user
             query = query.Where(t => t.UserId == userId);
@@ -89,6 +89,7 @@ namespace PrKanban.Controllers
                 return Unauthorized();
 
             var task = await _context.Tasks
+                .Include(t => t.Ordering)
                 .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (task == null)
@@ -120,7 +121,8 @@ namespace PrKanban.Controllers
                 ColumnName = request.ColumnName ?? "todo",
                 SubColumnName = request.SubColumnName,
                 UserId = userId,
-                Tags = request.Tags ?? Array.Empty<string>()
+                Tags = request.Tags ?? Array.Empty<string>(),
+                Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null
             };
 
             _context.Tasks.Add(task);
@@ -141,6 +143,7 @@ namespace PrKanban.Controllers
                 return Unauthorized();
 
             var task = await _context.Tasks
+                .Include(t => t.Ordering)
                 .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (task == null)
@@ -162,6 +165,13 @@ namespace PrKanban.Controllers
                 task.SubColumnName = request.SubColumnName;
             if (request.Tags != null)
                 task.Tags = request.Tags;
+            if (request.Order.HasValue)
+            {
+                if (task.Ordering == null)
+                    task.Ordering = new TaskOrder { TaskId = task.Id, Value = request.Order.Value };
+                else
+                    task.Ordering.Value = request.Order.Value;
+            }
 
             await _context.SaveChangesAsync();
             
@@ -252,6 +262,7 @@ namespace PrKanban.Controllers
         public string? ColumnName { get; set; }
         public string? SubColumnName { get; set; }
         public string[]? Tags { get; set; }
+        public double? Order { get; set; }
     }
 
     public class UpdateTaskRequest
@@ -264,5 +275,6 @@ namespace PrKanban.Controllers
         public string? ColumnName { get; set; }
         public string? SubColumnName { get; set; }
         public string[]? Tags { get; set; }
+        public double? Order { get; set; }
     }
 }

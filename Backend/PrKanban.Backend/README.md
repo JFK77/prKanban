@@ -130,6 +130,9 @@ may contain placeholders such as `{count}` which should be retained.
 - `GET /api/v1/admin/translations` - List translations (administrator only)
 - `GET`, `POST`, `PUT`, `DELETE /api/v1/admin/translations/:key` - Manage a translation (administrator only)
 
+Task positions within columns are saved per task. Existing tasks without a saved
+position retain their creation-time ordering until they are reordered.
+
 ---
 
 ## 🔐 SECURITY FEATURES CONFIGURED

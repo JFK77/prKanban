@@ -364,6 +364,19 @@ namespace PrKanban.Migrations
                     b.ToTable("AppTranslations");
                 });
 
+            modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
+                {
+                    b.Property<string>("TaskId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("TaskId");
+
+                    b.ToTable("TaskOrder");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -435,6 +448,20 @@ namespace PrKanban.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
+                {
+                    b.HasOne("PrKanban.Models.Task", null)
+                        .WithOne("Ordering")
+                        .HasForeignKey("PrKanban.Models.TaskOrder", "TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Task", b =>
+                {
+                    b.Navigation("Ordering");
                 });
 
             modelBuilder.Entity("PrKanban.Models.ApplicationUser", b =>

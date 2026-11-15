@@ -1424,6 +1424,7 @@
                 column,
                 subColumn: column === "Backlog" ? "Backlog" : (apiTask.subColumnName || "Doing"),
                 isArchived: apiTask.isArchived || false,
+                order: apiTask.order,
                 tags: apiTask.tags || [],
                 taskTypeColor: undefined, // Wird von Frontend berechnet
                 d365Link: apiTask.d365Link || "",

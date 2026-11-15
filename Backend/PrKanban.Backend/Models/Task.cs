@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrKanban.Models
 {
@@ -52,6 +53,15 @@ namespace PrKanban.Models
         /// Sub-column ID/name within column (nullable)
         /// </summary>
         public string? SubColumnName { get; set; }
+
+        /// <summary>
+        /// Saved position within the column and sub-column
+        /// </summary>
+        [NotMapped]
+        public double? Order => Ordering?.Value;
+
+        [JsonIgnore]
+        public virtual TaskOrder? Ordering { get; set; }
 
         /// <summary>
         /// Whether task is archived (soft delete)

@@ -73,6 +73,10 @@ namespace PrKanban.Data
             modelBuilder.Entity<Task>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.Ordering)
+                    .WithOne()
+                    .HasForeignKey<TaskOrder>(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.TaskType).HasMaxLength(50);
                 entity.Property(e => e.Owner).HasMaxLength(256);
@@ -90,6 +94,8 @@ namespace PrKanban.Data
                 entity.HasIndex(e => e.CreatedAt);
                 entity.HasIndex(e => e.UpdatedAt);
             });
+
+            modelBuilder.Entity<TaskOrder>().HasKey(e => e.TaskId);
 
             // Configure BoardConfig
             modelBuilder.Entity<BoardConfig>(entity =>
