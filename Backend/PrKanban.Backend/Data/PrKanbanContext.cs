@@ -17,6 +17,8 @@ namespace PrKanban.Data
         /// </summary>
         public DbSet<Task> Tasks { get; set; }
 
+        public DbSet<TaskAttachment> TaskAttachments { get; set; }
+
         /// <summary>
         /// DbSet for board configurations
         /// </summary>
@@ -96,6 +98,25 @@ namespace PrKanban.Data
             });
 
             modelBuilder.Entity<TaskOrder>().HasKey(e => e.TaskId);
+
+            modelBuilder.Entity<TaskAttachment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(32);
+                entity.Property(e => e.TaskId).IsRequired();
+                entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.SizeBytes).IsRequired();
+                entity.Property(e => e.IsInlineImage).IsRequired();
+                entity.Property(e => e.InlineContentType).HasMaxLength(32);
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.CreatedByUserId).IsRequired();
+                entity.Property(e => e.Content).IsRequired();
+                entity.HasIndex(e => e.TaskId);
+                entity.HasOne<Task>()
+                    .WithMany()
+                    .HasForeignKey(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             // Configure BoardConfig
             modelBuilder.Entity<BoardConfig>(entity =>

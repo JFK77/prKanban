@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using PrKanban.Data;
 using PrKanban.Models;
+using PrKanban.Services;
 using Task = PrKanban.Models.Task;
 
 namespace PrKanban.Controllers
@@ -12,20 +14,39 @@ namespace PrKanban.Controllers
     /// </summary>
     [ApiController]
     [Route("api/v1/tasks")]
-    [Authorize]
+    [Authorize(Roles = "Admin,User")]
     public class TasksController : ControllerBase
     {
         private readonly PrKanbanContext _context;
         private readonly ILogger<TasksController> _logger;
+        private readonly ITaskMoveService _taskMoves;
 
-        public TasksController(PrKanbanContext context, ILogger<TasksController> logger)
+        public TasksController(PrKanbanContext context, ILogger<TasksController> logger, ITaskMoveService taskMoves)
         {
             _context = context;
             _logger = logger;
+            _taskMoves = taskMoves;
+        }
+
+        /// <summary>Moves a task within the shared board and persists the target lane order.</summary>
+        [HttpPut("{id}/position")]
+        public async Task<IActionResult> MoveTask(
+            string id, [FromBody] MoveTaskRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _taskMoves.MoveAsync(
+                id, request.ColumnName, request.SubColumnName, request.BeforeTaskId, cancellationToken);
+            return result switch
+            {
+                TaskMoveResult.Success => NoContent(),
+                TaskMoveResult.TaskNotFound => NotFound(new ProblemDetails { Status = 404, Title = "Task not found." }),
+                TaskMoveResult.InvalidTarget => BadRequest(new ProblemDetails { Status = 400, Title = "Invalid target lane." }),
+                TaskMoveResult.InvalidBeforeTask => Conflict(new ProblemDetails { Status = 409, Title = "The target position is no longer available." }),
+                _ => throw new InvalidOperationException("Unexpected task move result.")
+            };
         }
 
         /// <summary>
-        /// GET /api/v1/tasks - Get all tasks for current user with optional filtering
+        /// GET /api/v1/tasks - Get all tasks visible to administrators and users
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetTasks(
@@ -35,14 +56,7 @@ namespace PrKanban.Controllers
             [FromQuery] int skip = 0,
             [FromQuery] int take = 100)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
             var query = _context.Tasks.Include(t => t.Ordering).AsQueryable();
-
-            // Filter by user
-            query = query.Where(t => t.UserId == userId);
 
             // Apply optional filters
             if (archived.HasValue)
@@ -84,13 +98,9 @@ namespace PrKanban.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTask(string id)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
             var task = await _context.Tasks
                 .Include(t => t.Ordering)
-                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
@@ -117,7 +127,7 @@ namespace PrKanban.Controllers
                 TaskType = request.TaskType ?? "task",
                 Owner = request.Owner,
                 Customer = request.Customer,
-                Description = request.Description,
+                Description = TaskDescriptionSanitizer.Sanitize(request.Description),
                 ColumnName = request.ColumnName ?? "todo",
                 SubColumnName = request.SubColumnName,
                 UserId = userId,
@@ -144,7 +154,7 @@ namespace PrKanban.Controllers
 
             var task = await _context.Tasks
                 .Include(t => t.Ordering)
-                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
@@ -158,7 +168,7 @@ namespace PrKanban.Controllers
             if (!string.IsNullOrEmpty(request.Customer))
                 task.Customer = request.Customer;
             if (request.Description != null)
-                task.Description = request.Description;
+                task.Description = TaskDescriptionSanitizer.Sanitize(request.Description);
             if (!string.IsNullOrEmpty(request.ColumnName))
                 task.ColumnName = request.ColumnName;
             if (request.SubColumnName != null)
@@ -194,7 +204,7 @@ namespace PrKanban.Controllers
                 return Unauthorized();
 
             var task = await _context.Tasks
-                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
@@ -217,7 +227,7 @@ namespace PrKanban.Controllers
                 return Unauthorized();
 
             var task = await _context.Tasks
-                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
@@ -239,7 +249,7 @@ namespace PrKanban.Controllers
                 return Unauthorized();
 
             var task = await _context.Tasks
-                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
@@ -252,6 +262,18 @@ namespace PrKanban.Controllers
     }
 
     // Request DTOs
+    /// <summary>Target lane and optional next task for a shared board move.</summary>
+    public sealed record MoveTaskRequest
+    {
+        [Required, MaxLength(100)]
+        public required string ColumnName { get; init; }
+
+        [Required, MaxLength(100)]
+        public required string SubColumnName { get; init; }
+
+        public string? BeforeTaskId { get; init; }
+    }
+
     public class CreateTaskRequest
     {
         public string Title { get; set; } = string.Empty;

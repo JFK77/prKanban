@@ -1,0 +1,23 @@
+@baseUrl = http://localhost:5000
+@taskId = replace-with-task-id
+@beforeTaskId = replace-with-task-id-in-target-lane
+
+### Move a task before another task (requires an Admin or User session cookie)
+PUT {{baseUrl}}/api/v1/tasks/{{taskId}}/position
+Content-Type: application/json
+
+{
+  "columnName": "ToDo",
+  "subColumnName": "Doing",
+  "beforeTaskId": "{{beforeTaskId}}"
+}
+
+### Move a task to the end of another lane
+PUT {{baseUrl}}/api/v1/tasks/{{taskId}}/position
+Content-Type: application/json
+
+{
+  "columnName": "Analysis",
+  "subColumnName": "Doing",
+  "beforeTaskId": null
+}

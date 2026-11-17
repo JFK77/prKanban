@@ -24,7 +24,7 @@ namespace PrKanban.Models
         public string? TaskType { get; set; }
 
         /// <summary>
-        /// Person responsible for the task
+        /// Person assigned to the task; does not determine access rights.
         /// </summary>
         public string? Owner { get; set; }
 
@@ -69,7 +69,7 @@ namespace PrKanban.Models
         public bool IsArchived { get; set; } = false;
 
         /// <summary>
-        /// User ID who owns this task (foreign key)
+        /// User ID of the account that created this task (foreign key).
         /// </summary>
         public string UserId { get; set; } = string.Empty;
 

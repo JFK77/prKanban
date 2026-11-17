@@ -134,7 +134,7 @@ const TaskAPI = {
    * Filters:
    *   - column: Filter by column (e.g., 'Todo', 'In Progress')
    *   - archived: true/false
-   *   - owner: Filter by owner name
+   *   - owner: Filter by assigned person's name
    *   - skip: Pagination offset
    *   - take: Number of tasks to return
    */
@@ -203,7 +203,7 @@ const TaskAPI = {
    * Optional fields:
    *   - description: string
    *   - taskType: string (e.g., 'feature', 'bug')
-   *   - owner: string
+   *   - owner: assigned person's name
    *   - customer: string
    *   - subColumnName: string
    *   - tags: string[]
@@ -255,6 +255,60 @@ const TaskAPI = {
       console.error('Update task error:', error);
       throw error;
     }
+  },
+
+  async moveTask(id, columnName, subColumnName, beforeTaskId) {
+    const response = await fetch(`${API_BASE}/tasks/${encodeURIComponent(id)}/position`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ columnName, subColumnName, beforeTaskId })
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to move task (${response.status})`);
+    }
+  },
+
+  async getTaskAttachments(taskId) {
+    const response = await fetch(`${API_BASE}/tasks/${encodeURIComponent(taskId)}/attachments`, {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || data.error?.message || `Failed to fetch attachments (${response.status})`);
+    }
+    return data;
+  },
+
+  async uploadTaskAttachment(taskId, file, isInlineImage = false) {
+    const formData = new FormData();
+    formData.append('file', file, file.name || 'pasted-image.png');
+    formData.append('isInlineImage', String(isInlineImage));
+    const response = await fetch(`${API_BASE}/tasks/${encodeURIComponent(taskId)}/attachments`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.title || data.detail || data.error?.message || `Upload failed (${response.status})`);
+    }
+    return data;
+  },
+
+  async deleteTaskAttachment(taskId, attachmentId) {
+    const response = await fetch(
+      `${API_BASE}/tasks/${encodeURIComponent(taskId)}/attachments/${encodeURIComponent(attachmentId)}`,
+      { method: 'DELETE', credentials: 'include' }
+    );
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || data.error?.message || `Delete failed (${response.status})`);
+    }
+  },
+
+  taskAttachmentContentUrl(taskId, attachmentId) {
+    return `${API_BASE}/tasks/${encodeURIComponent(taskId)}/attachments/${encodeURIComponent(attachmentId)}/content`;
   },
 
   /**

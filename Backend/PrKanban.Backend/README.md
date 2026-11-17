@@ -83,8 +83,8 @@ show the number of tasks in that panel.
 The collapsible Backlog on the left holds tasks outside the workflow board.
 Create tasks with its `+ Task` button, edit them by selecting a card, and move
 them between the Backlog and permitted board columns by drag and drop or the
-card's move menu. Backlog tasks are stored through the same task API as board
-tasks.
+card's move menu. The task editor keeps Close and Save visible while its
+contents scroll. Backlog tasks are stored through the same task API as board tasks.
 
 ---
 
@@ -97,13 +97,33 @@ tasks.
 - ✅ `GET /api/v1/auth/user` - Get current user info
 
 ### Tasks (TasksController)
-- ✅ `GET /api/v1/tasks` - List tasks (with filtering)
-- ✅ `GET /api/v1/tasks/:id` - Get single task
+- ✅ `GET /api/v1/tasks` - List all tasks visible to Admin and User roles (with filtering)
+- ✅ `GET /api/v1/tasks/:id` - Get any task visible to Admin and User roles
 - ✅ `POST /api/v1/tasks` - Create task
 - ✅ `PUT /api/v1/tasks/:id` - Update task
+- ✅ `PUT /api/v1/tasks/:id/position` - Move a task and atomically reorder the destination lane
 - ✅ `DELETE /api/v1/tasks/:id` - Delete task
 - ✅ `PUT /api/v1/tasks/:id/archive` - Archive task
 - ✅ `PUT /api/v1/tasks/:id/restore` - Restore archived task
+
+Admin and User accounts can view, edit, move, archive, restore and delete any
+task. "Assigned to" identifies the person responsible for a task; it does not
+control permissions. Other roles, including a future Customer role, do not have
+task API access unless explicitly authorized.
+
+### Task attachments
+
+- `GET /api/v1/tasks/:id/attachments` - List attachment metadata
+- `GET /api/v1/tasks/:id/attachments/:attachmentId` - Get attachment metadata
+- `POST /api/v1/tasks/:id/attachments` - Upload one file (up to 20 MB)
+- `GET /api/v1/tasks/:id/attachments/:attachmentId/content` - Download a file or view a validated inline raster image
+- `DELETE /api/v1/tasks/:id/attachments/:attachmentId` - Delete an attachment
+
+Attachment contents are stored as SQLite BLOBs. Admins and Users can read,
+upload and delete attachments on any task. Task descriptions are sanitized on the server and support
+basic formatting, lists, links, and PNG/JPEG/GIF/WebP inline images.
+Select an image and drag a resize handle to change its width while preserving
+its aspect ratio. The size is saved with the task description.
 
 ### Administration
 - `GET /api/v1/admin/database` - Read the database provider and location

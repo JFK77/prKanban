@@ -10,6 +10,8 @@ builder.Services.AddSingleton<IDatabaseInformationService, DatabaseInformationSe
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<IUserLanguageService, UserLanguageService>();
+builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
+builder.Services.AddScoped<ITaskMoveService, TaskMoveService>();
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>

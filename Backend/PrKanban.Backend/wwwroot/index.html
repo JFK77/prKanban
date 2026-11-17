@@ -151,6 +151,42 @@
             min-height: 120px;
             outline: none;
         }
+        #modal-description img {
+            max-width: 100%;
+            height: auto;
+        }
+        #description-image-resizer {
+            position: absolute;
+            border: 1px solid #2563eb;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .description-image-handle {
+            position: absolute;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            border: 1px solid white;
+            border-radius: 2px;
+            background: #2563eb;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        .description-image-handle.top { top: -5px; cursor: nesw-resize; }
+        .description-image-handle.bottom { bottom: -5px; cursor: nwse-resize; }
+        #modal-description ul {
+            list-style: disc;
+            padding-left: 1.5rem;
+        }
+        #modal-description ol {
+            list-style: decimal;
+            padding-left: 1.5rem;
+        }
+        #modal-description a {
+            color: #2563eb;
+            text-decoration: underline;
+            cursor: pointer;
+        }
         .toolbar-btn {
             padding: 0.375rem 0.75rem;
             color: #64748b;
@@ -521,6 +557,15 @@
             color: #94a3b8;
         }
         .dark .board-column-toggle:focus-visible { outline-color: #a5b4fc; }
+        @media (min-width: 768px) {
+            body.details-panel-open {
+                height: 100vh;
+                height: 100dvh;
+                min-height: 0;
+                overflow: hidden;
+            }
+            body.details-panel-open .board-area { min-height: 0; }
+        }
         @media (max-width: 767px) {
             #task-details-panel {
                 position: fixed;
@@ -611,8 +656,8 @@
             </span>
             <div class="relative" id="filter-owner-container">
                 <button id="filter-owner-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                    <span class="sr-only" data-i18n="board.filterOwner">Owner filtern:</span>
-                    <span id="filter-owner-label" class="max-w-[140px] truncate">Alle Owner</span>
+                    <span class="sr-only" data-i18n="board.filterOwner">Zugewiesene Person filtern:</span>
+                    <span id="filter-owner-label" class="max-w-[140px] truncate">Alle Zugewiesenen</span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
                 <div id="filter-owner-dropdown" class="tag-filter-dropdown hidden">
@@ -661,7 +706,7 @@
                     <option value="NONE" data-i18n="board.noGrouping">Keine Gruppierung</option>
                     <option value="customer" data-i18n="board.customer">Kunde</option>
                     <option value="taskType" data-i18n="board.taskType">Task Typ</option>
-                    <option value="owner" data-i18n="board.owner">Owner</option>
+                    <option value="owner" data-i18n="board.owner">Zugewiesen an</option>
                 </select>
                 <button id="group-primary-trigger" type="button" aria-labelledby="group-primary-name group-primary-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="group-primary-dropdown" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span id="group-primary-name" data-i18n="board.primaryGroupLabel" class="sr-only">Primäre Gruppe (Swimlane):</span>
@@ -675,7 +720,7 @@
                     <option value="NONE" data-i18n="board.noSubgrouping">Keine Untergruppierung</option>
                     <option value="customer" data-i18n="board.customer">Kunde</option>
                     <option value="taskType" data-i18n="board.taskType">Task Typ</option>
-                    <option value="owner" data-i18n="board.owner">Owner</option>
+                    <option value="owner" data-i18n="board.owner">Zugewiesen an</option>
                 </select>
                 <button id="group-secondary-trigger" type="button" aria-labelledby="group-secondary-name group-secondary-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="group-secondary-dropdown" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span id="group-secondary-name" data-i18n="board.secondaryGroupLabel" class="sr-only">Sub-Gruppe (Innere Swimlane):</span>
@@ -730,7 +775,7 @@
         <!-- Task Details Side Panel (replaces modal) -->
         <aside id="task-details-panel" class="hidden bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex-col" style="width: 450px;">
             <!-- Panel content will be injected here, similar to the old modal -->
-            <div class="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex-none flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800">
                 <h3 id="panel-heading" class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <!-- Heading set by JS -->
                 </h3>
@@ -738,7 +783,7 @@
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div class="flex-1 p-6 overflow-y-auto">
+            <div class="flex-1 min-h-0 p-6 overflow-y-auto">
                 <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
                     <input type="hidden" id="modal-task-id">
                     <div>
@@ -753,16 +798,15 @@
                             </select>
                         </div>
                         <div>
-                        <label data-i18n="board.owner" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Owner</label>
+                        <label data-i18n="board.owner" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Zugewiesen an</label>
                         <div id="modal-owner-container" class="combobox-container">
                             <div class="relative">
-                                <input type="text" id="modal-owner" list="owner-list" required placeholder="Owner auswählen oder neu erstellen" data-i18n-placeholder="task.ownerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="modal-owner" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="owner-custom-dropdown" required placeholder="Person auswählen oder neu erstellen" data-i18n-placeholder="task.ownerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <div id="owner-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                            <datalist id="owner-list"></datalist>
-                            <div id="owner-custom-dropdown" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
+                            <div id="owner-custom-dropdown" role="listbox" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
                         </div>
                         </div>
                     </div>
@@ -770,15 +814,12 @@
                         <label data-i18n="board.customer" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde</label>
                         <div id="modal-customer-container" class="combobox-container">
                             <div class="relative">
-                                <input type="text" id="modal-customer" list="customer-list" required placeholder="Kunden auswählen oder neu erstellen" data-i18n-placeholder="task.customerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="modal-customer" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="customer-custom-dropdown" required placeholder="Kunden auswählen oder neu erstellen" data-i18n-placeholder="task.customerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <div id="customer-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                            <datalist id="customer-list">
-                                <!-- Dynamisch gefüllt für Autocomplete -->
-                            </datalist>
-                            <div id="customer-custom-dropdown" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
+                            <div id="customer-custom-dropdown" role="listbox" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
                         </div>
                     </div>
                     <div>
@@ -788,10 +829,30 @@
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('bold')" title="Fett" data-i18n-title="task.bold"><i class="fa-solid fa-bold"></i></button>
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('italic')" title="Kursiv" data-i18n-title="task.italic"><i class="fa-solid fa-italic"></i></button>
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('underline')" title="Unterstrichen" data-i18n-title="task.underline"><i class="fa-solid fa-underline"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('insertUnorderedList')" title="Aufzählungsliste" data-i18n-title="task.bulletedList"><i class="fa-solid fa-list-ul"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('insertOrderedList')" title="Nummerierte Liste" data-i18n-title="task.numberedList"><i class="fa-solid fa-list-ol"></i></button>
+                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertDescriptionLink()" title="Link einfügen" data-i18n-title="task.insertLink"><i class="fa-solid fa-link"></i></button>
                                 <button type="button" class="toolbar-btn" onmousedown="event.preventDefault(); formatDoc('removeFormat')" title="Formatierung entfernen" data-i18n-title="task.clearFormatting"><i class="fa-solid fa-text-slash"></i></button>
                             </div>
-                            <div id="modal-description" contenteditable="true" class="w-full p-3 text-sm text-slate-800 dark:text-white"></div>
+                            <div id="description-editor-container" class="relative">
+                                <div id="modal-description" contenteditable="true" class="w-full p-3 text-sm text-slate-800 dark:text-white"></div>
+                                <div id="description-image-resizer" hidden>
+                                    <button type="button" class="description-image-handle top" aria-label="Bildgröße ändern" title="Bildgröße ändern" data-i18n-aria-label="task.resizeImage" data-i18n-title="task.resizeImage"></button>
+                                    <button type="button" class="description-image-handle bottom" aria-label="Bildgröße ändern" title="Bildgröße ändern" data-i18n-aria-label="task.resizeImage" data-i18n-title="task.resizeImage"></button>
+                                </div>
+                            </div>
                         </div>
+                        <p data-i18n="task.pasteImageHint" class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Bilder können direkt in die Beschreibung eingefügt werden.</p>
+                        <p data-i18n="task.resizeImageHint" class="text-[11px] text-slate-500 dark:text-slate-400">Bild anklicken und an den Griffen ziehen, um die Größe zu ändern.</p>
+                    </div>
+                    <div id="task-attachments-section">
+                        <div class="flex items-center justify-between gap-2">
+                            <label data-i18n="task.attachments" class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Anhänge</label>
+                            <button id="task-attachment-add" type="button" data-i18n="task.addAttachments" class="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Dateien anhängen</button>
+                            <input id="task-attachment-input" type="file" multiple hidden>
+                        </div>
+                        <p data-i18n="task.attachmentLimit" class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Bis zu 20 MB pro Datei. Beliebige Dateitypen; Anhänge werden heruntergeladen.</p>
+                        <div id="task-attachment-list" class="mt-2 space-y-2"></div>
                     </div>
                     <!-- Integration Links (D365 & Zeiterfassung) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -812,7 +873,7 @@
                     </div>
                 </form>
             </div>
-            <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex-none p-4 border-t border-slate-200 dark:border-slate-800">
                 <div class="grid grid-cols-2 gap-3">
                     <button type="button" onclick="closeDetailsPanel()" class="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
                         <span data-i18n="common.close">Schließen</span>
@@ -1100,6 +1161,11 @@
         const API_BASE_URL = "http://localhost:5000/api/v1";
 
         window.currentUser = null;
+        let selectedDescriptionImage = null;
+        let descriptionImageObserver = null;
+        let pendingTaskUploads = [];
+        let pendingUploadTaskId = null;
+        let currentTaskAttachments = [];
         let authReadyResolver = null;
         const authReady = new Promise((resolve) => {
             authReadyResolver = resolve;
@@ -1116,6 +1182,158 @@
             if (window.currentUser) return true;
             showToast(t('auth.required', 'Bitte zuerst einloggen, um {operation} auszuführen.', { operation: operationName }));
             return false;
+        }
+
+        function positionDescriptionImageResizer() {
+            const editor = document.getElementById('modal-description');
+            const overlay = document.getElementById('description-image-resizer');
+            if (!selectedDescriptionImage || !editor.contains(selectedDescriptionImage)) {
+                selectDescriptionImage(null);
+                return;
+            }
+            const imageRect = selectedDescriptionImage.getBoundingClientRect();
+            const containerRect = document.getElementById('description-editor-container').getBoundingClientRect();
+            overlay.style.left = `${imageRect.left - containerRect.left}px`;
+            overlay.style.top = `${imageRect.top - containerRect.top}px`;
+            overlay.style.width = `${imageRect.width}px`;
+            overlay.style.height = `${imageRect.height}px`;
+        }
+
+        function selectDescriptionImage(image) {
+            if (selectedDescriptionImage) descriptionImageObserver?.unobserve(selectedDescriptionImage);
+            selectedDescriptionImage = image;
+            const overlay = document.getElementById('description-image-resizer');
+            overlay.hidden = !image;
+            if (image) {
+                descriptionImageObserver?.observe(image);
+                positionDescriptionImageResizer();
+            }
+        }
+
+        function setDescriptionImageWidth(width) {
+            if (!selectedDescriptionImage) return;
+            const editor = document.getElementById('modal-description');
+            const style = window.getComputedStyle(editor);
+            const availableWidth = editor.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+            const maxWidth = Math.max(1, Math.floor(availableWidth));
+            const minWidth = Math.min(32, maxWidth);
+            selectedDescriptionImage.setAttribute('width', String(Math.round(Math.min(maxWidth, Math.max(minWidth, width)))));
+            selectedDescriptionImage.removeAttribute('height');
+            positionDescriptionImageResizer();
+        }
+
+        function clearPendingTaskUploads() {
+            pendingTaskUploads.forEach(upload => {
+                if (upload.objectUrl) URL.revokeObjectURL(upload.objectUrl);
+            });
+            pendingTaskUploads = [];
+            pendingUploadTaskId = null;
+        }
+
+        function renderTaskAttachments(attachments = currentTaskAttachments) {
+            const list = document.getElementById('task-attachment-list');
+            list.replaceChildren();
+
+            for (const attachment of attachments) {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-3 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs';
+                const link = document.createElement('a');
+                link.className = 'min-w-0 flex-1 truncate text-blue-600 dark:text-blue-400 hover:underline';
+                link.href = window.TaskAPI.taskAttachmentContentUrl(attachment.taskId, attachment.id);
+                link.textContent = `${attachment.fileName} (${(attachment.sizeBytes / 1024 / 1024).toFixed(2)} MB)`;
+                link.download = attachment.fileName;
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'rounded px-2 py-1 text-slate-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-950';
+                remove.setAttribute('aria-label', t('task.removeAttachment', 'Anhang entfernen'));
+                remove.textContent = t('common.delete', 'Löschen');
+                remove.addEventListener('click', async () => {
+                    try {
+                        await window.TaskAPI.deleteTaskAttachment(attachment.taskId, attachment.id);
+                        await loadTaskAttachments(attachment.taskId);
+                    } catch (error) {
+                        console.error('Could not delete task attachment:', error);
+                        showToast(t('task.attachmentDeleteFailed', 'Anhang konnte nicht gelöscht werden.'));
+                    }
+                });
+                row.append(link, remove);
+                list.append(row);
+            }
+
+            for (const upload of pendingTaskUploads) {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2 text-xs';
+                const label = document.createElement('span');
+                label.className = 'min-w-0 flex-1 truncate text-slate-500';
+                label.textContent = `${upload.file.name} (${t('task.pendingUpload', 'wird hochgeladen')})`;
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'rounded px-2 py-1 text-slate-500 hover:text-red-600';
+                remove.setAttribute('aria-label', t('task.removeAttachment', 'Anhang entfernen'));
+                remove.textContent = t('common.delete', 'Löschen');
+                remove.addEventListener('click', () => {
+                    if (upload.token) {
+                        const image = [...document.querySelectorAll('#modal-description img')]
+                            .find(element => element.alt === upload.token);
+                        if (image === selectedDescriptionImage) selectDescriptionImage(null);
+                        image?.remove();
+                    }
+                    if (upload.objectUrl) URL.revokeObjectURL(upload.objectUrl);
+                    pendingTaskUploads = pendingTaskUploads.filter(item => item !== upload);
+                    renderTaskAttachments(attachments);
+                });
+                row.append(label, remove);
+                list.append(row);
+            }
+        }
+
+        async function loadTaskAttachments(taskId) {
+            const list = document.getElementById('task-attachment-list');
+            if (!taskId) {
+                renderTaskAttachments([]);
+                return;
+            }
+            try {
+                const attachments = await window.TaskAPI.getTaskAttachments(taskId);
+                if (document.getElementById('modal-task-id').value !== taskId) return;
+                currentTaskAttachments = Array.isArray(attachments) ? attachments : attachments.data || [];
+                renderTaskAttachments();
+            } catch (error) {
+                if (document.getElementById('modal-task-id').value !== taskId) return;
+                console.error('Could not load task attachments:', error);
+                showToast(t('task.attachmentLoadFailed', 'Anhänge konnten nicht geladen werden.'));
+                currentTaskAttachments = [];
+                list.replaceChildren();
+            }
+        }
+
+        async function uploadPendingTaskAttachments(taskId) {
+            let uploadedInlineImage = false;
+            for (const upload of [...pendingTaskUploads]) {
+                try {
+                    const attachment = await window.TaskAPI.uploadTaskAttachment(
+                        taskId, upload.file, Boolean(upload.token));
+                    if (upload.token) {
+                        const image = [...document.querySelectorAll('#modal-description img')]
+                            .find(element => element.alt === upload.token);
+                        if (image) {
+                            image.src = window.TaskAPI.taskAttachmentContentUrl(taskId, attachment.id);
+                            image.alt = upload.file.name;
+                        }
+                        uploadedInlineImage = true;
+                    }
+                    if (upload.objectUrl) URL.revokeObjectURL(upload.objectUrl);
+                    pendingTaskUploads = pendingTaskUploads.filter(item => item !== upload);
+                } catch (error) {
+                    console.error('Could not upload task attachment:', error);
+                    showToast(t('task.attachmentUploadFailed', 'Anhang konnte nicht hochgeladen werden: {error}', {
+                        error: error.message || t('common.unknownError', 'Unbekannter Fehler')
+                    }));
+                    return { success: false, uploadedInlineImage };
+                }
+            }
+            await loadTaskAttachments(taskId);
+            return { success: true, uploadedInlineImage };
         }
 
         function updateConnectionUI() {
@@ -1553,7 +1771,6 @@
         let draggedTaskId = null;
         let selectedTaskId = null;
         let newTaskColumn = "ToDo";
-        let dragSource = null;
         let dragDropState = null;
         const collapsedSwimlanes = new Set();
         const collapsedBoardColumns = new Set();
@@ -1808,11 +2025,11 @@
                 options: [...owners].sort(),
                 onReset: 'resetOwnerFilterToAll',
                 onToggle: 'toggleFilterOwner',
-                resetLabel: t('board.showAllOwners', 'Alle Owner anzeigen'),
+                resetLabel: t('board.showAllOwners', 'Alle Zugewiesenen anzeigen'),
                 labelId: 'filter-owner-label',
-                allLabel: t('board.allOwners', 'Alle Owner'),
-                singularSuffix: t('board.owner', 'Owner'),
-                pluralSuffix: t('board.owner', 'Owner')
+                allLabel: t('board.allOwners', 'Alle Zugewiesenen'),
+                singularSuffix: t('board.assignee', 'Zugewiesene Person'),
+                pluralSuffix: t('board.assignees', 'Zugewiesene Personen')
             });
         }
 
@@ -1982,49 +2199,6 @@
             return tasks.find(task => task.id === taskId) || null;
         }
 
-        function buildLaneOrderUpdates(mainCol, subCol, laneTasks) {
-            return laneTasks.map((task, index) => ({
-                id: task.id,
-                data: {
-                    column: mainCol,
-                    subColumn: subCol,
-                    order: (index + 1) * 1024
-                }
-            }));
-        }
-
-        async function updateTaskSetInCloud(taskUpdates) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationSavePriorities', 'Prioritäten zu speichern'))) return false;
-            if (!taskUpdates || taskUpdates.length === 0) return true;
-
-            try {
-                // Update multiple tasks via API
-                // Make individual update calls for each task
-                const updatePromises = taskUpdates.map((item) => {
-                    const payload = normalizeTaskPayload(item.data, true);
-                    return window.TaskAPI.updateTask(item.id, payload);
-                });
-
-                await Promise.all(updatePromises);
-
-                // Update local state - use original frontend format
-                taskUpdates.forEach((item) => {
-                    const index = tasks.findIndex(task => task.id === item.id);
-                    if (index !== -1) {
-                        // Keep the original item.data which is in frontend format
-                        tasks[index] = { ...tasks[index], ...item.data };
-                    }
-                });
-
-                persistTaskSnapshot();
-                return true;
-            } catch (error) {
-                console.error("Error updating task order set:", error);
-                showToast(t('board.prioritySaveFailed', 'Priorisierung konnte nicht gespeichert werden.'));
-                return false;
-            }
-        }
-
         function normalizeLaneOrders(laneTasks) {
             return laneTasks.map((task, index) => {
                 const fallbackOrder = (index + 1) * 1024;
@@ -2126,37 +2300,18 @@
         }
 
         async function reorderTaskAndPersist(taskId, targetMain, targetSub, beforeTaskId) {
-            const movedTask = getTaskById(taskId);
-            if (!movedTask) return false;
-
-            const sourceMain = dragSource?.mainCol || movedTask.column;
-            const sourceSub = dragSource?.subCol || movedTask.subColumn;
-            const sourceLane = getLaneTasks(sourceMain, sourceSub, taskId);
-            const targetLane = getLaneTasks(targetMain, targetSub, taskId);
-
-            const insertIndex = (() => {
-                if (!beforeTaskId) return targetLane.length;
-                const idx = targetLane.findIndex(task => task.id === beforeTaskId);
-                return idx === -1 ? targetLane.length : idx;
-            })();
-
-            targetLane.splice(insertIndex, 0, { ...movedTask, column: targetMain, subColumn: targetSub });
-
-            let updates = [];
-            if (sourceMain === targetMain && sourceSub === targetSub) {
-                updates = buildLaneOrderUpdates(targetMain, targetSub, targetLane);
-            } else {
-                updates = [
-                    ...buildLaneOrderUpdates(sourceMain, sourceSub, sourceLane),
-                    ...buildLaneOrderUpdates(targetMain, targetSub, targetLane)
-                ];
+            if (!getTaskById(taskId)) return false;
+            if (!ensureAuthenticatedOrToast(t('auth.operationSavePriorities', 'Prioritäten zu speichern'))) return false;
+            try {
+                await window.TaskAPI.moveTask(taskId, targetMain, targetSub, beforeTaskId);
+                await loadTasksFromCloud();
+                return true;
+            } catch (error) {
+                console.error("Error moving task:", error);
+                showToast(t('board.prioritySaveFailed', 'Priorisierung konnte nicht gespeichert werden.'));
+                await loadTasksFromCloud();
+                return false;
             }
-
-            const success = await updateTaskSetInCloud(updates);
-            if (!success) return false;
-
-            await loadTasksFromCloud();
-            return true;
         }
 
         // --- RENDER FUNCTIONS ---
@@ -2265,7 +2420,7 @@
             icon.setAttribute('aria-hidden', 'true');
             const label = document.createElement('span');
             label.className = 'board-swimlane-label';
-            const groupLabels = { customer: ['board.customer', 'Kunde'], taskType: ['board.taskType', 'Task Typ'], owner: ['board.owner', 'Owner'] };
+            const groupLabels = { customer: ['board.customer', 'Kunde'], taskType: ['board.taskType', 'Task Typ'], owner: ['board.owner', 'Zugewiesen an'] };
             const groupLabel = groupLabels[row.group] ? t(...groupLabels[row.group]) : row.group;
             label.textContent = `${groupLabel.toUpperCase()}: ${row.value}`;
             const count = document.createElement('span');
@@ -2476,7 +2631,7 @@
                 <h4 class="text-xs font-semibold text-slate-800 dark:text-white leading-tight mb-1 line-clamp-2">${task.title}</h4>
                 ${tagsHtml}
                 <div class="space-y-1.5 border-t border-slate-200 dark:border-slate-700/40 pt-2 mt-2 text-[10px]">
-                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.owner', 'Owner'))}: <strong class="text-slate-800 dark:text-white">${task.owner}</strong></span></div>
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.owner', 'Zugewiesen an'))}: <strong class="text-slate-800 dark:text-white">${task.owner}</strong></span></div>
                     <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-building-user text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.customer', 'Kunde'))}: <strong class="text-slate-800 dark:text-white">${task.customer}</strong></span></div>
                     <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><i class="fa-solid fa-gears text-[9px] text-slate-400 dark:text-slate-500"></i><span>${escapeHtml(t('board.type', 'Typ'))}: <strong class="text-slate-800 dark:text-white">${task.taskType}</strong></span></div>
                 </div>
@@ -2603,8 +2758,6 @@
             e.dataTransfer.effectAllowed = "move";
             e.dataTransfer.setData('text/plain', taskId);
             e.target.classList.add('dragging-card');
-            const sourceCard = getTaskById(taskId);
-            dragSource = sourceCard ? { mainCol: sourceCard.column, subCol: sourceCard.subColumn } : null;
 
             // Hide original card after drag starts so insertion positions are calculated against the real remaining list.
             setTimeout(() => {
@@ -2629,7 +2782,6 @@
             cleanupDraggingCards();
             clearDropIndicators();
             draggedTaskId = null;
-            dragSource = null;
         }
 
         function handleDragOver(e) {
@@ -2692,7 +2844,6 @@
                 cleanupDraggingCards();
                 clearDropIndicators();
                 draggedTaskId = null;
-                dragSource = null;
                 return;
             }
 
@@ -2718,12 +2869,10 @@
                 const success = await reorderTaskAndPersist(draggedTaskId, targetMain, targetSub, beforeTaskId);
                 if (!success) {
                     draggedTaskId = null;
-                    dragSource = null;
                     return;
                 }
             }
             draggedTaskId = null;
-            dragSource = null;
         }
 
         window.manualMoveTask = async function(taskId, mainCol, subCol) {
@@ -2744,7 +2893,7 @@
         window.handleFormSubmit = async function(e) {
             e.preventDefault();
             const form = e.target;
-            const taskId = form.querySelector('#modal-task-id').value;
+            let taskId = form.querySelector('#modal-task-id').value;
             const taskData = {
                 title: form.querySelector('#modal-title').value.trim(),
                 taskType: form.querySelector('#modal-type').value,
@@ -2757,6 +2906,7 @@
                 tags: [...selectedModalTags]
             };
 
+            const isNewTask = !taskId;
             if (taskId) {
                 const task = tasks.find(t => t.id === taskId);
                 if (task && task.column !== "Backlog" && task.taskType !== taskData.taskType) {
@@ -2768,7 +2918,6 @@
                 }
                 const success = await updateTaskInCloud(taskId, taskData);
                 if (!success) return;
-                showToast(t('task.updated', 'Task {id}... wurde aktualisiert.', { id: taskId.slice(0,8) }));
             } else {
                 if (newTaskColumn === "ToDo" && wipLimits["ToDo"] !== null) {
                     const currentGlobalCount = getWipTaskCount("ToDo", "Doing");
@@ -2782,24 +2931,46 @@
                 taskData.order = computeNewOrder(taskData.column, taskData.subColumn, null, null);
                 const newId = await addTaskToCloud(taskData);
                 if (!newId) return;
-                showToast(t('task.created', 'Task {id}... wurde in {column} erstellt.', { id: newId.slice(0,8), column: getColLabel(newTaskColumn) }));
+                taskId = newId;
+                pendingUploadTaskId = taskId;
+                form.querySelector('#modal-task-id').value = taskId;
             }
 
+            if (pendingTaskUploads.length && pendingUploadTaskId !== taskId)
+                clearPendingTaskUploads();
+            pendingUploadTaskId = taskId;
+            const uploadResult = await uploadPendingTaskAttachments(taskId);
+            if (!uploadResult.success) return;
+            if (uploadResult.uploadedInlineImage) {
+                taskData.description = form.querySelector('#modal-description').innerHTML;
+                if (!await updateTaskInCloud(taskId, taskData)) return;
+            }
+
+            if (isNewTask) {
+                showToast(t('task.created', 'Task {id}... wurde in {column} erstellt.', {
+                    id: taskId.slice(0, 8), column: getColLabel(newTaskColumn)
+                }));
+            } else {
+                showToast(t('task.updated', 'Task {id}... wurde aktualisiert.', { id: taskId.slice(0, 8) }));
+            }
             closeAddTaskModal();
             await loadTasksFromCloud();
         }
 
         window.openAddTaskModal = function(column = "ToDo") {
+            selectDescriptionImage(null);
             newTaskColumn = column;
             document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> ${escapeHtml(column === "Backlog" ? t('task.createBacklog', 'Neuen Backlog-Task erstellen') : t('task.create', 'Neuen Task erstellen'))}`;
             document.getElementById('task-form').reset();
             document.getElementById('modal-task-id').value = "";
             selectedTaskId = null;
+            clearPendingTaskUploads();
+            currentTaskAttachments = [];
+            document.getElementById('task-attachment-input').value = "";
+            renderTaskAttachments();
             document.getElementById('modal-description').innerHTML = "";
             selectedModalTags = [];
             updateAllDropdowns();
-            setupOwnerCombobox();
-            setupCustomerCombobox();
             renderModalTagsSelection();
             openDetailsPanel();
         }
@@ -2808,6 +2979,13 @@
             if (event && event.target.closest('button, a')) return;
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
+            selectDescriptionImage(null);
+            if (pendingTaskUploads.length && pendingUploadTaskId !== taskId)
+                clearPendingTaskUploads();
+            pendingUploadTaskId = taskId;
+            currentTaskAttachments = [];
+            renderTaskAttachments();
+            loadTaskAttachments(taskId);
 
             document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-500"></i> ${escapeHtml(t('task.edit', 'Task bearbeiten ({id}...)', { id: task.id.slice(0,8) }))}`;
             const form = document.getElementById('task-form');
@@ -2822,8 +3000,6 @@
             
             selectedModalTags = task.tags ? [...task.tags] : [];
             updateAllDropdowns();
-            setupOwnerCombobox();
-            setupCustomerCombobox();
             renderModalTagsSelection();
         }
 
@@ -2837,6 +3013,7 @@
         }
 
         function openDetailsPanel() {
+            document.body.classList.add('details-panel-open');
             document.getElementById('task-details-panel').classList.remove('hidden');
             document.getElementById('task-details-panel').classList.add('flex');
             document.getElementById('details-resizer').classList.remove('hidden');
@@ -2844,9 +3021,12 @@
         }
 
         window.closeDetailsPanel = function() {
+            selectDescriptionImage(null);
+            document.body.classList.remove('details-panel-open');
             document.getElementById('task-details-panel').classList.add('hidden');
             document.getElementById('task-details-panel').classList.remove('flex');
             document.getElementById('details-resizer').classList.add('hidden');
+            clearPendingTaskUploads();
             selectedTaskId = null;
             highlightSelectedCard();
         }
@@ -2858,6 +3038,51 @@
 
         window.formatDoc = function(command, value = null) {
             document.execCommand(command, false, value);
+        }
+
+        window.insertDescriptionLink = function() {
+            const editor = document.getElementById('modal-description');
+            const selection = window.getSelection();
+            const selectedRange = selection?.rangeCount && editor.contains(selection.anchorNode)
+                ? selection.getRangeAt(0).cloneRange()
+                : null;
+            const selectedText = selectedRange?.toString() || '';
+            const enteredUrl = window.prompt(t('task.insertLink', 'Link einfügen'));
+            if (!enteredUrl?.trim()) return;
+
+            try {
+                let url = enteredUrl.trim();
+                if (!/^[a-z][a-z\d+.-]*:/i.test(url) && !url.startsWith('/') && !url.startsWith('#'))
+                    url = url.includes('@') && !url.includes('/') ? `mailto:${url}` : `https://${url}`;
+                const parsed = new URL(url, window.location.origin);
+                if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) throw new Error('Unsupported URL scheme');
+
+                editor.focus();
+                if (selectedRange) {
+                    selection.removeAllRanges();
+                    selection.addRange(selectedRange);
+                }
+
+                if (selectedRange && !selectedRange.collapsed) {
+                    document.execCommand('createLink', false, parsed.href);
+                } else {
+                    const link = document.createElement('a');
+                    link.href = parsed.href;
+                    link.textContent = selectedText || enteredUrl.trim();
+                    if (selectedRange) {
+                        selectedRange.deleteContents();
+                        selectedRange.insertNode(link);
+                        selectedRange.setStartAfter(link);
+                        selectedRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(selectedRange);
+                    } else {
+                        editor.append(link);
+                    }
+                }
+            } catch {
+                showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
+            }
         }
 
         // Tag & Type Config Modals
@@ -3184,92 +3409,116 @@
             customers = [...customerSet].sort();
         }
 
-        function updateOwnerDropdowns() {
-            const modalOwnerDatalist = document.getElementById('owner-list');
-
-            // Datalist im Modal aktualisieren
-            modalOwnerDatalist.innerHTML = '';
-            owners.forEach(owner => {
-                modalOwnerDatalist.innerHTML += `<option value="${owner}"></option>`;
-            });
-
-            renderOwnerFilterDropdown();
-        }
-
-        function updateCustomerDropdowns() {
-            const modalCustomerDatalist = document.getElementById('customer-list');
-
-            // Datalist im Modal aktualisieren
-            modalCustomerDatalist.innerHTML = '';
-            customers.forEach(customer => {
-                modalCustomerDatalist.innerHTML += `<option value="${customer}"></option>`;
-            });
-
-            renderCustomerFilterDropdown();
-        }
-
         function updateAllDropdowns() {
             updateConfiguredDropdowns(); // For Task Types
-            updateOwnerDropdowns();
-            updateCustomerDropdowns();
+            renderOwnerFilterDropdown();
+            renderCustomerFilterDropdown();
             renderTagFilterDropdown();
         }
 
-        function setupCombobox(containerSelector, inputId, dropdownId, arrowId, dataArray) {
+        function setupCombobox(containerSelector, inputId, dropdownId, arrowId, getItems) {
             const container = document.querySelector(containerSelector);
             if (!container) return; // Guard against missing elements
             const input = document.getElementById(inputId);
             const customDropdown = document.getElementById(dropdownId);
             const arrow = document.getElementById(arrowId);
+            let activeIndex = -1;
 
-            const renderItems = (filter = '') => {
-                const filteredItems = dataArray.filter(item => item.toLowerCase().includes(filter.toLowerCase()));
-                if (filteredItems.length === 0) {
-                    customDropdown.classList.add('hidden');
-                    return;
-                }
-                customDropdown.innerHTML = filteredItems.map(item => 
-                    `<div class="combobox-item text-sm text-slate-200 hover:bg-blue-600" data-value="${item}">${item}</div>`
-                ).join('');
-                customDropdown.classList.remove('hidden');
+            const closeDropdown = () => {
+                customDropdown.classList.add('hidden');
+                input.setAttribute('aria-expanded', 'false');
+                input.removeAttribute('aria-activedescendant');
+                activeIndex = -1;
             };
 
-            const toggleDropdown = () => {
-                if (customDropdown.classList.contains('hidden')) {
-                    renderItems(input.value);
-                } else {
-                    customDropdown.classList.add('hidden');
+            const renderItems = (filter = '') => {
+                const filteredItems = getItems().filter(item => item.toLowerCase().includes(filter.toLowerCase()));
+                if (filteredItems.length === 0) {
+                    closeDropdown();
+                    return;
                 }
+                customDropdown.replaceChildren();
+                filteredItems.forEach((value, index) => {
+                    const item = document.createElement('div');
+                    item.id = `${dropdownId}-option-${index}`;
+                    item.className = 'combobox-item text-sm text-slate-800 dark:text-slate-200 hover:bg-blue-600 hover:text-white dark:hover:text-slate-200';
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', 'false');
+                    item.dataset.value = value;
+                    item.textContent = value;
+                    customDropdown.appendChild(item);
+                });
+                activeIndex = -1;
+                input.removeAttribute('aria-activedescendant');
+                customDropdown.classList.remove('hidden');
+                input.setAttribute('aria-expanded', 'true');
+            };
+
+            const selectItem = (item) => {
+                input.value = item.dataset.value;
+                closeDropdown();
             };
 
             input.addEventListener('focus', () => renderItems(''));
             input.addEventListener('input', () => renderItems(input.value));
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeDropdown();
+                    return;
+                }
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (customDropdown.classList.contains('hidden')) renderItems(input.value);
+                    const items = [...customDropdown.children];
+                    if (!items.length || customDropdown.classList.contains('hidden')) return;
+                    activeIndex = event.key === 'ArrowDown'
+                        ? Math.min(activeIndex + 1, items.length - 1)
+                        : (activeIndex < 0 ? items.length - 1 : Math.max(activeIndex - 1, 0));
+                    items.forEach((item, index) => {
+                        const active = index === activeIndex;
+                        item.setAttribute('aria-selected', String(active));
+                        item.classList.toggle('bg-blue-600', active);
+                        item.classList.toggle('text-white', active);
+                    });
+                    input.setAttribute('aria-activedescendant', items[activeIndex].id);
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (event.key === 'Enter' && activeIndex >= 0 && !customDropdown.classList.contains('hidden')) {
+                    event.preventDefault();
+                    selectItem(customDropdown.children[activeIndex]);
+                } else if (event.key === 'Tab') {
+                    closeDropdown();
+                }
+            });
             arrow.addEventListener('click', (e) => {
                 e.stopPropagation();
-                toggleDropdown();
-                input.focus();
+                if (document.activeElement !== input) {
+                    input.focus();
+                } else if (customDropdown.classList.contains('hidden')) {
+                    renderItems(input.value);
+                } else {
+                    closeDropdown();
+                }
             });
 
             customDropdown.addEventListener('click', (e) => {
                 if (e.target.classList.contains('combobox-item')) {
-                    input.value = e.target.dataset.value;
-                    customDropdown.classList.add('hidden');
+                    selectItem(e.target);
                 }
             });
 
             document.addEventListener('click', (e) => {
                 if (!container.contains(e.target)) {
-                    customDropdown.classList.add('hidden');
+                    closeDropdown();
                 }
             });
         }
 
         function setupCustomerCombobox() {
-            setupCombobox('#modal-customer-container', 'modal-customer', 'customer-custom-dropdown', 'customer-dropdown-arrow', customers);
+            setupCombobox('#modal-customer-container', 'modal-customer', 'customer-custom-dropdown', 'customer-dropdown-arrow', () => customers);
         }
 
         function setupOwnerCombobox() {
-            setupCombobox('#modal-owner-container', 'modal-owner', 'owner-custom-dropdown', 'owner-dropdown-arrow', owners);
+            setupCombobox('#modal-owner-container', 'modal-owner', 'owner-custom-dropdown', 'owner-dropdown-arrow', () => owners);
         }
 
         // --- INITIALIZATION ---
@@ -3285,6 +3534,109 @@
 
         async function initDOMAndAuth() {
             // Add event listeners for controls
+            const descriptionEditor = document.getElementById('modal-description');
+            const descriptionEditorContainer = document.getElementById('description-editor-container');
+            const imageResizer = document.getElementById('description-image-resizer');
+            const attachmentInput = document.getElementById('task-attachment-input');
+            descriptionImageObserver = new ResizeObserver(() => {
+                if (selectedDescriptionImage) positionDescriptionImageResizer();
+            });
+            descriptionImageObserver.observe(descriptionEditor);
+            descriptionEditor.addEventListener('click', event => {
+                if (event.target instanceof HTMLImageElement) {
+                    event.preventDefault();
+                    selectDescriptionImage(event.target);
+                } else {
+                    selectDescriptionImage(null);
+                }
+            });
+            descriptionEditor.addEventListener('input', () => {
+                if (selectedDescriptionImage && !descriptionEditor.contains(selectedDescriptionImage))
+                    selectDescriptionImage(null);
+                else if (selectedDescriptionImage)
+                    positionDescriptionImageResizer();
+            });
+            document.addEventListener('pointerdown', event => {
+                if (!descriptionEditorContainer.contains(event.target))
+                    selectDescriptionImage(null);
+            });
+            imageResizer.querySelectorAll('button').forEach(handle => {
+                let drag = null;
+                handle.addEventListener('pointerdown', event => {
+                    if (event.button !== 0 || !selectedDescriptionImage) return;
+                    event.preventDefault();
+                    drag = { startX: event.clientX, startWidth: selectedDescriptionImage.getBoundingClientRect().width };
+                    handle.setPointerCapture(event.pointerId);
+                });
+                handle.addEventListener('pointermove', event => {
+                    if (drag) setDescriptionImageWidth(drag.startWidth + event.clientX - drag.startX);
+                });
+                handle.addEventListener('pointerup', () => { drag = null; });
+                handle.addEventListener('pointercancel', () => { drag = null; });
+                handle.addEventListener('keydown', event => {
+                    if (!selectedDescriptionImage || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+                    event.preventDefault();
+                    setDescriptionImageWidth(selectedDescriptionImage.getBoundingClientRect().width
+                        + (event.key === 'ArrowRight' ? 10 : -10));
+                });
+            });
+            descriptionEditor.addEventListener('click', event => {
+                if (event.defaultPrevented) return;
+                const link = event.target.closest('a[href]');
+                if (!link || !descriptionEditor.contains(link)) return;
+                event.preventDefault();
+                if (!window.getSelection().isCollapsed) return;
+
+                let url;
+                try {
+                    url = new URL(link.href, window.location.href);
+                } catch {
+                    showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
+                    return;
+                }
+                if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
+                    showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
+                    return;
+                }
+                window.open(url.href, '_blank', 'noopener,noreferrer');
+            });
+            document.getElementById('task-attachment-add').addEventListener('click', () => attachmentInput.click());
+            attachmentInput.addEventListener('change', () => {
+                for (const file of attachmentInput.files || []) {
+                    if (file.size > 20 * 1024 * 1024) {
+                        showToast(t('task.attachmentTooLarge', 'Dateien dürfen höchstens 20 MB groß sein.'));
+                        continue;
+                    }
+                    pendingTaskUploads.push({ file, token: null, objectUrl: null });
+                }
+                attachmentInput.value = "";
+                renderTaskAttachments();
+            });
+            descriptionEditor.addEventListener('paste', event => {
+                const imageItem = [...(event.clipboardData?.items || [])]
+                    .find(item => item.kind === 'file' && item.type.startsWith('image/'));
+                if (!imageItem) return;
+                event.preventDefault();
+                const file = imageItem.getAsFile();
+                if (!file) return;
+                if (!['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type)) {
+                    showToast(t('task.inlineImageInvalid', 'Dieses Bildformat kann nicht direkt eingefügt werden. Bitte PNG, JPEG, GIF oder WebP verwenden.'));
+                    return;
+                }
+                if (file.size > 20 * 1024 * 1024) {
+                    showToast(t('task.attachmentTooLarge', 'Dateien dürfen höchstens 20 MB groß sein.'));
+                    return;
+                }
+                const extension = file.type.split('/')[1].replace('jpeg', 'jpg');
+                const namedFile = new File([file], file.name || `pasted-image-${Date.now()}.${extension}`, { type: file.type });
+                const token = `pending-image-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                const objectUrl = URL.createObjectURL(namedFile);
+                pendingTaskUploads.push({ file: namedFile, token, objectUrl });
+                document.execCommand('insertHTML', false,
+                    `<img src="${objectUrl}" alt="${token}">`);
+                renderTaskAttachments();
+            });
+
             const backlogPanel = document.getElementById('backlog-panel');
             const backlogToggle = document.getElementById('backlog-toggle');
             const backlogContent = document.getElementById('backlog-content');
@@ -3314,7 +3666,6 @@
                 cleanupDraggingCards();
                 clearDropIndicators();
                 draggedTaskId = null;
-                dragSource = null;
                 await window.manualMoveTask(taskId, 'Backlog', 'Backlog');
             });
             backlogTasks.addEventListener('dragover', handleDragOver);
