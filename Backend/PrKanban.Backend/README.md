@@ -136,6 +136,32 @@ stored as an Identity claim; it prevents sign-in and invalidates existing sessio
 on their next request. It does not delete the account or its tasks. Administrators
 cannot deactivate themselves or remove their own administrator role.
 
+Administrators can create and edit customers, projects and deliverables in
+the **Customers and projects** tab next to the Kanban filters, also accessible
+from administration. The Kanban tab preserves the current board and the Dashboard
+tab is a placeholder for a future dashboard.
+Users can browse the hierarchy read-only.
+The expandable tree shows tasks under their deliverables, including archived
+tasks marked as such. Tasks without a deliverable are not shown in the tree.
+Every project belongs to one customer;
+every deliverable belongs to one project. Customer debtor numbers and CRM URLs,
+project CRM links, order numbers and default assignees are optional.
+Deliverable estimates, budgets and actuals are non-negative hours. Actuals are
+entered manually until time recording is implemented; exceeding the budget is allowed.
+Each project has a unique, immutable 2–12 character alphanumeric short key,
+beginning with a letter. New deliverable and task IDs start with that key.
+IDs remain stable when items are reassigned; existing IDs are not changed.
+Existing projects need a short key before new deliverables or tasks can be created.
+The project's default assignee pre-fills new tasks and can be overridden.
+Admins and Users can read the hierarchy and must select a deliverable for new
+tasks. Existing unassigned tasks remain available and can be assigned when
+edited. Budgets do not restrict task creation; time booking and project boards
+are not implemented yet.
+
+- `GET /api/v1/hierarchy` — hierarchy for Admin and User
+- `POST /api/v1/hierarchy/customers`, `/projects`, `/deliverables` — create (Admin)
+- `PUT /api/v1/hierarchy/{customers|projects|deliverables}/:id` — edit (Admin)
+
 ### Languages and translations
 
 The board language selector is immediately before the theme button. German is

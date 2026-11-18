@@ -6,7 +6,7 @@
     <title data-i18n="admin.pageTitle">Administration – Dynamic Workflow Kanban</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="i18n.js?v=2" defer></script>
-    <script src="admin.js?v=translations-3" defer></script>
+    <script src="admin.js?v=hierarchy-2" defer></script>
     <style>
         #user-panel-resizer {
             width: 8px;
@@ -39,6 +39,7 @@
             </div>
             <nav aria-label="Administration" data-i18n-aria-label="common.administration" class="space-y-1">
                 <button type="button" data-view="users" data-i18n="admin.users" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Benutzer</button>
+                <a href="index.html?view=projects" data-i18n="hierarchy.title" class="block w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Kunden und Projekte</a>
                 <button type="button" data-view="translations" data-i18n="admin.translations" class="hidden w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Übersetzungen</button>
                 <button type="button" data-view="database" data-i18n="admin.database" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Datenbank</button>
             </nav>

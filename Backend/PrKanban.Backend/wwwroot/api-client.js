@@ -128,6 +128,11 @@ const AuthAPI = {
  * Handles all task CRUD operations via REST
  */
 const TaskAPI = {
+  async getHierarchy() {
+    const response = await fetch(`${API_BASE}/hierarchy`, { credentials: 'include' });
+    if (!response.ok || response.redirected) throw new Error(`Failed to load hierarchy (${response.status})`);
+    return response.json();
+  },
   /**
    * Get all tasks with optional filters
    * 

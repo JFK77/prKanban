@@ -268,6 +268,137 @@ namespace PrKanban.Migrations
                     b.ToTable("BoardConfigs");
                 });
 
+            modelBuilder.Entity("PrKanban.Models.Customer", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.CustomerDetails", b =>
+                {
+                    b.Property<string>("CustomerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CrmUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DebitorNo")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CustomerId");
+
+                    b.ToTable("CustomerDetails");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Deliverable", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("BudgetHours")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("Deliverables", t =>
+                        {
+                            t.HasCheckConstraint("CK_Deliverables_BudgetHours", "\"BudgetHours\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("PrKanban.Models.DeliverableDetails", b =>
+                {
+                    b.Property<string>("DeliverableId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("ActualHours")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("InitialEstimateHours")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("DeliverableId");
+
+                    b.ToTable("DeliverableDetails", t =>
+                        {
+                            t.HasCheckConstraint("CK_DeliverableDetails_Actual", "\"ActualHours\" >= 0");
+
+                            t.HasCheckConstraint("CK_DeliverableDetails_InitialEstimate", "\"InitialEstimateHours\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Project", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectDetails", b =>
+                {
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CrmLink")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CrmUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerOrderNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DefaultAssignee")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InternalOrderNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ShortKey")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ProjectId");
+
+                    b.HasIndex("ShortKey")
+                        .IsUnique();
+
+                    b.ToTable("ProjectDetails");
+                });
+
             modelBuilder.Entity("PrKanban.Models.Task", b =>
                 {
                     b.Property<string>("Id")
@@ -338,50 +469,15 @@ namespace PrKanban.Migrations
                     b.ToTable("Tasks");
                 });
 
-            modelBuilder.Entity("PrKanban.Models.TranslationEntry", b =>
-                {
-                    b.Property<string>("Key")
-                        .HasMaxLength(120)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("English")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("German")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Key");
-
-                    b.ToTable("AppTranslations");
-                });
-
-            modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
-                {
-                    b.Property<string>("TaskId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double>("Value")
-                        .HasColumnType("REAL");
-
-                    b.HasKey("TaskId");
-
-                    b.ToTable("TaskOrder");
-                });
-
             modelBuilder.Entity("PrKanban.Models.TaskAttachment", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -389,10 +485,6 @@ namespace PrKanban.Migrations
                     b.Property<string>("CreatedByUserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<byte[]>("Content")
-                        .IsRequired()
-                        .HasColumnType("BLOB");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -418,6 +510,61 @@ namespace PrKanban.Migrations
                     b.HasIndex("TaskId");
 
                     b.ToTable("TaskAttachments");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TaskDeliverable", b =>
+                {
+                    b.Property<string>("TaskId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeliverableId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("TaskId");
+
+                    b.HasIndex("DeliverableId");
+
+                    b.ToTable("TaskDeliverables");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
+                {
+                    b.Property<string>("TaskId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("TaskId");
+
+                    b.ToTable("TaskOrder");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TranslationEntry", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("English")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("German")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("AppTranslations");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -482,6 +629,55 @@ namespace PrKanban.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PrKanban.Models.CustomerDetails", b =>
+                {
+                    b.HasOne("PrKanban.Models.Customer", null)
+                        .WithOne("Details")
+                        .HasForeignKey("PrKanban.Models.CustomerDetails", "CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Deliverable", b =>
+                {
+                    b.HasOne("PrKanban.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.DeliverableDetails", b =>
+                {
+                    b.HasOne("PrKanban.Models.Deliverable", null)
+                        .WithOne("Details")
+                        .HasForeignKey("PrKanban.Models.DeliverableDetails", "DeliverableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Project", b =>
+                {
+                    b.HasOne("PrKanban.Models.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectDetails", b =>
+                {
+                    b.HasOne("PrKanban.Models.Project", null)
+                        .WithOne("Details")
+                        .HasForeignKey("PrKanban.Models.ProjectDetails", "ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PrKanban.Models.Task", b =>
                 {
                     b.HasOne("PrKanban.Models.ApplicationUser", "User")
@@ -493,15 +689,6 @@ namespace PrKanban.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
-                {
-                    b.HasOne("PrKanban.Models.Task", null)
-                        .WithOne("Ordering")
-                        .HasForeignKey("PrKanban.Models.TaskOrder", "TaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("PrKanban.Models.TaskAttachment", b =>
                 {
                     b.HasOne("PrKanban.Models.Task", null)
@@ -511,9 +698,30 @@ namespace PrKanban.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PrKanban.Models.Task", b =>
+            modelBuilder.Entity("PrKanban.Models.TaskDeliverable", b =>
                 {
-                    b.Navigation("Ordering");
+                    b.HasOne("PrKanban.Models.Deliverable", "Deliverable")
+                        .WithMany()
+                        .HasForeignKey("DeliverableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PrKanban.Models.Task", null)
+                        .WithOne("DeliverableAssignment")
+                        .HasForeignKey("PrKanban.Models.TaskDeliverable", "TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Deliverable");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
+                {
+                    b.HasOne("PrKanban.Models.Task", null)
+                        .WithOne("Ordering")
+                        .HasForeignKey("PrKanban.Models.TaskOrder", "TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("PrKanban.Models.ApplicationUser", b =>
@@ -521,6 +729,28 @@ namespace PrKanban.Migrations
                     b.Navigation("BoardConfig");
 
                     b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Customer", b =>
+                {
+                    b.Navigation("Details");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Deliverable", b =>
+                {
+                    b.Navigation("Details");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Project", b =>
+                {
+                    b.Navigation("Details");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.Task", b =>
+                {
+                    b.Navigation("DeliverableAssignment");
+
+                    b.Navigation("Ordering");
                 });
 #pragma warning restore 612, 618
         }

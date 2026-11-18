@@ -33,6 +33,21 @@ namespace PrKanban.Models
         /// </summary>
         public string? Customer { get; set; }
 
+        [JsonIgnore]
+        public TaskDeliverable? DeliverableAssignment { get; set; }
+
+        [NotMapped]
+        public string? DeliverableId => DeliverableAssignment?.DeliverableId;
+
+        [NotMapped]
+        public string? DeliverableName => DeliverableAssignment?.Deliverable?.Name;
+
+        [NotMapped]
+        public string? ProjectName => DeliverableAssignment?.Deliverable?.Project?.Name;
+
+        [NotMapped]
+        public string? CustomerName => DeliverableAssignment?.Deliverable?.Project?.Customer?.Name;
+
         /// <summary>
         /// Detailed task description
         /// </summary>

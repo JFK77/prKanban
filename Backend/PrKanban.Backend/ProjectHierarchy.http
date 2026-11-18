@@ -1,0 +1,43 @@
+@baseUrl = http://localhost:5000
+@customerId = replace-with-customer-id
+@projectId = replace-with-project-id
+@deliverableId = replace-with-deliverable-id
+
+### Read as Admin or User
+GET {{baseUrl}}/api/v1/hierarchy
+
+### Create customer as Admin
+POST {{baseUrl}}/api/v1/hierarchy/customers
+Content-Type: application/json
+
+{"name":"Example customer","debitorNo":"D-100","crmUrl":"https://crm.example.com/customers/100"}
+
+### Update customer
+PUT {{baseUrl}}/api/v1/hierarchy/customers/{{customerId}}
+Content-Type: application/json
+
+{"name":"Example customer","debitorNo":"D-100","crmUrl":"https://crm.example.com/customers/100"}
+
+### Create project
+POST {{baseUrl}}/api/v1/hierarchy/projects
+Content-Type: application/json
+
+{"name":"Example project","customerId":"{{customerId}}","shortKey":"EXAMPLE","crmLink":"https://crm.example.com/projects/1","crmUrl":"https://crm.example.com/projects/1","internalOrderNumber":"INT-100","customerOrderNumber":"PO-100","defaultAssignee":"Alex"}
+
+### Update project
+PUT {{baseUrl}}/api/v1/hierarchy/projects/{{projectId}}
+Content-Type: application/json
+
+{"name":"Example project","customerId":"{{customerId}}","shortKey":"EXAMPLE","crmLink":"https://crm.example.com/projects/1","crmUrl":"https://crm.example.com/projects/1","internalOrderNumber":"INT-100","customerOrderNumber":"PO-100","defaultAssignee":"Alex"}
+
+### Create deliverable
+POST {{baseUrl}}/api/v1/hierarchy/deliverables
+Content-Type: application/json
+
+{"name":"Installation","projectId":"{{projectId}}","initialEstimateHours":35,"budgetHours":40,"actualHours":0}
+
+### Update deliverable
+PUT {{baseUrl}}/api/v1/hierarchy/deliverables/{{deliverableId}}
+Content-Type: application/json
+
+{"name":"Installation","projectId":"{{projectId}}","initialEstimateHours":35,"budgetHours":40,"actualHours":10}

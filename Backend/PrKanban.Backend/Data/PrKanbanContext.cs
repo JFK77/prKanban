@@ -18,6 +18,10 @@ namespace PrKanban.Data
         public DbSet<Task> Tasks { get; set; }
 
         public DbSet<TaskAttachment> TaskAttachments { get; set; }
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<Deliverable> Deliverables { get; set; }
+        public DbSet<TaskDeliverable> TaskDeliverables { get; set; }
 
         /// <summary>
         /// DbSet for board configurations
@@ -40,6 +44,50 @@ namespace PrKanban.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Customer>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                entity.HasOne(x => x.Details).WithOne().HasForeignKey<CustomerDetails>(x => x.CustomerId).OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<Project>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                entity.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Details).WithOne().HasForeignKey<ProjectDetails>(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<Deliverable>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                entity.ToTable(t => t.HasCheckConstraint("CK_Deliverables_BudgetHours", "\"BudgetHours\" >= 0"));
+                entity.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Details).WithOne().HasForeignKey<DeliverableDetails>(x => x.DeliverableId).OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<CustomerDetails>().HasKey(x => x.CustomerId);
+            modelBuilder.Entity<ProjectDetails>(entity =>
+            {
+                entity.HasKey(x => x.ProjectId);
+                entity.HasIndex(x => x.ShortKey).IsUnique();
+            });
+            modelBuilder.Entity<DeliverableDetails>(entity =>
+            {
+                entity.HasKey(x => x.DeliverableId);
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_DeliverableDetails_InitialEstimate", "\"InitialEstimateHours\" >= 0");
+                    t.HasCheckConstraint("CK_DeliverableDetails_Actual", "\"ActualHours\" >= 0");
+                });
+            });
+            modelBuilder.Entity<TaskDeliverable>(entity =>
+            {
+                entity.HasKey(x => x.TaskId);
+                entity.HasOne<Task>().WithOne(x => x.DeliverableAssignment)
+                    .HasForeignKey<TaskDeliverable>(x => x.TaskId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.Deliverable).WithMany().HasForeignKey(x => x.DeliverableId).OnDelete(DeleteBehavior.Restrict);
+            });
 
             modelBuilder.Entity<TranslationEntry>(entity =>
             {

@@ -56,7 +56,9 @@ namespace PrKanban.Controllers
             [FromQuery] int skip = 0,
             [FromQuery] int take = 100)
         {
-            var query = _context.Tasks.Include(t => t.Ordering).AsQueryable();
+            var query = _context.Tasks.Include(t => t.Ordering)
+                .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
+                .ThenInclude(d => d.Project).ThenInclude(p => p.Customer).AsQueryable();
 
             // Apply optional filters
             if (archived.HasValue)
@@ -100,6 +102,8 @@ namespace PrKanban.Controllers
         {
             var task = await _context.Tasks
                 .Include(t => t.Ordering)
+                .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
+                .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
@@ -121,18 +125,29 @@ namespace PrKanban.Controllers
             if (string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest(new { success = false, error = new { code = "INVALID_REQUEST", message = "Title is required" } });
 
+            var deliverable = await _context.Deliverables
+                .Include(d => d.Project).ThenInclude(p => p.Customer)
+                .Include(d => d.Project).ThenInclude(p => p.Details)
+                .FirstOrDefaultAsync(d => d.Id == request.DeliverableId);
+            if (deliverable is null)
+                return BadRequest(new { success = false, error = new { code = "INVALID_DELIVERABLE", message = "A valid deliverable is required." } });
+            if (string.IsNullOrEmpty(deliverable.Project.Details?.ShortKey))
+                return BadRequest(new { success = false, error = new { code = "MISSING_PROJECT_KEY", message = "Set a project short key before creating tasks." } });
+
             var task = new Task
             {
+                Id = $"{deliverable.Project.Details.ShortKey}-T-{Guid.NewGuid():N}",
                 Title = request.Title,
                 TaskType = request.TaskType ?? "task",
-                Owner = request.Owner,
+                Owner = string.IsNullOrWhiteSpace(request.Owner) ? deliverable.Project.Details.DefaultAssignee : request.Owner,
                 Customer = request.Customer,
                 Description = TaskDescriptionSanitizer.Sanitize(request.Description),
                 ColumnName = request.ColumnName ?? "todo",
                 SubColumnName = request.SubColumnName,
                 UserId = userId,
                 Tags = request.Tags ?? Array.Empty<string>(),
-                Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null
+                Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null,
+                DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable }
             };
 
             _context.Tasks.Add(task);
@@ -154,10 +169,24 @@ namespace PrKanban.Controllers
 
             var task = await _context.Tasks
                 .Include(t => t.Ordering)
+                .Include(t => t.DeliverableAssignment)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
+
+            if (request.DeliverableId != null)
+            {
+                if (string.IsNullOrWhiteSpace(request.DeliverableId) ||
+                    !await _context.Deliverables.AnyAsync(d => d.Id == request.DeliverableId))
+                    return BadRequest(new { success = false, error = new { code = "INVALID_DELIVERABLE", message = "A valid deliverable is required." } });
+                if (task.DeliverableAssignment is null)
+                {
+                    task.DeliverableAssignment = new TaskDeliverable { TaskId = task.Id, DeliverableId = request.DeliverableId };
+                    _context.TaskDeliverables.Add(task.DeliverableAssignment);
+                }
+                else task.DeliverableAssignment.DeliverableId = request.DeliverableId;
+            }
 
             if (!string.IsNullOrEmpty(request.Title))
                 task.Title = request.Title;
@@ -186,7 +215,10 @@ namespace PrKanban.Controllers
             await _context.SaveChangesAsync();
             
             // Reload the task to get updated values
-            task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+            task = await _context.Tasks.Include(t => t.Ordering)
+                .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
+                .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
+                .FirstAsync(t => t.Id == id);
             
             _logger.LogInformation($"Task {task.Id} updated by user {userId}");
 
@@ -280,6 +312,7 @@ namespace PrKanban.Controllers
         public string? TaskType { get; set; }
         public string? Owner { get; set; }
         public string? Customer { get; set; }
+        public string? DeliverableId { get; set; }
         public string? Description { get; set; }
         public string? ColumnName { get; set; }
         public string? SubColumnName { get; set; }
@@ -293,6 +326,7 @@ namespace PrKanban.Controllers
         public string? TaskType { get; set; }
         public string? Owner { get; set; }
         public string? Customer { get; set; }
+        public string? DeliverableId { get; set; }
         public string? Description { get; set; }
         public string? ColumnName { get; set; }
         public string? SubColumnName { get; set; }

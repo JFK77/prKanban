@@ -12,6 +12,7 @@ builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<IUserLanguageService, UserLanguageService>();
 builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
 builder.Services.AddScoped<ITaskMoveService, TaskMoveService>();
+builder.Services.AddScoped<IProjectHierarchyService, ProjectHierarchyService>();
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>

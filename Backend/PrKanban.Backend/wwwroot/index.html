@@ -23,8 +23,11 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- API Client (must load before other scripts) -->
-    <script src="api-client.js?v=language-1"></script>
+    <script src="api-client.js?v=hierarchy-1"></script>
     <script src="i18n.js?v=3" defer></script>
+    <link rel="stylesheet" href="hierarchy.css?v=task-side-panel-5">
+    <script src="hierarchy.js?v=hierarchy-task-panel-7" defer></script>
+    <script src="view-tabs.js?v=task-side-panel-5" defer></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -567,7 +570,7 @@
             body.details-panel-open .board-area { min-height: 0; }
         }
         @media (max-width: 767px) {
-            #task-details-panel {
+            #kanban-panel #task-details-panel {
                 position: fixed;
                 top: 0;
                 right: 0;
@@ -576,7 +579,7 @@
                 z-index: 60;
                 box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
             }
-            #details-resizer { display: none; }
+            #kanban-panel #details-resizer { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
             #backlog-panel, #backlog-content, #backlog-toggle { transition: none; }
@@ -634,6 +637,7 @@
                 <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden" aria-hidden="true"></i>
                 <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden" aria-hidden="true"></i>
             </button>
+            <div id="board-header-actions" class="flex flex-wrap items-center gap-2">
             <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                 <i class="fa-solid fa-tag text-slate-500" aria-hidden="true"></i> <span data-i18n="board.manageTags">Tags verwalten</span>
             </button>
@@ -643,14 +647,20 @@
             <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="board.addTask">Task hinzufügen</span>
             </button>
+            </div>
         </div>
     </header>
     <div id="language-error" hidden role="alert" class="px-4 py-2 text-sm text-red-700 bg-red-50"></div>
 
     <!-- Controls Panel: Filters & Grouping -->
     <section aria-label="Board-Einstellungen" data-i18n-aria-label="board.settings" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <nav id="view-tabs" role="tablist" aria-label="Ansichten" data-i18n-aria-label="views.label" class="flex flex-wrap items-center gap-1">
+            <button id="tab-projects" type="button" role="tab" aria-controls="hierarchy-panel" aria-selected="false" tabindex="-1" data-view="projects" class="view-tab"><i class="fa-solid fa-list text-slate-500" aria-hidden="true"></i><span data-i18n="hierarchy.open">Kunden und Projekte</span></button>
+            <button id="tab-kanban" type="button" role="tab" aria-controls="kanban-panel" aria-selected="true" tabindex="0" data-view="kanban" class="view-tab"><i class="fa-solid fa-table-columns text-blue-600" aria-hidden="true"></i><span data-i18n="views.kanban">Kanban</span></button>
+            <button id="tab-dashboard" type="button" role="tab" aria-controls="dashboard-panel" aria-selected="false" tabindex="-1" data-view="dashboard" class="view-tab"><i class="fa-solid fa-chart-column text-purple-600" aria-hidden="true"></i><span data-i18n="views.dashboard">Dashboard</span></button>
+        </nav>
         <!-- Filters -->
-        <div class="flex flex-wrap items-center gap-2">
+        <div id="board-filters" class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 <i class="fa-solid fa-filter mr-1" aria-hidden="true"></i><span data-i18n="board.filters">Filter:</span>
             </span>
@@ -697,7 +707,7 @@
         </div>
 
         <!-- Groupings / Swimlanes -->
-        <div class="flex flex-wrap items-center gap-2">
+        <div id="board-groupings" class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i><span data-i18n="board.swimlanes">Swimlanes:</span>
             </span>
@@ -749,7 +759,7 @@
     </section>
 
     <!-- Board Area -->
-    <div class="board-area flex flex-1 overflow-hidden">
+    <div id="kanban-panel" role="tabpanel" aria-labelledby="tab-kanban" class="board-area flex flex-1 overflow-hidden">
         <aside id="backlog-panel" class="bg-white dark:bg-slate-900" aria-label="Backlog" data-i18n-aria-label="board.backlog">
             <button type="button" id="backlog-toggle" aria-label="Backlog" data-i18n-aria-label="board.backlog" aria-expanded="false" aria-controls="backlog-content" title="Backlog auf- oder zuklappen" data-i18n-title="board.toggleBacklog" class="font-semibold tracking-wide">
                 <i id="backlog-chevron" class="fa-solid fa-chevron-right" aria-hidden="true"></i>
@@ -811,16 +821,17 @@
                         </div>
                     </div>
                     <div>
-                        <label data-i18n="board.customer" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde</label>
-                        <div id="modal-customer-container" class="combobox-container">
-                            <div class="relative">
-                                <input type="text" id="modal-customer" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="customer-custom-dropdown" required placeholder="Kunden auswählen oder neu erstellen" data-i18n-placeholder="task.customerPlaceholder" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <div id="customer-dropdown-arrow" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer">
-                                    <i class="fa-solid fa-chevron-down text-xs"></i>
-                                </div>
-                            </div>
-                            <div id="customer-custom-dropdown" role="listbox" class="combobox-dropdown hidden dark:bg-slate-800 dark:border-slate-700"></div>
-                        </div>
+                        <label for="modal-customer" data-i18n="hierarchy.customer" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Kunde</label>
+                        <select id="modal-customer" required class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white"></select>
+                    </div>
+                    <div>
+                        <label for="modal-project" data-i18n="hierarchy.project" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Projekt</label>
+                        <select id="modal-project" required class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white"></select>
+                    </div>
+                    <div>
+                        <label for="modal-deliverable" data-i18n="hierarchy.deliverable" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Lieferobjekt</label>
+                        <select id="modal-deliverable" required class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white"></select>
+                        <p id="hierarchy-setup-required" data-i18n="hierarchy.setupRequired" class="hidden mt-1 text-xs text-amber-700 dark:text-amber-300">Ein Administrator muss zuerst Kunde, Projekt und Lieferobjekt anlegen.</p>
                     </div>
                     <div>
                         <label data-i18n="task.description" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Beschreibung</label>
@@ -885,6 +896,45 @@
             </div>
         </aside>
     </div>
+    <div id="hierarchy-panel" role="tabpanel" aria-labelledby="tab-projects" class="hidden flex-1 p-4 sm:p-5">
+        <main class="grid gap-5 lg:grid-cols-[minmax(24rem,1fr)_minmax(22rem,1fr)]">
+            <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 min-w-0">
+                <div class="flex items-center justify-between gap-2 mb-4"><h2 data-i18n="hierarchy.customers" class="font-bold">Kunden</h2><button id="new-customer" type="button" data-i18n="hierarchy.addCustomer" class="hidden rounded-lg bg-blue-600 px-3 py-2 text-sm text-white">+ Kunde</button></div>
+                <div id="tree"></div>
+            </section>
+            <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 min-w-0">
+                <div id="hierarchy-entity-editor">
+                <div id="status" role="status" aria-live="polite" class="text-sm mb-3"></div>
+                <p id="placeholder" data-i18n="hierarchy.pick" class="text-slate-500 dark:text-slate-400">Ein Element auswählen oder neu anlegen.</p>
+                <p id="read-only" data-i18n="hierarchy.readOnly" class="hidden mb-3 text-sm text-slate-500 dark:text-slate-400">Nur Administratoren können Änderungen vornehmen.</p>
+                <form id="details" class="hidden">
+                    <h2 id="form-title" class="font-bold text-lg mb-4"></h2>
+                    <p id="item-id" class="text-xs text-slate-500 break-all mb-4"></p>
+                    <fieldset id="fields" class="space-y-4">
+                        <label class="block text-sm"><span id="name-label" data-i18n="common.name">Name</span><input name="name" required maxlength="200" class="hierarchy-input"></label>
+                        <label data-for="projects deliverables" class="block text-sm"><span id="parent-label"></span><select name="parent" class="hierarchy-input"></select></label>
+                        <label data-for="customers" class="block text-sm"><span data-i18n="hierarchy.debitorNo">Debitorennummer</span><input name="debitorNo" maxlength="100" class="hierarchy-input"></label>
+                        <label data-for="customers projects" class="block text-sm"><span data-i18n="hierarchy.crmUrl">CRM URL</span><input name="crmUrl" type="url" pattern="https?://.+" maxlength="2000" class="hierarchy-input"></label>
+                        <label data-for="projects" class="block text-sm"><span data-i18n="hierarchy.shortKey">Projektkürzel</span><input name="shortKey" pattern="[A-Za-z][A-Za-z0-9]{1,11}" maxlength="12" class="hierarchy-input uppercase"><small data-i18n="hierarchy.keyHelp" class="text-slate-500">2–12 Buchstaben/Ziffern, beginnt mit einem Buchstaben. Nach dem Speichern unveränderlich.</small></label>
+                        <label data-for="projects" class="block text-sm"><span data-i18n="hierarchy.crmLink">CRM Link</span><input name="crmLink" type="url" pattern="https?://.+" maxlength="2000" class="hierarchy-input"></label>
+                        <label data-for="projects" class="block text-sm"><span data-i18n="hierarchy.internalOrder">Interne Projektauftragsnummer</span><input name="internalOrderNumber" maxlength="100" class="hierarchy-input"></label>
+                        <label data-for="projects" class="block text-sm"><span data-i18n="hierarchy.customerOrder">Kundenauftragsnummer</span><input name="customerOrderNumber" maxlength="100" class="hierarchy-input"></label>
+                        <label data-for="projects" class="block text-sm"><span data-i18n="hierarchy.defaultAssignee">Standard-Zuweisung</span><input name="defaultAssignee" maxlength="256" class="hierarchy-input"></label>
+                        <label data-for="deliverables" class="block text-sm"><span data-i18n="hierarchy.estimate">Initiale Schätzung (h)</span><input name="initialEstimateHours" type="number" min="0" max="1000000000" step="any" class="hierarchy-input"></label>
+                        <label data-for="deliverables" class="block text-sm"><span data-i18n="hierarchy.budget">Zeitbudget (Stunden)</span><input name="budgetHours" type="number" min="0" max="1000000000" step="any" class="hierarchy-input"></label>
+                        <label data-for="deliverables" class="block text-sm"><span data-i18n="hierarchy.actual">Ist (h), manuell</span><input name="actualHours" type="number" min="0" max="1000000000" step="any" class="hierarchy-input"></label>
+                        <button id="save" type="submit" data-i18n="common.save" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Speichern</button>
+                    </fieldset>
+                </form>
+                </div>
+                <div id="hierarchy-task-panel-slot" class="hierarchy-task-panel-slot hidden min-w-0"></div>
+            </section>
+        </main>
+    </div>
+    <section id="dashboard-panel" role="tabpanel" aria-labelledby="tab-dashboard" class="hidden flex-1 p-6">
+        <h2 data-i18n="views.dashboard" class="text-xl font-bold">Dashboard</h2>
+        <p data-i18n="views.dashboardLater" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Das Dashboard wird später ergänzt.</p>
+    </section>
     <!-- Footer -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
         <span data-i18n="board.footer">Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits &amp; Collapsible Swimlanes implementiert.</span>
@@ -1362,6 +1412,7 @@
                 loginGuestBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
             }
+            window.dispatchEvent(new CustomEvent('app-auth-changed', { detail: window.currentUser }));
         }
 
         async function initAuth() {
@@ -1421,6 +1472,7 @@
         }
 
         window.logoutFromFirebase = async function() {
+            if (window.viewTabs?.current() === 'projects' && !window.hierarchyView.leave()) return;
             try {
                 await window.AuthAPI.logout();
                 window.currentUser = null;
@@ -1599,6 +1651,7 @@
                 saveToStorage('kanban_tagsConfig', tagsConfig);
                 saveToStorage('kanban_workflowPaths', workflowPaths);
                 saveToStorage('kanban_wipLimits', wipLimits);
+                window.dispatchEvent(new Event('tasktypecolorschanged'));
 
                 if (isExactLegacyDefaultTagSet(cloudConfig.tagsConfig)) {
                     queueBoardConfigSync();
@@ -1637,7 +1690,10 @@
                 title: apiTask.title,
                 description: apiTask.description || "",
                 owner: apiTask.owner || "Unassigned",
-                customer: apiTask.customer || "No Customer",
+                customer: apiTask.customerName || apiTask.customer || "No Customer",
+                deliverableId: apiTask.deliverableId,
+                projectName: apiTask.projectName,
+                deliverableName: apiTask.deliverableName,
                 taskType: apiTask.taskType || "Task",
                 column,
                 subColumn: column === "Backlog" ? "Backlog" : (apiTask.subColumnName || "Doing"),
@@ -1778,6 +1834,55 @@
 
         let owners = [];
         let customers = [];
+        let taskHierarchy = { customers: [], projects: [], deliverables: [] };
+        let taskHierarchyRequest = 0;
+        let lastProjectDefaultAssignee = '';
+
+        function hierarchyOptions(select, items, selected) {
+            select.replaceChildren(new Option(t('hierarchy.select', 'Bitte auswählen'), ''));
+            items.forEach(item => select.add(new Option(item.name, item.id)));
+            select.value = items.some(item => item.id === selected) ? selected : '';
+        }
+
+        function renderTaskDeliverables(selected = '') {
+            const projectId = document.getElementById('modal-project').value;
+            hierarchyOptions(document.getElementById('modal-deliverable'),
+                taskHierarchy.deliverables.filter(item => item.projectId === projectId), selected);
+        }
+
+        function renderTaskProjects(project = '', deliverable = '') {
+            const customerId = document.getElementById('modal-customer').value;
+            hierarchyOptions(document.getElementById('modal-project'),
+                taskHierarchy.projects.filter(item => item.customerId === customerId), project);
+            renderTaskDeliverables(deliverable);
+        }
+
+        async function loadTaskHierarchy(deliverableId = '') {
+            const request = ++taskHierarchyRequest;
+            const relationshipSelects = ['modal-customer', 'modal-project', 'modal-deliverable']
+                .map(id => document.getElementById(id));
+            relationshipSelects.forEach(select => { select.disabled = false; });
+            taskHierarchy = { customers: [], projects: [], deliverables: [] };
+            document.getElementById('hierarchy-setup-required').classList.add('hidden');
+            hierarchyOptions(document.getElementById('modal-customer'), [], '');
+            renderTaskProjects();
+            try {
+                const data = await window.TaskAPI.getHierarchy();
+                if (request !== taskHierarchyRequest) return;
+                taskHierarchy = data;
+                document.getElementById('hierarchy-setup-required').classList.toggle('hidden', data.deliverables.length > 0);
+                const deliverable = data.deliverables.find(item => item.id === deliverableId);
+                const project = data.projects.find(item => item.id === deliverable?.projectId);
+                hierarchyOptions(document.getElementById('modal-customer'), data.customers, project?.customerId);
+                renderTaskProjects(project?.id, deliverable?.id);
+                const inheritedFromTree = !!deliverable && window.viewTabs?.current() === 'projects';
+                relationshipSelects.forEach(select => { select.disabled = inheritedFromTree; });
+            } catch (error) {
+                if (request !== taskHierarchyRequest) return;
+                console.error('Error loading task hierarchy:', error);
+                showToast(t('hierarchy.loadFailed', 'Struktur konnte nicht geladen werden.'));
+            }
+        }
         let tagsConfig = normalizeLegacySampleTags(loadFromStorage('kanban_tagsConfig', {}));
 
         let workflowPaths = loadFromStorage('kanban_workflowPaths', {
@@ -1793,6 +1898,8 @@
             saveToStorage('kanban_workflowPaths', workflowPaths);
         }
         // --- End of Migration ---
+        window.getTaskTypeColor = getTaskTypeColor;
+        window.dispatchEvent(new Event('tasktypecolorschanged'));
         
         const wipLimits = {
             "ToDo": 5, "Analysis": 4, "InProgress": 3, "Done": null,
@@ -2609,7 +2716,7 @@
             card.innerHTML = `
                 <div class="flex justify-between items-start gap-1 mb-1.5">
                     <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700/50">${task.id.slice(0,8)}...</span>
+                        <span class="text-[10px] break-all text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700/50">${escapeHtml(task.id)}</span>
                         <div class="flex items-center gap-2">
                             ${descriptionIconHtml}
                             ${linksHtml}
@@ -2899,7 +3006,7 @@
                 taskType: form.querySelector('#modal-type').value,
                 taskTypeColor: getTaskTypeColor(form.querySelector('#modal-type').value),
                 owner: form.querySelector('#modal-owner').value,
-                customer: form.querySelector('#modal-customer').value,
+                deliverableId: form.querySelector('#modal-deliverable').value,
                 d365Link: form.querySelector('#modal-d365-link').value,
                 timeLink: form.querySelector('#modal-time-link').value,
                 description: form.querySelector('#modal-description').innerHTML,
@@ -2907,6 +3014,14 @@
             };
 
             const isNewTask = !taskId;
+            const refreshHierarchy = window.viewTabs?.current() === 'projects';
+            if (isNewTask) {
+                const project = taskHierarchy.projects.find(item => item.id === form.querySelector('#modal-project').value);
+                if (!project?.shortKey) {
+                    showToast(t('hierarchy.projectKeyRequired', 'Bitte zuerst in Kunden und Projekte ein Projektkürzel hinterlegen.'));
+                    return;
+                }
+            }
             if (taskId) {
                 const task = tasks.find(t => t.id === taskId);
                 if (task && task.column !== "Backlog" && task.taskType !== taskData.taskType) {
@@ -2955,13 +3070,16 @@
             }
             closeAddTaskModal();
             await loadTasksFromCloud();
+            if (refreshHierarchy && window.viewTabs?.current() === 'projects')
+                await window.hierarchyView.refreshTasks();
         }
 
-        window.openAddTaskModal = function(column = "ToDo") {
+        window.openAddTaskModal = async function(column = "ToDo", deliverableId = '') {
             selectDescriptionImage(null);
             newTaskColumn = column;
             document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> ${escapeHtml(column === "Backlog" ? t('task.createBacklog', 'Neuen Backlog-Task erstellen') : t('task.create', 'Neuen Task erstellen'))}`;
             document.getElementById('task-form').reset();
+            lastProjectDefaultAssignee = '';
             document.getElementById('modal-task-id').value = "";
             selectedTaskId = null;
             clearPendingTaskUploads();
@@ -2973,9 +3091,10 @@
             updateAllDropdowns();
             renderModalTagsSelection();
             openDetailsPanel();
+            await loadTaskHierarchy(deliverableId);
         }
 
-        window.openEditTaskModal = function(taskId, event) {
+        window.openEditTaskModal = async function(taskId, event) {
             if (event && event.target.closest('button, a')) return;
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
@@ -2993,7 +3112,6 @@
             form.querySelector('#modal-title').value = task.title;
             form.querySelector('#modal-type').value = task.taskType;
             form.querySelector('#modal-owner').value = task.owner;
-            form.querySelector('#modal-customer').value = task.customer;
             form.querySelector('#modal-d365-link').value = task.d365Link || "";
             form.querySelector('#modal-time-link').value = task.timeLink || "";
             form.querySelector('#modal-description').innerHTML = task.description || "";
@@ -3001,6 +3119,7 @@
             selectedModalTags = task.tags ? [...task.tags] : [];
             updateAllDropdowns();
             renderModalTagsSelection();
+            await loadTaskHierarchy(task.deliverableId);
         }
 
         window.selectTask = function(taskId, event) {
@@ -3012,20 +3131,48 @@
             openDetailsPanel();
         }
 
+        window.openHierarchyTask = async function(taskId) {
+            if (!tasks.some(task => task.id === taskId)) await loadTasksFromCloud();
+            if (tasks.some(task => task.id === taskId)) {
+                window.selectTask(taskId);
+                return;
+            }
+            showToast(t('hierarchy.taskNotFound', 'Task konnte im Kanban nicht gefunden werden.'));
+        }
+
+        window.openHierarchyNewTask = async function(deliverableId) {
+            await window.openAddTaskModal('Backlog', deliverableId);
+        }
+
         function openDetailsPanel() {
-            document.body.classList.add('details-panel-open');
-            document.getElementById('task-details-panel').classList.remove('hidden');
-            document.getElementById('task-details-panel').classList.add('flex');
-            document.getElementById('details-resizer').classList.remove('hidden');
+            const panel = document.getElementById('task-details-panel');
+            panel.classList.remove('hidden');
+            panel.classList.add('flex');
+            if (window.viewTabs?.current() === 'projects') {
+                document.getElementById('hierarchy-task-panel-slot').classList.remove('hidden');
+                document.getElementById('hierarchy-entity-editor').classList.add('hidden');
+                document.getElementById('details-resizer').classList.add('hidden');
+                document.body.classList.remove('details-panel-open');
+            } else {
+                document.body.classList.add('details-panel-open');
+                document.getElementById('details-resizer').classList.remove('hidden');
+            }
             highlightSelectedCard();
         }
 
         window.closeDetailsPanel = function() {
             selectDescriptionImage(null);
+            taskHierarchyRequest++;
             document.body.classList.remove('details-panel-open');
-            document.getElementById('task-details-panel').classList.add('hidden');
-            document.getElementById('task-details-panel').classList.remove('flex');
+            const panel = document.getElementById('task-details-panel');
+            panel.classList.add('hidden');
+            panel.classList.remove('flex');
             document.getElementById('details-resizer').classList.add('hidden');
+            if (window.viewTabs?.current() === 'projects') {
+                document.getElementById('hierarchy-task-panel-slot').classList.add('hidden');
+                document.getElementById('hierarchy-entity-editor').classList.remove('hidden');
+                window.hierarchyView.returnFromTaskEditor();
+            }
             clearPendingTaskUploads();
             selectedTaskId = null;
             highlightSelectedCard();
@@ -3513,10 +3660,6 @@
             });
         }
 
-        function setupCustomerCombobox() {
-            setupCombobox('#modal-customer-container', 'modal-customer', 'customer-custom-dropdown', 'customer-dropdown-arrow', () => customers);
-        }
-
         function setupOwnerCombobox() {
             setupCombobox('#modal-owner-container', 'modal-owner', 'owner-custom-dropdown', 'owner-dropdown-arrow', () => owners);
         }
@@ -3787,7 +3930,16 @@
             // Initial data load and render
             updateAllDropdowns();
             setupOwnerCombobox();
-            setupCustomerCombobox(); // Initial setup for event listeners
+            document.getElementById('modal-customer').addEventListener('change', () => renderTaskProjects());
+            document.getElementById('modal-project').addEventListener('change', () => {
+                renderTaskDeliverables();
+                if (!document.getElementById('modal-task-id').value) {
+                    const owner = document.getElementById('modal-owner');
+                    const project = taskHierarchy.projects.find(item => item.id === document.getElementById('modal-project').value);
+                    if (!owner.value || owner.value === lastProjectDefaultAssignee) owner.value = project?.defaultAssignee || '';
+                    lastProjectDefaultAssignee = project?.defaultAssignee || '';
+                }
+            });
 
             // --- Theme Toggle Logic ---
             const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
