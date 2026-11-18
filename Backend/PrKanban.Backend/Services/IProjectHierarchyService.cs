@@ -39,6 +39,13 @@ public sealed record DeliverableRequest
     [Range(0, 1000000000)] public double ActualHours { get; init; }
 }
 
+/// <summary>Moves an item to a new parent and sibling position.</summary>
+public sealed record MoveHierarchyItemRequest
+{
+    [MaxLength(100)] public string? ParentId { get; init; }
+    [Range(0, int.MaxValue)] public required int Index { get; init; }
+}
+
 public sealed class HierarchyConflictException(string code, string message) : Exception(message)
 {
     public string Code { get; } = code;
@@ -50,4 +57,5 @@ public interface IProjectHierarchyService
     Task<CustomerResponse?> SaveCustomerAsync(string? id, CustomerRequest request, CancellationToken ct);
     Task<ProjectResponse?> SaveProjectAsync(string? id, ProjectRequest request, CancellationToken ct);
     Task<DeliverableResponse?> SaveDeliverableAsync(string? id, DeliverableRequest request, CancellationToken ct);
+    Task<bool> MoveAsync(string kind, string id, string? parentId, int index, CancellationToken ct);
 }

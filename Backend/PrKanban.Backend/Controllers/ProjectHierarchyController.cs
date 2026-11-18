@@ -96,4 +96,18 @@ public sealed class ProjectHierarchyController(IProjectHierarchyService hierarch
         }
         catch (HierarchyConflictException e) { return ConflictResult(e); }
     }
+
+    /// <summary>Moves and reorders an item in the hierarchy. Admins and users share this permission.</summary>
+    [HttpPut("{kind}/{id}/position")]
+    public async Task<IActionResult> Move(string kind, string id, MoveHierarchyItemRequest request, CancellationToken ct)
+    {
+        if (kind is not ("customers" or "projects" or "deliverables" or "tasks"))
+            return BadRequest(new ProblemDetails { Status = 400, Title = "Invalid hierarchy item type." });
+        if ((kind == "customers" && request.ParentId is not null) ||
+            (kind != "customers" && string.IsNullOrWhiteSpace(request.ParentId)))
+            return BadRequest(new ProblemDetails { Status = 400, Title = "Invalid hierarchy parent." });
+
+        var moved = await hierarchy.MoveAsync(kind, id, request.ParentId, request.Index, ct);
+        return moved ? Ok(new { success = true }) : NotFound();
+    }
 }

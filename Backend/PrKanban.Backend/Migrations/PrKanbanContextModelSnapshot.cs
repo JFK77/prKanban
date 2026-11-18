@@ -528,6 +528,31 @@ namespace PrKanban.Migrations
                     b.ToTable("TaskDeliverables");
                 });
 
+            modelBuilder.Entity("PrKanban.Models.HierarchyPosition", b =>
+                {
+                    b.Property<string>("ItemKind")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemId")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ItemKind", "ItemId");
+
+                    b.HasIndex("ItemKind", "ParentId", "SortOrder");
+
+                    b.ToTable("HierarchyPositions");
+                });
+
             modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
                 {
                     b.Property<string>("TaskId")

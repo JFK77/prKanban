@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace PrKanban.Models;
 
 public sealed class Customer
@@ -55,5 +57,15 @@ public sealed class TaskDeliverable
 {
     public string TaskId { get; set; } = "";
     public string DeliverableId { get; set; } = "";
+    [NotMapped]
+    public int SortOrder { get; set; }
     public Deliverable Deliverable { get; set; } = null!;
+}
+
+public sealed class HierarchyPosition
+{
+    public string ItemKind { get; set; } = "";
+    public string ItemId { get; set; } = "";
+    public string ParentId { get; set; } = "";
+    public int SortOrder { get; set; }
 }

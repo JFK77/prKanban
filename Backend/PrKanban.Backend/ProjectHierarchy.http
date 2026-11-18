@@ -2,6 +2,7 @@
 @customerId = replace-with-customer-id
 @projectId = replace-with-project-id
 @deliverableId = replace-with-deliverable-id
+@taskId = replace-with-task-id
 
 ### Read as Admin or User
 GET {{baseUrl}}/api/v1/hierarchy
@@ -41,3 +42,21 @@ PUT {{baseUrl}}/api/v1/hierarchy/deliverables/{{deliverableId}}
 Content-Type: application/json
 
 {"name":"Installation","projectId":"{{projectId}}","initialEstimateHours":35,"budgetHours":40,"actualHours":10}
+
+### Move a project under a customer and place it first
+PUT {{baseUrl}}/api/v1/hierarchy/projects/{{projectId}}/position
+Content-Type: application/json
+
+{"parentId":"{{customerId}}","index":0}
+
+### Move a deliverable under a project and place it first
+PUT {{baseUrl}}/api/v1/hierarchy/deliverables/{{deliverableId}}/position
+Content-Type: application/json
+
+{"parentId":"{{projectId}}","index":0}
+
+### Move a task under a deliverable and place it first
+PUT {{baseUrl}}/api/v1/hierarchy/tasks/{{taskId}}/position
+Content-Type: application/json
+
+{"parentId":"{{deliverableId}}","index":0}

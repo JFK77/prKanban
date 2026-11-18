@@ -10,12 +10,14 @@ let treeTasks = [];
 const expandedNodes = new Map();
 let hierarchyLoaded = false;
 let admin = false;
+let canRearrange = false;
 let editing = null;
 let dirty = false;
 let saving = false;
 let activation = 0;
 let selectedItemKey = null;
 let taskPanelReturnItemKey = null;
+let draggedItem = null;
 
 function message(text, error = false) {
     status.textContent = text;
@@ -107,7 +109,12 @@ function treeNode(kind, item, depth, children, childLabel) {
     const row = document.createElement('summary');
     row.className = 'tree-row';
     row.dataset.itemKey = key;
+    row.dataset.itemKind = kind;
+    row.dataset.itemId = item.id;
+    row.dataset.parentId = item.customerId || item.projectId || '';
     row.style.setProperty('--depth', depth);
+    row.draggable = canRearrange;
+    if (canRearrange) row.title = t('hierarchy.dragItem', 'Ziehen, um zu verschieben');
     const arrow = document.createElement('span');
     arrow.className = children.length ? 'tree-arrow' : 'tree-arrow-placeholder';
     arrow.setAttribute('aria-hidden', 'true');
@@ -159,7 +166,12 @@ function taskRow(task) {
     const row = document.createElement('div');
     row.className = 'tree-row';
     row.dataset.itemKey = `tasks:${task.id}`;
+    row.dataset.itemKind = 'tasks';
+    row.dataset.itemId = task.id;
+    row.dataset.parentId = task.deliverableId || '';
     row.style.setProperty('--depth', 3);
+    row.draggable = canRearrange;
+    if (canRearrange) row.title = t('hierarchy.dragItem', 'Ziehen, um zu verschieben');
     const spacer = document.createElement('span');
     spacer.className = 'tree-arrow-placeholder';
     const taskIcon = entityIcon('tasks');
@@ -196,7 +208,8 @@ function renderTree() {
         const projectNodes = projects.map(project => {
             const deliverables = data.deliverables.filter(deliverable => deliverable.projectId === project.id);
             const deliverableNodes = deliverables.map(deliverable => {
-                const tasks = treeTasks.filter(task => task.deliverableId === deliverable.id);
+                const tasks = treeTasks.filter(task => task.deliverableId === deliverable.id)
+                    .sort((a, b) => (a.hierarchyOrder ?? 0) - (b.hierarchyOrder ?? 0));
                 return treeNode('deliverables', deliverable, 2, tasks.map(taskRow), t('hierarchy.tasks', 'Tasks'));
             });
             return treeNode('projects', project, 1, deliverableNodes, t('hierarchy.deliverables', 'Lieferobjekte'));
@@ -207,6 +220,127 @@ function renderTree() {
         row.classList.toggle('is-selected', row.dataset.itemKey === selectedItemKey);
     });
 }
+
+function siblingsFor(kind, parentId) {
+    if (kind === 'customers') return data.customers;
+    if (kind === 'projects') return data.projects.filter(item => item.customerId === parentId);
+    if (kind === 'deliverables') return data.deliverables.filter(item => item.projectId === parentId);
+    if (kind === 'tasks') return treeTasks.filter(item => item.deliverableId === parentId)
+        .sort((a, b) => (a.hierarchyOrder ?? 0) - (b.hierarchyOrder ?? 0));
+    return [];
+}
+
+function getDropPlan(source, row, clientY) {
+    const targetKind = row.dataset.itemKind;
+    const targetId = row.dataset.itemId;
+    const targetParentId = row.dataset.parentId || null;
+    if (!targetKind || !targetId) return null;
+
+    if (source.kind === targetKind) {
+        if (source.id === targetId) return null;
+        const siblings = siblingsFor(source.kind, targetParentId);
+        const targetIndex = siblings.findIndex(item => item.id === targetId);
+        const sourceIndex = siblings.findIndex(item => item.id === source.id);
+        if (targetIndex < 0) return null;
+        const before = clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+        let index = targetIndex + (before ? 0 : 1);
+        if (source.parentId === targetParentId && sourceIndex >= 0) {
+            if (sourceIndex < index) index--;
+            if (sourceIndex === index) return null;
+        }
+        return { parentId: targetParentId, index, marker: before ? 'drop-before' : 'drop-after' };
+    }
+
+    const parentKind = { projects: 'customers', deliverables: 'projects', tasks: 'deliverables' };
+    if (parentKind[source.kind] !== targetKind) return null;
+    const siblings = siblingsFor(source.kind, targetId);
+    if (source.parentId === targetId) {
+        const sourceIndex = siblings.findIndex(item => item.id === source.id);
+        if (sourceIndex === siblings.length - 1) return null;
+        return { parentId: targetId, index: siblings.length - 1, marker: 'drop-inside' };
+    }
+    return { parentId: targetId, index: siblings.length, marker: 'drop-inside' };
+}
+
+function clearDropIndicators() {
+    document.querySelectorAll('#tree .drop-before, #tree .drop-after, #tree .drop-inside')
+        .forEach(row => row.classList.remove('drop-before', 'drop-after', 'drop-inside'));
+}
+
+async function moveItem(source, plan) {
+    if (!discardChanges()) return;
+    dirty = false;
+    const requestId = activation;
+    try {
+        await request(`hierarchy/${source.kind}/${encodeURIComponent(source.id)}/position`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({parentId: plan.parentId, index: plan.index})
+        });
+        const parentKind = { projects: 'customers', deliverables: 'projects', tasks: 'deliverables' }[source.kind];
+        if (parentKind && plan.parentId) expandedNodes.set(`${parentKind}:${plan.parentId}`, true);
+        const [nextData, nextTasks] = await Promise.all([request('hierarchy'), loadTreeTasks()]);
+        if (requestId !== activation) return;
+        data = nextData;
+        treeTasks = nextTasks;
+        hierarchyLoaded = true;
+        renderTree();
+        if (editing?.kind === source.kind && editing.id === source.id && source.kind !== 'tasks') {
+            const collection = source.kind === 'customers' ? data.customers :
+                source.kind === 'projects' ? data.projects : data.deliverables;
+            const moved = collection.find(item => item.id === source.id);
+            if (moved) select(source.kind, moved);
+        }
+        message(t('hierarchy.moved', 'Position aktualisiert.'));
+    } catch (error) {
+        console.error('Hierarchy move failed:', error);
+        if (requestId === activation) message(error.message, true);
+    }
+}
+
+const tree = document.getElementById('tree');
+tree.addEventListener('dragstart', event => {
+    const row = event.target.closest('.tree-row[draggable="true"]');
+    if (!canRearrange || !row) {
+        event.preventDefault();
+        return;
+    }
+    draggedItem = {
+        kind: row.dataset.itemKind,
+        id: row.dataset.itemId,
+        parentId: row.dataset.parentId || null
+    };
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${draggedItem.kind}:${draggedItem.id}`);
+    row.classList.add('is-dragging');
+});
+tree.addEventListener('dragover', event => {
+    if (!canRearrange || !draggedItem) return;
+    const row = event.target.closest('.tree-row');
+    const plan = row && getDropPlan(draggedItem, row, event.clientY);
+    clearDropIndicators();
+    if (!plan) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    row.classList.add(plan.marker);
+});
+tree.addEventListener('drop', async event => {
+    if (!canRearrange || !draggedItem) return;
+    const row = event.target.closest('.tree-row');
+    const plan = row && getDropPlan(draggedItem, row, event.clientY);
+    if (!plan) return;
+    event.preventDefault();
+    const source = draggedItem;
+    draggedItem = null;
+    clearDropIndicators();
+    document.querySelectorAll('#tree .is-dragging').forEach(item => item.classList.remove('is-dragging'));
+    await moveItem(source, plan);
+});
+tree.addEventListener('dragend', () => {
+    draggedItem = null;
+    clearDropIndicators();
+    document.querySelectorAll('#tree .is-dragging').forEach(item => item.classList.remove('is-dragging'));
+});
 
 async function loadTreeTasks() {
     const tasks = [];
@@ -340,6 +474,7 @@ async function activate() {
         const current = await request('auth/user');
         if (requestId !== activation) return;
         admin = !!current.data?.isAdmin;
+        canRearrange = true;
         document.getElementById('new-customer').classList.toggle('hidden', !admin);
         const [nextData, nextTasks] = await Promise.all([request('hierarchy'), loadTreeTasks()]);
         if (requestId !== activation) return;
@@ -362,6 +497,7 @@ function reset() {
     data = { customers: [], projects: [], deliverables: [] };
     treeTasks = [];
     admin = false;
+    canRearrange = false;
     editing = null;
     selectedItemKey = null;
     taskPanelReturnItemKey = null;

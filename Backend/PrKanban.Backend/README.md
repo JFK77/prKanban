@@ -140,9 +140,13 @@ Administrators can create and edit customers, projects and deliverables in
 the **Customers and projects** tab next to the Kanban filters, also accessible
 from administration. The Kanban tab preserves the current board and the Dashboard
 tab is a placeholder for a future dashboard.
-Users can browse the hierarchy read-only.
+Users can browse the hierarchy and, like Admins, reorder items and move them
+between valid parents. Only Admins can create items or edit their fields.
 The expandable tree shows tasks under their deliverables, including archived
 tasks marked as such. Tasks without a deliverable are not shown in the tree.
+Admins and Users can drag customers, projects, deliverables and tasks to reorder
+them or move them to another valid parent; the hierarchy order is independent
+from Kanban card order.
 Every project belongs to one customer;
 every deliverable belongs to one project. Customer debtor numbers and CRM URLs,
 project CRM links, order numbers and default assignees are optional.
@@ -161,6 +165,7 @@ are not implemented yet.
 - `GET /api/v1/hierarchy` — hierarchy for Admin and User
 - `POST /api/v1/hierarchy/customers`, `/projects`, `/deliverables` — create (Admin)
 - `PUT /api/v1/hierarchy/{customers|projects|deliverables}/:id` — edit (Admin)
+- `PUT /api/v1/hierarchy/{customers|projects|deliverables|tasks}/:id/position` — move/reorder (Admin and User)
 
 ### Languages and translations
 

@@ -73,9 +73,11 @@ namespace PrKanban.Controllers
             var total = await query.CountAsync();
             var tasks = await query
                 .OrderByDescending(t => t.UpdatedAt)
+                .ThenBy(t => t.Id)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
+            await PopulateHierarchyOrdersAsync(tasks);
 
             return Ok(new
             {
@@ -109,6 +111,7 @@ namespace PrKanban.Controllers
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
 
+            await PopulateHierarchyOrdersAsync(new[] { task });
             return Ok(new { success = true, data = task });
         }
 
@@ -134,6 +137,10 @@ namespace PrKanban.Controllers
             if (string.IsNullOrEmpty(deliverable.Project.Details?.ShortKey))
                 return BadRequest(new { success = false, error = new { code = "MISSING_PROJECT_KEY", message = "Set a project short key before creating tasks." } });
 
+            var hierarchyOrder = (await _context.HierarchyPositions
+                .Where(p => p.ItemKind == "tasks" && p.ParentId == deliverable.Id)
+                .Select(p => (int?)p.SortOrder)
+                .MaxAsync()) ?? -1;
             var task = new Task
             {
                 Id = $"{deliverable.Project.Details.ShortKey}-T-{Guid.NewGuid():N}",
@@ -147,10 +154,17 @@ namespace PrKanban.Controllers
                 UserId = userId,
                 Tags = request.Tags ?? Array.Empty<string>(),
                 Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null,
-                DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable }
+                DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable, SortOrder = hierarchyOrder + 1 }
             };
 
             _context.Tasks.Add(task);
+            _context.HierarchyPositions.Add(new HierarchyPosition
+            {
+                ItemKind = "tasks",
+                ItemId = task.Id,
+                ParentId = deliverable.Id,
+                SortOrder = hierarchyOrder + 1
+            });
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Task {task.Id} created by user {userId}");
 
@@ -180,12 +194,43 @@ namespace PrKanban.Controllers
                 if (string.IsNullOrWhiteSpace(request.DeliverableId) ||
                     !await _context.Deliverables.AnyAsync(d => d.Id == request.DeliverableId))
                     return BadRequest(new { success = false, error = new { code = "INVALID_DELIVERABLE", message = "A valid deliverable is required." } });
-                if (task.DeliverableAssignment is null)
+                if (task.DeliverableAssignment?.DeliverableId != request.DeliverableId)
                 {
-                    task.DeliverableAssignment = new TaskDeliverable { TaskId = task.Id, DeliverableId = request.DeliverableId };
-                    _context.TaskDeliverables.Add(task.DeliverableAssignment);
+                    var hierarchyOrder = (await _context.HierarchyPositions
+                        .Where(p => p.ItemKind == "tasks" && p.ParentId == request.DeliverableId)
+                        .Select(p => (int?)p.SortOrder)
+                        .MaxAsync()) ?? -1;
+                    var previousDeliverableId = task.DeliverableAssignment?.DeliverableId;
+                    if (previousDeliverableId is not null)
+                    {
+                        var previousPositions = await _context.HierarchyPositions
+                            .Where(p => p.ItemKind == "tasks" && p.ParentId == previousDeliverableId && p.ItemId != task.Id)
+                            .OrderBy(p => p.SortOrder)
+                            .ThenBy(p => p.ItemId)
+                            .ToListAsync();
+                        for (var index = 0; index < previousPositions.Count; index++)
+                            previousPositions[index].SortOrder = index;
+                    }
+                    var position = await _context.HierarchyPositions
+                        .FirstOrDefaultAsync(p => p.ItemKind == "tasks" && p.ItemId == task.Id);
+                    if (position is null)
+                    {
+                        position = new HierarchyPosition { ItemKind = "tasks", ItemId = task.Id };
+                        _context.HierarchyPositions.Add(position);
+                    }
+                    position.ParentId = request.DeliverableId;
+                    position.SortOrder = hierarchyOrder + 1;
+                    if (task.DeliverableAssignment is null)
+                    {
+                        task.DeliverableAssignment = new TaskDeliverable { TaskId = task.Id, DeliverableId = request.DeliverableId, SortOrder = hierarchyOrder + 1 };
+                        _context.TaskDeliverables.Add(task.DeliverableAssignment);
+                    }
+                    else
+                    {
+                        task.DeliverableAssignment.DeliverableId = request.DeliverableId;
+                        task.DeliverableAssignment.SortOrder = hierarchyOrder + 1;
+                    }
                 }
-                else task.DeliverableAssignment.DeliverableId = request.DeliverableId;
             }
 
             if (!string.IsNullOrEmpty(request.Title))
@@ -219,10 +264,26 @@ namespace PrKanban.Controllers
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
                 .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
                 .FirstAsync(t => t.Id == id);
+            await PopulateHierarchyOrdersAsync(new[] { task });
             
             _logger.LogInformation($"Task {task.Id} updated by user {userId}");
 
             return Ok(new { success = true, data = task });
+        }
+
+        private async System.Threading.Tasks.Task PopulateHierarchyOrdersAsync(IReadOnlyCollection<Task> tasks)
+        {
+            if (tasks.Count == 0) return;
+            var ids = tasks.Select(task => task.Id).ToArray();
+            var positions = await _context.HierarchyPositions
+                .Where(position => position.ItemKind == "tasks" && ids.Contains(position.ItemId))
+                .ToDictionaryAsync(position => position.ItemId, position => position.SortOrder);
+            foreach (var task in tasks)
+            {
+                if (task.DeliverableAssignment is not null &&
+                    positions.TryGetValue(task.Id, out var hierarchyOrder))
+                    task.DeliverableAssignment.SortOrder = hierarchyOrder;
+            }
         }
 
         /// <summary>
@@ -241,6 +302,19 @@ namespace PrKanban.Controllers
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
 
+            var position = await _context.HierarchyPositions
+                .FirstOrDefaultAsync(p => p.ItemKind == "tasks" && p.ItemId == id);
+            if (position is not null)
+            {
+                var siblings = await _context.HierarchyPositions
+                    .Where(p => p.ItemKind == "tasks" && p.ParentId == position.ParentId && p.ItemId != id)
+                    .OrderBy(p => p.SortOrder)
+                    .ThenBy(p => p.ItemId)
+                    .ToListAsync();
+                for (var index = 0; index < siblings.Count; index++)
+                    siblings[index].SortOrder = index;
+                _context.HierarchyPositions.Remove(position);
+            }
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Task {task.Id} deleted by user {userId}");

@@ -22,6 +22,7 @@ namespace PrKanban.Data
         public DbSet<Project> Projects { get; set; }
         public DbSet<Deliverable> Deliverables { get; set; }
         public DbSet<TaskDeliverable> TaskDeliverables { get; set; }
+        public DbSet<HierarchyPosition> HierarchyPositions { get; set; }
 
         /// <summary>
         /// DbSet for board configurations
@@ -87,6 +88,14 @@ namespace PrKanban.Data
                 entity.HasOne<Task>().WithOne(x => x.DeliverableAssignment)
                     .HasForeignKey<TaskDeliverable>(x => x.TaskId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(x => x.Deliverable).WithMany().HasForeignKey(x => x.DeliverableId).OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<HierarchyPosition>(entity =>
+            {
+                entity.HasKey(x => new { x.ItemKind, x.ItemId });
+                entity.Property(x => x.ItemKind).IsRequired().HasMaxLength(20);
+                entity.Property(x => x.ItemId).IsRequired().HasMaxLength(256);
+                entity.Property(x => x.ParentId).IsRequired().HasMaxLength(256);
+                entity.HasIndex(x => new { x.ItemKind, x.ParentId, x.SortOrder });
             });
 
             modelBuilder.Entity<TranslationEntry>(entity =>

@@ -48,6 +48,9 @@ namespace PrKanban.Models
         [NotMapped]
         public string? CustomerName => DeliverableAssignment?.Deliverable?.Project?.Customer?.Name;
 
+        [NotMapped]
+        public int? HierarchyOrder => DeliverableAssignment?.SortOrder;
+
         /// <summary>
         /// Detailed task description
         /// </summary>
