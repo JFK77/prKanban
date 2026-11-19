@@ -39,6 +39,7 @@ public sealed class ProjectDetails
 {
     public string ProjectId { get; set; } = "";
     public string? ShortKey { get; set; }
+    public int LastTaskNumber { get; set; }
     public string? CrmLink { get; set; }
     public string? CrmUrl { get; set; }
     public string? InternalOrderNumber { get; set; }

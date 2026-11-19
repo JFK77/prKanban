@@ -14,6 +14,11 @@ namespace PrKanban.Models
         public string Id { get; set; } = $"task_{Guid.NewGuid()}";
 
         /// <summary>
+        /// Human-readable identifier that is stable across task moves.
+        /// </summary>
+        public string? TaskNumber { get; set; }
+
+        /// <summary>
         /// Task title (required)
         /// </summary>
         public string Title { get; set; } = string.Empty;

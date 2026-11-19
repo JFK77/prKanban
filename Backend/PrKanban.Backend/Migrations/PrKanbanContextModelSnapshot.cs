@@ -388,6 +388,9 @@ namespace PrKanban.Migrations
                     b.Property<string>("InternalOrderNumber")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("LastTaskNumber")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ShortKey")
                         .HasColumnType("TEXT");
 
@@ -506,6 +509,9 @@ namespace PrKanban.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TaskNumber")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Tags")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -541,6 +547,9 @@ namespace PrKanban.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "IsArchived");
+
+                    b.HasIndex("TaskNumber")
+                        .IsUnique();
 
                     b.ToTable("Tasks");
                 });

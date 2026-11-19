@@ -178,6 +178,7 @@ namespace PrKanban.Data
                 entity.Property(e => e.UserId).IsRequired();
                 entity.Property(e => e.CreatedAt).IsRequired();
                 entity.Property(e => e.UpdatedAt).IsRequired();
+                entity.HasIndex(e => e.TaskNumber).IsUnique();
 
                 // Indexes for query performance
                 entity.HasIndex(e => e.UserId);

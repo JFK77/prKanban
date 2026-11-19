@@ -145,6 +145,14 @@ namespace PrKanban.Controllers
             if (string.IsNullOrEmpty(deliverable.Project.Details?.ShortKey))
                 return BadRequest(new { success = false, error = new { code = "MISSING_PROJECT_KEY", message = "Set a project short key before creating tasks." } });
 
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE ProjectDetails SET LastTaskNumber = LastTaskNumber + 1 WHERE ProjectId = {deliverable.ProjectId}",
+                cancellationToken);
+            var taskNumberSequence = await _context.Database
+                .SqlQuery<int>($"SELECT LastTaskNumber AS Value FROM ProjectDetails WHERE ProjectId = {deliverable.ProjectId}")
+                .SingleAsync(cancellationToken);
+
             var hierarchyOrder = (await _context.HierarchyPositions
                 .Where(p => p.ItemKind == "tasks" && p.ParentId == deliverable.Id)
                 .Select(p => (int?)p.SortOrder)
@@ -163,6 +171,7 @@ namespace PrKanban.Controllers
             var task = new Task
             {
                 Id = $"{deliverable.Project.Details.ShortKey}-T-{Guid.NewGuid():N}",
+                TaskNumber = $"{deliverable.Project.Details.ShortKey}-{taskNumberSequence}",
                 Title = request.Title,
                 TaskType = request.TaskType ?? "task",
                 Owner = string.IsNullOrWhiteSpace(request.Owner) ? deliverable.Project.Details.DefaultAssignee : request.Owner,
@@ -199,6 +208,7 @@ namespace PrKanban.Controllers
                 SortOrder = hierarchyOrder + 1
             });
             await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             _logger.LogInformation($"Task {task.Id} created by user {userId}");
 
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new { success = true, data = task });
