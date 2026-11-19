@@ -40,6 +40,7 @@ button.tree-name:hover { text-decoration: underline; }
 .dark .tree-action:hover, .dark .tree-action:focus-visible { color: #93c5fd; }
 .hierarchy-input { display: block; width: 100%; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; color: #1e293b; background: white; }
 .hierarchy-task-panel-slot #task-details-panel { width: 100% !important; height: min(80vh, 900px); min-height: 360px; border: 1px solid #e2e8f0; border-radius: 12px; }
+@media (min-width: 1024px) { .hierarchy-task-panel-slot { position: sticky; top: 1rem; } }
 .dark .hierarchy-input { color: #f1f5f9; background: #1e293b; border-color: #475569; }
 .dark .hierarchy-task-panel-slot #task-details-panel { border-color: #334155; }
 .view-tab { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; color: #64748b; }

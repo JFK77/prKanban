@@ -198,11 +198,13 @@ function taskRow(task) {
     const taskTypeColor = task.taskTypeColor || window.getTaskTypeColor?.(task.taskType) || '#64748b';
     taskIcon.style.color = taskTypeColor;
     taskIcon.style.backgroundColor = `${taskTypeColor}20`;
-    const title = button(task.title, event => {
+    const openTask = event => {
         event.preventDefault();
         event.stopPropagation();
         if (prepareTaskEditor(`tasks:${task.id}`)) window.openHierarchyTask(task.id);
-    }, 'tree-name');
+    };
+    const title = button(task.title, openTask, 'tree-name');
+    row.addEventListener('click', openTask);
     row.append(spacer, taskIcon, title);
     if (task.isArchived) {
         const archived = document.createElement('span');
@@ -306,6 +308,11 @@ async function moveItem(source, plan) {
         hierarchyLoaded = true;
         renderTree();
         if (source.kind === 'projects') window.refreshProjectBoardOptions?.();
+        if (source.kind === 'tasks' && source.parentId !== plan.parentId) {
+            const movedTask = treeTasks.find(task => task.id === source.id);
+            if (!movedTask) throw new Error(t('hierarchy.taskNotFound', 'Task konnte im Kanban nicht gefunden werden.'));
+            await window.syncMovedHierarchyTask(movedTask);
+        }
         if (editing?.kind === source.kind && editing.id === source.id && source.kind !== 'tasks') {
             const collection = source.kind === 'customers' ? data.customers :
                 source.kind === 'projects' ? data.projects : data.deliverables;

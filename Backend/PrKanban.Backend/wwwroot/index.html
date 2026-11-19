@@ -26,8 +26,8 @@
     <!-- API Client (must load before other scripts) -->
     <script src="api-client.js?v=hierarchy-1"></script>
     <script src="i18n.js?v=3" defer></script>
-    <link rel="stylesheet" href="hierarchy.css?v=project-board-navigation-7">
-    <script src="hierarchy.js?v=project-board-navigation-11" defer></script>
+    <link rel="stylesheet" href="hierarchy.css?v=project-board-navigation-8">
+    <script src="hierarchy.js?v=project-board-navigation-13" defer></script>
     <script src="view-tabs.js?v=project-board-navigation-7" defer></script>
     <script>
         // Initialization callback that module script will call
@@ -967,11 +967,11 @@
                         <button id="save" type="submit" data-i18n="common.save" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Speichern</button>
                     </fieldset>
                 </form>
-                </section>
+                </div>
                 <div id="hierarchy-task-panel-slot" class="hierarchy-task-panel-slot hidden min-w-0"></div>
             </section>
         </main>
-    </div>
+    </section>
     <section id="dashboard-panel" role="tabpanel" aria-labelledby="tab-dashboard" class="hidden flex-1 p-6">
         <h2 data-i18n="views.dashboard" class="text-xl font-bold">Dashboard</h2>
         <p data-i18n="views.dashboardLater" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Das Dashboard wird später ergänzt.</p>
@@ -1819,9 +1819,17 @@
                 return;
             }
             try {
-                const response = await window.TaskAPI.getTasks();
-                console.log("Raw response from TaskAPI:", response);
-                const apiTasks = response.tasks || response.data?.tasks || [];
+                const apiTasks = [];
+                let total;
+                do {
+                    const response = await window.TaskAPI.getTasks({ skip: apiTasks.length, take: 100 });
+                    if (!Array.isArray(response.tasks) || !Number.isInteger(response.pagination?.total))
+                        throw new Error('Invalid task page');
+                    total = response.pagination.total;
+                    if (!response.tasks.length && apiTasks.length < total)
+                        throw new Error('Incomplete task list');
+                    apiTasks.push(...response.tasks);
+                } while (apiTasks.length < total);
                 const cloudTasks = apiTasks.map(t => normalizeTaskFromAPI(t));
                 console.log("Extracted and normalized cloudTasks:", cloudTasks);
 
@@ -3560,6 +3568,20 @@
                 return;
             }
             showToast(t('hierarchy.taskNotFound', 'Task konnte im Kanban nicht gefunden werden.'));
+        }
+
+        window.syncMovedHierarchyTask = async function(apiTask) {
+            const updatedTask = normalizeTaskFromAPI(apiTask);
+            const index = tasks.findIndex(task => task.id === updatedTask.id);
+            if (index < 0) tasks.push(updatedTask);
+            else tasks[index] = updatedTask;
+            persistTaskSnapshot();
+            updateDynamicListsFromTasks(tasks);
+            renderCustomerFilterDropdown();
+            renderBoard();
+            if (selectedTaskId === updatedTask.id && window.viewTabs?.current() === 'projects' &&
+                !document.getElementById('task-details-panel').classList.contains('hidden'))
+                await loadTaskHierarchy(updatedTask.deliverableId);
         }
 
         window.openHierarchyNewTask = async function(deliverableId) {
