@@ -12,7 +12,8 @@ Content-Type: application/json
 
 {
   "name": "Customer review",
-  "masterColumnName": "Analysis"
+  "masterColumnName": "Analysis",
+  "showSubLanes": true
 }
 
 ### Rename or remap an empty column
@@ -21,7 +22,8 @@ Content-Type: application/json
 
 {
   "name": "Customer review",
-  "masterColumnName": "Analysis"
+  "masterColumnName": "Analysis",
+  "showSubLanes": false
 }
 
 ### Reorder all project columns

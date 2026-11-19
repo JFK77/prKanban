@@ -159,8 +159,14 @@ Existing projects need a short key before new deliverables or tasks can be creat
 The project's default assignee pre-fills new tasks and can be overridden.
 Admins and Users can read the hierarchy and must select a deliverable for new
 tasks. Existing unassigned tasks remain available and can be assigned when
-edited. Budgets do not restrict task creation; time booking and project boards
-are not implemented yet.
+edited. Budgets do not restrict task creation; time booking is not implemented yet.
+
+Each project has its own board. Administrators and assigned project leads can
+use **Manage columns** to create, rename, reorder (by dragging the handle or
+using the arrow buttons) and delete columns, map each
+column to a master-board category, and optionally display Doing/Done subcolumns.
+Backlog mappings do not support subcolumns. Columns containing tasks cannot be
+remapped or deleted, and each master category must retain at least one mapping.
 
 - `GET /api/v1/hierarchy` — hierarchy for Admin and User
 - `POST /api/v1/hierarchy/customers`, `/projects`, `/deliverables` — create (Admin)

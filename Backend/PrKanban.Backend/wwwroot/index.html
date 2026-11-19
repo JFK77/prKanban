@@ -425,6 +425,10 @@
             min-height: 100%;
         }
         .project-board-column { min-width: 0; min-height: 100%; }
+        .project-board-column-drag-handle { cursor: grab; padding: 4px; color: #64748b; }
+        .project-board-column-row.is-dragging { opacity: .45; }
+        .project-board-column-row.drop-before { box-shadow: inset 0 3px #2563eb; }
+        .project-board-column-row.drop-after { box-shadow: inset 0 -3px #2563eb; }
         .project-board-grid .project-board-column-body {
             display: flex;
             flex-direction: column;
@@ -1063,6 +1067,19 @@
                 </div>
             </div>
 
+            <!-- List of Types -->
+            <div id="types-manager-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                <!-- Configured Types dynamically populated -->
+            </div>
+
+            <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+                <button onclick="closeTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
+                    <span data-i18n="common.close">Schließen</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
             <!-- Project Board Management Modal -->
             <div id="project-board-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
@@ -1075,9 +1092,12 @@
                     <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4">
                         <h4 data-i18n="projectBoard.addColumn" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">Neue Spalte erstellen</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-[1fr_180px_auto] gap-2">
-                            <input id="project-board-new-column-name" type="text" maxlength="100" data-i18n-placeholder="projectBoard.columnName" placeholder="Spaltenname" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white">
-                            <select id="project-board-new-column-master" aria-label="Master-Kategorie" data-i18n-aria-label="projectBoard.masterCategory" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white"></select>
-                            <button type="button" onclick="createProjectBoardColumn()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg" data-i18n="common.create">Erstellen</button>
+                            <input id="project-board-new-column-name" type="text" maxlength="100" data-i18n-placeholder="projectBoard.columnName" placeholder="Spaltenname" class="self-end bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white">
+                            <div>
+                                <label for="project-board-new-column-master" data-i18n="projectBoard.mappingLabel" class="block mb-1 text-xs text-slate-600 dark:text-slate-300">Mapping to master board column:</label>
+                                <select id="project-board-new-column-master" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white"></select>
+                            </div>
+                            <button type="button" onclick="createProjectBoardColumn()" class="self-end bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg" data-i18n="common.create">Erstellen</button>
                             <label class="sm:col-span-3 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                                 <input id="project-board-new-column-show-sub-lanes" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                 <span data-i18n="projectBoard.showSubLanes">Zwei Unterspalten anzeigen (Doing/Done)</span>
@@ -1098,19 +1118,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- List of Types -->
-            <div id="types-manager-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                <!-- Configured Types dynamically populated -->
-            </div>
-
-            <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
-                <button onclick="closeTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
-                    <span data-i18n="common.close">Schließen</span>
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Toast Notification Box -->
     <div id="toast">
@@ -3711,6 +3718,53 @@
             renderProjectBoardColumnList();
         }
 
+        let draggedProjectColumnRow = null;
+        let reorderingProjectBoardColumns = false;
+
+        function clearProjectColumnDragState() {
+            document.querySelectorAll('#project-board-column-list .is-dragging, #project-board-column-list .drop-before, #project-board-column-list .drop-after')
+                .forEach(row => row.classList.remove('is-dragging', 'drop-before', 'drop-after'));
+            draggedProjectColumnRow = null;
+        }
+
+        function updateProjectColumnMoveButtons(list) {
+            const rows = [...list.children];
+            rows.forEach((row, index) => {
+                row.querySelector('[data-move="up"]').disabled = index === 0;
+                row.querySelector('[data-move="down"]').disabled = index === rows.length - 1;
+            });
+        }
+
+        async function reorderProjectBoardColumn(row, before) {
+            const list = document.getElementById('project-board-column-list');
+            if (reorderingProjectBoardColumns || before === row || row.nextElementSibling === before) return;
+            const originalRows = [...list.children];
+            list.insertBefore(row, before);
+            const columnIds = [...list.children].map(element => element.dataset.columnId);
+            const buttons = [...document.querySelectorAll('#project-board-modal button')];
+            const disabledStates = buttons.map(button => button.disabled);
+            reorderingProjectBoardColumns = true;
+            list.setAttribute('aria-busy', 'true');
+            buttons.forEach(button => { button.disabled = true; });
+            let saved = false;
+            try {
+                await window.ProjectBoardAPI.reorderColumns(activeProjectBoardId, columnIds);
+                saved = true;
+                activeProjectBoard.columns.forEach(column => { column.sortOrder = columnIds.indexOf(column.id); });
+                renderBoard();
+                setProjectBoardModalError();
+            } catch (error) {
+                if (!saved) list.append(...originalRows);
+                console.error('Could not reorder project board columns:', error);
+                setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+            } finally {
+                buttons.forEach((button, index) => { button.disabled = disabledStates[index]; });
+                updateProjectColumnMoveButtons(list);
+                list.removeAttribute('aria-busy');
+                reorderingProjectBoardColumns = false;
+            }
+        }
+
         function renderProjectBoardColumnList() {
             const list = document.getElementById('project-board-column-list');
             list.replaceChildren();
@@ -3718,17 +3772,65 @@
             const columns = [...activeProjectBoard.columns].sort((a, b) => a.sortOrder - b.sortOrder);
             columns.forEach((column, index) => {
                 const row = document.createElement('div');
-                row.className = 'project-board-column-row bg-slate-50 dark:bg-slate-800/50 p-3 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-wrap items-center gap-2';
+                row.className = 'project-board-column-row bg-slate-50 dark:bg-slate-800/50 p-3 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-wrap items-end gap-2';
                 row.dataset.columnId = column.id;
+                const handle = document.createElement('span');
+                handle.className = 'project-board-column-drag-handle';
+                handle.draggable = true;
+                handle.title = t('hierarchy.dragItem', 'Ziehen, um zu verschieben');
+                handle.setAttribute('aria-hidden', 'true');
+                handle.innerHTML = '<i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>';
+                handle.addEventListener('dragstart', event => {
+                    if (reorderingProjectBoardColumns) {
+                        event.preventDefault();
+                        return;
+                    }
+                    draggedProjectColumnRow = row;
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', column.id);
+                    row.classList.add('is-dragging');
+                });
+                handle.addEventListener('dragend', clearProjectColumnDragState);
+                row.addEventListener('dragover', event => {
+                    if (!draggedProjectColumnRow || draggedProjectColumnRow === row || reorderingProjectBoardColumns) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    list.querySelectorAll('.drop-before, .drop-after')
+                        .forEach(item => item.classList.remove('drop-before', 'drop-after'));
+                    const before = event.clientY < row.getBoundingClientRect().top + row.offsetHeight / 2;
+                    row.classList.add(before ? 'drop-before' : 'drop-after');
+                });
+                row.addEventListener('drop', event => {
+                    if (!draggedProjectColumnRow || draggedProjectColumnRow === row || reorderingProjectBoardColumns) return;
+                    event.preventDefault();
+                    const source = draggedProjectColumnRow;
+                    const before = event.clientY < row.getBoundingClientRect().top + row.offsetHeight / 2;
+                    clearProjectColumnDragState();
+                    reorderProjectBoardColumn(source, before ? row : row.nextElementSibling);
+                });
                 const name = document.createElement('input');
                 name.type = 'text';
                 name.maxLength = 100;
                 name.value = column.name;
-                name.setAttribute('aria-label', t('projectBoard.columnName', 'Spaltenname'));
-                name.className = 'min-w-[140px] flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-white';
+                name.className = 'w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-white';
+                const nameLabel = document.createElement('label');
+                nameLabel.className = 'min-w-[140px] flex-1';
+                const nameLabelText = document.createElement('span');
+                nameLabelText.className = 'block mb-1 text-xs text-slate-600 dark:text-slate-300';
+                nameLabelText.dataset.i18n = 'projectBoard.thisBoardColumn';
+                nameLabelText.textContent = t('projectBoard.thisBoardColumn', 'This board column');
+                nameLabelText.dataset.i18nFallback = 'This board column';
+                nameLabel.append(nameLabelText, name);
                 const master = document.createElement('select');
-                master.setAttribute('aria-label', t('projectBoard.masterCategory', 'Master-Kategorie'));
-                master.className = 'min-w-[150px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-white';
+                master.className = 'w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-white';
+                const masterLabel = document.createElement('label');
+                masterLabel.className = 'min-w-[150px]';
+                const masterLabelText = document.createElement('span');
+                masterLabelText.className = 'block mb-1 text-xs text-slate-600 dark:text-slate-300';
+                masterLabelText.dataset.i18n = 'projectBoard.masterBoard';
+                masterLabelText.textContent = t('projectBoard.masterBoard', 'Master board');
+                masterLabelText.dataset.i18nFallback = 'Master board';
+                masterLabel.append(masterLabelText, master);
                 populateProjectBoardMasterSelect(master, column.masterColumnName);
                 const laneLabel = document.createElement('label');
                 laneLabel.className = 'inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300';
@@ -3747,38 +3849,26 @@
 
                 const actions = document.createElement('div');
                 actions.className = 'flex items-center gap-1';
-                const move = (offset) => async () => {
-                    const rows = [...list.children];
-                    const from = rows.indexOf(row);
-                    const to = from + offset;
-                    if (to < 0 || to >= rows.length) return;
-                    list.insertBefore(row, offset < 0 ? rows[to] : rows[to].nextSibling);
-                    try {
-                        await window.ProjectBoardAPI.reorderColumns(
-                            activeProjectBoardId,
-                            [...list.children].map(element => element.dataset.columnId));
-                        await refreshProjectBoard();
-                        setProjectBoardModalError();
-                    } catch (error) {
-                        console.error('Could not reorder project board columns:', error);
-                        setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
-                        renderProjectBoardColumnList();
-                    }
-                };
                 const up = document.createElement('button');
                 up.type = 'button';
                 up.disabled = index === 0;
+                up.dataset.move = 'up';
                 up.title = t('projectBoard.moveLeft', 'Spalte nach links verschieben');
                 up.className = 'px-2 py-1 text-slate-600 dark:text-slate-300 disabled:opacity-40';
                 up.innerHTML = '<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>';
-                up.addEventListener('click', move(-1));
+                up.addEventListener('click', () => {
+                    if (row.previousElementSibling) reorderProjectBoardColumn(row, row.previousElementSibling);
+                });
                 const down = document.createElement('button');
                 down.type = 'button';
                 down.disabled = index === columns.length - 1;
+                down.dataset.move = 'down';
                 down.title = t('projectBoard.moveRight', 'Spalte nach rechts verschieben');
                 down.className = 'px-2 py-1 text-slate-600 dark:text-slate-300 disabled:opacity-40';
                 down.innerHTML = '<i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
-                down.addEventListener('click', move(1));
+                down.addEventListener('click', () => {
+                    if (row.nextElementSibling) reorderProjectBoardColumn(row, row.nextElementSibling.nextElementSibling);
+                });
                 const save = document.createElement('button');
                 save.type = 'button';
                 save.textContent = t('common.save', 'Speichern');
@@ -3814,7 +3904,7 @@
                     }
                 });
                 actions.append(up, down, save, remove);
-                row.append(name, master, laneLabel, actions);
+                row.append(handle, nameLabel, masterLabel, laneLabel, actions);
                 list.appendChild(row);
             });
         }
