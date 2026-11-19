@@ -13,6 +13,7 @@
         tailwind.config = {
             darkMode: 'class',
         }
+
         // Theme aus LocalStorage laden, um "Flashen" zu verhindern
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark')
@@ -25,9 +26,9 @@
     <!-- API Client (must load before other scripts) -->
     <script src="api-client.js?v=hierarchy-1"></script>
     <script src="i18n.js?v=3" defer></script>
-    <link rel="stylesheet" href="hierarchy.css?v=hierarchy-drag-drop-6">
-    <script src="hierarchy.js?v=hierarchy-drag-drop-8" defer></script>
-    <script src="view-tabs.js?v=task-side-panel-5" defer></script>
+    <link rel="stylesheet" href="hierarchy.css?v=project-board-navigation-7">
+    <script src="hierarchy.js?v=project-board-navigation-11" defer></script>
+    <script src="view-tabs.js?v=project-board-navigation-7" defer></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -315,6 +316,7 @@
             box-shadow: inset 0 0 0 1px #e2e8f0;
             transition: flex-basis 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
+        #backlog-panel.hidden { display: none; }
         #backlog-panel.is-open {
             flex: 1 1 0;
             min-width: 250px;
@@ -410,6 +412,26 @@
             grid-template-columns: var(--board-columns);
             column-gap: var(--board-panel-gap);
         }
+        .project-board-grid {
+            display: grid;
+            gap: var(--board-panel-gap);
+            align-items: start;
+            min-width: 100%;
+            min-height: 100%;
+        }
+        .project-board-grid .board-column-panel {
+            grid-row: auto;
+            min-width: 0;
+            min-height: 100%;
+        }
+        .project-board-column { min-width: 0; min-height: 100%; }
+        .project-board-grid .project-board-column-body {
+            display: flex;
+            flex-direction: column;
+            grid-row: 1;
+            min-height: 0;
+        }
+        .project-board-column-body > .board-subcolumn { flex: 1; }
         #board-container > .board-grid { min-height: 100%; }
         .board-column-panel {
             display: grid;
@@ -638,6 +660,9 @@
                 <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden" aria-hidden="true"></i>
             </button>
             <div id="board-header-actions" class="flex flex-wrap items-center gap-2">
+            <button id="project-board-manage-button" type="button" onclick="openProjectBoardManager()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg">
+                <i class="fa-solid fa-table-columns mr-1.5" aria-hidden="true"></i><span data-i18n="projectBoard.manage">Spalten verwalten</span>
+            </button>
             <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                 <i class="fa-solid fa-tag text-slate-500" aria-hidden="true"></i> <span data-i18n="board.manageTags">Tags verwalten</span>
             </button>
@@ -654,9 +679,23 @@
 
     <!-- Controls Panel: Filters & Grouping -->
     <section aria-label="Board-Einstellungen" data-i18n-aria-label="board.settings" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <nav id="project-board-breadcrumb" aria-label="Board auswählen" data-i18n-aria-label="projectBoard.select" class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5">
+            <button id="project-board-breadcrumb-projects" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400">
+                <i class="fa-solid fa-folder-tree text-slate-400" aria-hidden="true"></i>
+                <span data-i18n="hierarchy.open">Kunden und Projekte</span>
+            </button>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400" aria-hidden="true"></i>
+            <button id="project-board-breadcrumb-kanban" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400">
+                <i class="fa-solid fa-table-columns text-blue-500" aria-hidden="true"></i>
+                <span data-i18n="views.kanban">Kanban</span>
+            </button>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400" aria-hidden="true"></i>
+            <label for="project-board-select" class="sr-only" data-i18n="projectBoard.select">Board auswählen</label>
+            <select id="project-board-select" onchange="selectProjectBoard(this.value)" aria-label="Board auswählen" data-i18n-aria-label="projectBoard.select" class="max-w-[260px] bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 py-1">
+                <option value="" data-i18n="projectBoard.master">Masterboard</option>
+            </select>
+        </nav>
         <nav id="view-tabs" role="tablist" aria-label="Ansichten" data-i18n-aria-label="views.label" class="flex flex-wrap items-center gap-1">
-            <button id="tab-projects" type="button" role="tab" aria-controls="hierarchy-panel" aria-selected="false" tabindex="-1" data-view="projects" class="view-tab"><i class="fa-solid fa-list text-slate-500" aria-hidden="true"></i><span data-i18n="hierarchy.open">Kunden und Projekte</span></button>
-            <button id="tab-kanban" type="button" role="tab" aria-controls="kanban-panel" aria-selected="true" tabindex="0" data-view="kanban" class="view-tab"><i class="fa-solid fa-table-columns text-blue-600" aria-hidden="true"></i><span data-i18n="views.kanban">Kanban</span></button>
             <button id="tab-dashboard" type="button" role="tab" aria-controls="dashboard-panel" aria-selected="false" tabindex="-1" data-view="dashboard" class="view-tab"><i class="fa-solid fa-chart-column text-purple-600" aria-hidden="true"></i><span data-i18n="views.dashboard">Dashboard</span></button>
         </nav>
         <!-- Filters -->
@@ -708,6 +747,7 @@
 
         <!-- Groupings / Swimlanes -->
         <div id="board-groupings" class="flex flex-wrap items-center gap-2">
+            <div id="board-grouping-options" class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i><span data-i18n="board.swimlanes">Swimlanes:</span>
             </span>
@@ -747,6 +787,7 @@
                     <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i> <span data-i18n="board.collapse">Einklappen</span>
                 </button>
             </div>
+            </div>
             <label for="filter-archived" class="h-8 inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
                 <i class="fa-solid fa-box-archive text-slate-400" aria-hidden="true"></i>
                 <span data-i18n="board.archive">Archiv</span>
@@ -759,7 +800,7 @@
     </section>
 
     <!-- Board Area -->
-    <div id="kanban-panel" role="tabpanel" aria-labelledby="tab-kanban" class="board-area flex flex-1 overflow-hidden">
+    <section id="kanban-panel" role="region" aria-label="Kanban" data-i18n-aria-label="views.kanban" class="board-area flex flex-1 overflow-hidden">
         <aside id="backlog-panel" class="bg-white dark:bg-slate-900" aria-label="Backlog" data-i18n-aria-label="board.backlog">
             <button type="button" id="backlog-toggle" aria-label="Backlog" data-i18n-aria-label="board.backlog" aria-expanded="false" aria-controls="backlog-content" title="Backlog auf- oder zuklappen" data-i18n-title="board.toggleBacklog" class="font-semibold tracking-wide">
                 <i id="backlog-chevron" class="fa-solid fa-chevron-right" aria-hidden="true"></i>
@@ -895,8 +936,8 @@
                 </div>
             </div>
         </aside>
-    </div>
-    <div id="hierarchy-panel" role="tabpanel" aria-labelledby="tab-projects" class="hidden flex-1 p-4 sm:p-5">
+    </section>
+    <section id="hierarchy-panel" role="region" aria-label="Kunden und Projekte" data-i18n-aria-label="hierarchy.open" class="hidden flex-1 p-4 sm:p-5">
         <main class="grid gap-5 lg:grid-cols-[minmax(24rem,1fr)_minmax(22rem,1fr)]">
             <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 min-w-0">
                 <div class="flex items-center justify-between gap-2 mb-4"><h2 data-i18n="hierarchy.customers" class="font-bold">Kunden</h2><button id="new-customer" type="button" data-i18n="hierarchy.addCustomer" class="hidden rounded-lg bg-blue-600 px-3 py-2 text-sm text-white">+ Kunde</button></div>
@@ -926,7 +967,7 @@
                         <button id="save" type="submit" data-i18n="common.save" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Speichern</button>
                     </fieldset>
                 </form>
-                </div>
+                </section>
                 <div id="hierarchy-task-panel-slot" class="hierarchy-task-panel-slot hidden min-w-0"></div>
             </section>
         </main>
@@ -1018,6 +1059,42 @@
                             <input type="color" id="new-type-color" value="#8b5cf6" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
                         </label>
                         <button onclick="addNewType()" data-i18n="types.createButton" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-lg">Typ erstellen</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Board Management Modal -->
+            <div id="project-board-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="project-board-modal-title" class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2"></h3>
+                        <button type="button" onclick="closeProjectBoardManager()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white">
+                            <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4">
+                        <h4 data-i18n="projectBoard.addColumn" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">Neue Spalte erstellen</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-[1fr_180px_auto] gap-2">
+                            <input id="project-board-new-column-name" type="text" maxlength="100" data-i18n-placeholder="projectBoard.columnName" placeholder="Spaltenname" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white">
+                            <select id="project-board-new-column-master" aria-label="Master-Kategorie" data-i18n-aria-label="projectBoard.masterCategory" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white"></select>
+                            <button type="button" onclick="createProjectBoardColumn()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg" data-i18n="common.create">Erstellen</button>
+                            <label class="sm:col-span-3 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                <input id="project-board-new-column-show-sub-lanes" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                <span data-i18n="projectBoard.showSubLanes">Zwei Unterspalten anzeigen (Doing/Done)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="project-board-column-list" class="space-y-2"></div>
+                    <section id="project-board-leads-section" class="hidden mt-5 border-t border-slate-200 dark:border-slate-800 pt-4">
+                        <h4 data-i18n="projectBoard.leads" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">Projektleiter</h4>
+                        <div class="flex flex-wrap items-start gap-2">
+                            <select id="project-board-leads-select" multiple size="5" class="min-w-[220px] flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white"></select>
+                            <button type="button" onclick="saveProjectBoardLeads()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg" data-i18n="projectBoard.saveLeads">Projektleiter speichern</button>
+                        </div>
+                    </section>
+                    <div id="project-board-modal-error" role="alert" class="hidden mt-3 text-xs text-red-600 dark:text-red-400"></div>
+                    <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+                        <button type="button" onclick="closeProjectBoardManager()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm" data-i18n="common.close">Schließen</button>
                     </div>
                 </div>
             </div>
@@ -1413,6 +1490,7 @@
                 logoutBtn.classList.add('hidden');
             }
             window.dispatchEvent(new CustomEvent('app-auth-changed', { detail: window.currentUser }));
+            window.refreshProjectBoardOptions?.();
         }
 
         async function initAuth() {
@@ -1479,6 +1557,9 @@
                 window.i18n.setUser(null);
                 updateConnectionUI();
                 tasks = [];
+                activeProjectBoardId = '';
+                activeProjectBoard = null;
+                updateProjectBoardControls();
                 updateAllDropdowns();
                 renderBoard();
                 showToast(t('auth.loggedOut', 'Abgemeldet.'));
@@ -1692,6 +1773,9 @@
                 owner: apiTask.owner || "Unassigned",
                 customer: apiTask.customerName || apiTask.customer || "No Customer",
                 deliverableId: apiTask.deliverableId,
+                projectId: apiTask.projectId,
+                projectBoardColumnId: apiTask.projectBoardColumnId,
+                projectBoardSortOrder: apiTask.projectBoardSortOrder,
                 projectName: apiTask.projectName,
                 deliverableName: apiTask.deliverableName,
                 taskType: apiTask.taskType || "Task",
@@ -1714,8 +1798,10 @@
             const mapping = {
                 "backlog": "Backlog",
                 "todo": "ToDo",
+                "to do": "ToDo",
                 "analysis": "Analysis",
                 "inprogress": "InProgress",
+                "in progress": "InProgress",
                 "done": "Done"
             };
             return mapping[columnName.toLowerCase()] || columnName;
@@ -1725,6 +1811,9 @@
         async function loadTasksFromCloud() {
             if (!window.currentUser) {
                 tasks = [];
+                activeProjectBoardId = '';
+                activeProjectBoard = null;
+                updateProjectBoardControls();
                 updateAllDropdowns();
                 renderBoard();
                 return;
@@ -1752,6 +1841,9 @@
                 console.error("Error loading tasks from API:", error);
                 const localFallback = loadFromStorage('kanban_tasks', []);
                 tasks = Array.isArray(localFallback) ? localFallback : [];
+                activeProjectBoardId = '';
+                activeProjectBoard = null;
+                updateProjectBoardControls();
                 showToast(t('board.offline', 'API momentan nicht erreichbar. Lokale Sicherung wird angezeigt.'));
                 updateAllDropdowns();
                 renderBoard();
@@ -1827,9 +1919,14 @@
         let draggedTaskId = null;
         let selectedTaskId = null;
         let newTaskColumn = "ToDo";
+        let newTaskProjectColumnId = "";
+        let activeProjectBoardId = loadFromStorage('kanban_activeProjectBoard', '');
+        let activeProjectBoard = null;
+        let projectBoardRequest = 0;
         let dragDropState = null;
         const collapsedSwimlanes = new Set();
         const collapsedBoardColumns = new Set();
+        const collapsedProjectBoardColumns = new Set();
         const boardColumns = ["ToDo", "Analysis", "InProgress", "Done"];
 
         let owners = [];
@@ -1837,6 +1934,101 @@
         let taskHierarchy = { customers: [], projects: [], deliverables: [] };
         let taskHierarchyRequest = 0;
         let lastProjectDefaultAssignee = '';
+
+        function updateProjectBoardControls() {
+            const manageButton = document.getElementById('project-board-manage-button');
+            const select = document.getElementById('project-board-select');
+            const backlog = document.getElementById('backlog-panel');
+            const groupingOptions = document.getElementById('board-grouping-options');
+            if (manageButton)
+                manageButton.classList.toggle('hidden', !activeProjectBoardId || !activeProjectBoard?.canManage);
+            if (select)
+                select.value = activeProjectBoardId || '';
+            if (backlog)
+                backlog.classList.toggle('hidden', !!activeProjectBoardId);
+            if (groupingOptions)
+                groupingOptions.classList.toggle('hidden', !!activeProjectBoardId);
+        }
+
+        async function loadProjectBoard(projectId) {
+            const request = ++projectBoardRequest;
+            try {
+                const board = await window.ProjectBoardAPI.getBoard(projectId);
+                if (request !== projectBoardRequest) return true;
+                activeProjectBoardId = projectId;
+                activeProjectBoard = board;
+                saveToStorage('kanban_activeProjectBoard', projectId);
+                updateProjectBoardControls();
+                renderBoard();
+                return true;
+            } catch (error) {
+                if (request !== projectBoardRequest) return true;
+                console.error('Could not load project board:', error);
+                activeProjectBoardId = '';
+                activeProjectBoard = null;
+                saveToStorage('kanban_activeProjectBoard', '');
+                updateProjectBoardControls();
+                renderBoard();
+                showToast(t('projectBoard.loadFailed', 'Projektboard konnte nicht geladen werden: {error}', {
+                    error: error.message || t('common.unknownError', 'Unbekannter Fehler')
+                }));
+                return false;
+            }
+        }
+
+        async function loadProjectBoardOptions() {
+            const select = document.getElementById('project-board-select');
+            if (!window.currentUser) {
+                activeProjectBoardId = '';
+                activeProjectBoard = null;
+                select?.replaceChildren(new Option(t('projectBoard.master', 'Masterboard'), ''));
+                updateProjectBoardControls();
+                return;
+            }
+
+            try {
+                const hierarchy = await window.TaskAPI.getHierarchy();
+                taskHierarchy = hierarchy;
+                const requestedProjectId = activeProjectBoardId || loadFromStorage('kanban_activeProjectBoard', '');
+                select.replaceChildren(new Option(t('projectBoard.master', 'Masterboard'), ''));
+                hierarchy.projects.forEach(project => {
+                    const customer = hierarchy.customers.find(item => item.id === project.customerId);
+                    const label = customer ? `${customer.name} / ${project.name}` : project.name;
+                    select.add(new Option(label, project.id));
+                });
+
+                activeProjectBoardId = hierarchy.projects.some(project => project.id === requestedProjectId)
+                    ? requestedProjectId
+                    : '';
+                saveToStorage('kanban_activeProjectBoard', activeProjectBoardId);
+                if (activeProjectBoardId)
+                    await loadProjectBoard(activeProjectBoardId);
+                else {
+                    activeProjectBoard = null;
+                    updateProjectBoardControls();
+                    renderBoard();
+                }
+            } catch (error) {
+                console.error('Could not load project boards:', error);
+                showToast(t('projectBoard.loadFailed', 'Projektboards konnten nicht geladen werden: {error}', {
+                    error: error.message || t('common.unknownError', 'Unbekannter Fehler')
+                }));
+            }
+        }
+
+        window.updateProjectBoardControls = updateProjectBoardControls;
+        window.refreshProjectBoardOptions = loadProjectBoardOptions;
+        window.selectProjectBoard = async function(projectId) {
+            activeProjectBoardId = projectId || '';
+            activeProjectBoard = null;
+            saveToStorage('kanban_activeProjectBoard', activeProjectBoardId);
+            updateProjectBoardControls();
+            if (!activeProjectBoardId) {
+                renderBoard();
+                return true;
+            }
+            return await loadProjectBoard(activeProjectBoardId);
+        };
 
         function hierarchyOptions(select, items, selected) {
             select.replaceChildren(new Option(t('hierarchy.select', 'Bitte auswählen'), ''));
@@ -1857,7 +2049,7 @@
             renderTaskDeliverables(deliverable);
         }
 
-        async function loadTaskHierarchy(deliverableId = '') {
+        async function loadTaskHierarchy(deliverableId = '', selectedProjectId = '') {
             const request = ++taskHierarchyRequest;
             const relationshipSelects = ['modal-customer', 'modal-project', 'modal-deliverable']
                 .map(id => document.getElementById(id));
@@ -1872,11 +2064,14 @@
                 taskHierarchy = data;
                 document.getElementById('hierarchy-setup-required').classList.toggle('hidden', data.deliverables.length > 0);
                 const deliverable = data.deliverables.find(item => item.id === deliverableId);
-                const project = data.projects.find(item => item.id === deliverable?.projectId);
+                const project = data.projects.find(item => item.id === (deliverable?.projectId || selectedProjectId));
                 hierarchyOptions(document.getElementById('modal-customer'), data.customers, project?.customerId);
                 renderTaskProjects(project?.id, deliverable?.id);
                 const inheritedFromTree = !!deliverable && window.viewTabs?.current() === 'projects';
-                relationshipSelects.forEach(select => { select.disabled = inheritedFromTree; });
+                const inheritedFromBoard = !!selectedProjectId && window.viewTabs?.current() !== 'projects';
+                relationshipSelects.forEach((select, index) => {
+                    select.disabled = inheritedFromTree || (inheritedFromBoard && index < 2);
+                });
             } catch (error) {
                 if (request !== taskHierarchyRequest) return;
                 console.error('Error loading task hierarchy:', error);
@@ -2296,7 +2491,19 @@
             return (a.id || '').localeCompare(b.id || '');
         }
 
-        function getLaneTasks(mainCol, subCol, excludeTaskId = null) {
+        function getLaneTasks(mainCol, subCol, excludeTaskId = null, projectBoardColumnId = null, projectSubColumn = null) {
+            if (activeProjectBoardId) {
+                return tasks
+                    .filter(task => task.projectId === activeProjectBoardId &&
+                        task.projectBoardColumnId === (projectBoardColumnId || subCol) &&
+                        (!projectSubColumn || task.subColumn === projectSubColumn) &&
+                        task.id !== excludeTaskId)
+                    .sort((a, b) => {
+                        const aOrder = typeof a.projectBoardSortOrder === 'number' ? a.projectBoardSortOrder : Number.POSITIVE_INFINITY;
+                        const bOrder = typeof b.projectBoardSortOrder === 'number' ? b.projectBoardSortOrder : Number.POSITIVE_INFINITY;
+                        return aOrder - bOrder || sortTasksByPriority(a, b);
+                    });
+            }
             return tasks
                 .filter(task => task.column === mainCol && task.subColumn === subCol && task.id !== excludeTaskId)
                 .sort(sortTasksByPriority);
@@ -2400,17 +2607,27 @@
         }
 
         function getInsertIndexFromDropzone(dropzone, draggedId, beforeTaskId) {
-            const lane = getLaneTasks(dropzone.dataset.main, dropzone.dataset.sub, draggedId);
+            const lane = getLaneTasks(
+                dropzone.dataset.main,
+                dropzone.dataset.sub,
+                draggedId,
+                dropzone.dataset.projectBoardColumnId,
+                dropzone.dataset.subColumnName);
             if (!beforeTaskId) return lane.length;
             const index = lane.findIndex(task => task.id === beforeTaskId);
             return index === -1 ? lane.length : index;
         }
 
-        async function reorderTaskAndPersist(taskId, targetMain, targetSub, beforeTaskId) {
+        async function reorderTaskAndPersist(
+            taskId, targetMain, targetSub, beforeTaskId, projectBoardColumnId = null, projectSubColumn = null) {
             if (!getTaskById(taskId)) return false;
             if (!ensureAuthenticatedOrToast(t('auth.operationSavePriorities', 'Prioritäten zu speichern'))) return false;
             try {
-                await window.TaskAPI.moveTask(taskId, targetMain, targetSub, beforeTaskId);
+                if (activeProjectBoardId)
+                    await window.ProjectBoardAPI.moveTask(
+                        activeProjectBoardId, taskId, projectBoardColumnId || targetSub, beforeTaskId, projectSubColumn);
+                else
+                    await window.TaskAPI.moveTask(taskId, targetMain, targetSub, beforeTaskId);
                 await loadTasksFromCloud();
                 return true;
             } catch (error) {
@@ -2445,6 +2662,17 @@
             updateBoardContainerFlex();
 
             const filteredTasks = getFilteredTasks();
+            if (activeProjectBoardId) {
+                if (!activeProjectBoard) {
+                    const loading = document.createElement('p');
+                    loading.className = 'p-6 text-sm text-slate-500';
+                    loading.textContent = t('common.loading', 'Lädt...');
+                    container.appendChild(loading);
+                    return;
+                }
+                renderProjectBoard(filteredTasks.filter(task => task.projectId === activeProjectBoardId));
+                return;
+            }
             renderBacklog(filteredTasks);
             const activeTasks = filteredTasks.filter(task => task.column !== "Backlog");
             const boardTasks = tasks.filter(task => task.column !== "Backlog");
@@ -2481,12 +2709,137 @@
             container.appendChild(createBoardStructure(activeTasks, rows));
         }
 
+        function renderProjectBoard(projectTasks) {
+            const container = document.getElementById('board-container');
+            const grid = document.createElement('div');
+            grid.className = 'project-board-grid p-3';
+            const columns = [...activeProjectBoard.columns].sort((a, b) => a.sortOrder - b.sortOrder);
+            grid.style.gridTemplateColumns = columns.map(column =>
+                collapsedProjectBoardColumns.has(column.id) ? '48px' : 'minmax(250px, 1fr)').join(' ');
+            if (!columns.length) {
+                const empty = document.createElement('p');
+                empty.className = 'text-sm text-slate-500';
+                empty.textContent = t('projectBoard.noColumns', 'Dieses Projekt hat noch keine Spalten.');
+                container.appendChild(empty);
+                return;
+            }
+
+            columns.forEach(column => {
+                const columnPanel = document.createElement('section');
+                columnPanel.className = 'board-column-panel project-board-column';
+                columnPanel.dataset.projectBoardColumn = column.id;
+                const collapsed = collapsedProjectBoardColumns.has(column.id);
+                columnPanel.classList.toggle('is-collapsed', collapsed);
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'board-column-toggle';
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+                toggle.setAttribute('aria-label', t('board.column', 'Spalte {column}', { column: column.name }));
+                toggle.title = t('board.toggleColumn', 'Spalte auf- oder zuklappen');
+                toggle.innerHTML = `<i class="fa-solid fa-chevron-right board-column-chevron" aria-hidden="true"></i><span class="board-column-toggle-label">${escapeHtml(column.name)}</span><span class="board-column-toggle-count"></span>`;
+                toggle.addEventListener('click', () =>
+                    setProjectBoardColumnCollapsed(column.id, !collapsedProjectBoardColumns.has(column.id)));
+
+                const columnBody = document.createElement('div');
+                columnBody.className = 'board-column-body project-board-column-body';
+                columnBody.hidden = collapsed;
+                const header = document.createElement('div');
+                header.className = 'board-column-header flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700';
+                const title = document.createElement('div');
+                title.className = 'min-w-0';
+                const name = document.createElement('h2');
+                name.className = 'text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-200 truncate';
+                name.textContent = column.name;
+                const mapping = document.createElement('p');
+                mapping.className = 'text-[10px] text-slate-500 dark:text-slate-400 mt-1';
+                const masterColumn = activeProjectBoard.masterColumns.find(item => item.name === column.masterColumnName);
+                mapping.textContent = t('projectBoard.mapsTo', 'Zuordnung: {column}', {
+                    column: masterColumn?.label || column.masterColumnName
+                });
+                title.append(name, mapping);
+                const count = document.createElement('span');
+                count.className = 'shrink-0 rounded-full bg-slate-200 dark:bg-slate-800 px-2 py-1 text-[10px] text-slate-600 dark:text-slate-300';
+                const laneTasks = projectTasks
+                    .filter(task => task.projectBoardColumnId === column.id)
+                    .sort((a, b) => {
+                        const aOrder = typeof a.projectBoardSortOrder === 'number' ? a.projectBoardSortOrder : Number.POSITIVE_INFINITY;
+                        const bOrder = typeof b.projectBoardSortOrder === 'number' ? b.projectBoardSortOrder : Number.POSITIVE_INFINITY;
+                        return aOrder - bOrder || sortTasksByPriority(a, b);
+                    });
+                count.textContent = String(laneTasks.length);
+                toggle.querySelector('.board-column-toggle-count').textContent = String(laneTasks.length);
+                const add = document.createElement('button');
+                add.type = 'button';
+                add.className = 'text-blue-600 hover:text-blue-500 dark:text-blue-400 px-1';
+                add.setAttribute('aria-label', t('projectBoard.addTaskToColumn', 'Task zu {column} hinzufügen', { column: column.name }));
+                add.title = add.getAttribute('aria-label');
+                add.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i>';
+                add.addEventListener('click', () =>
+                    window.openAddTaskModal(column.masterColumnName, '', column.id));
+                header.append(title, count, add);
+                columnBody.append(header);
+
+                if (column.showSubLanes) {
+                    const lanes = document.createElement('div');
+                    lanes.className = 'board-lane grid grid-cols-2 gap-2 p-2 flex-1 min-h-0';
+                    ['Doing', 'Done'].forEach(subColumn => {
+                        const subColumnTasks = laneTasks.filter(task => task.subColumn === subColumn);
+                        const dropzone = document.createElement('div');
+                        dropzone.className = 'board-subcolumn border rounded-xl p-2 flex flex-col gap-2 min-h-[140px] transition-all';
+                        dropzone.dataset.main = column.masterColumnName;
+                        dropzone.dataset.sub = subColumn;
+                        dropzone.dataset.projectBoardColumnId = column.id;
+                        dropzone.dataset.subColumnName = subColumn;
+                        dropzone.addEventListener('dragover', handleDragOver);
+                        dropzone.addEventListener('dragleave', handleDragLeave);
+                        dropzone.addEventListener('drop', event => handleDrop(event, column.masterColumnName, subColumn));
+
+                        const subColumnHeader = document.createElement('div');
+                        subColumnHeader.className = 'flex items-center justify-between gap-2 text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800';
+                        const badge = document.createElement('span');
+                        badge.className = subColumn === 'Doing'
+                            ? 'px-1.5 py-0.5 rounded border font-semibold bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+                            : 'px-1.5 py-0.5 rounded border font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+                        badge.textContent = t(subColumn === 'Doing' ? 'board.doing' : 'board.done', subColumn);
+                        const laneCount = document.createElement('span');
+                        laneCount.className = 'text-slate-500 dark:text-slate-400';
+                        laneCount.textContent = String(subColumnTasks.length);
+                        subColumnHeader.append(badge, laneCount);
+                        dropzone.append(subColumnHeader);
+                        subColumnTasks.forEach(task => dropzone.appendChild(createCard(task)));
+                        lanes.appendChild(dropzone);
+                    });
+                    columnBody.append(lanes);
+                } else {
+                    const dropzone = document.createElement('div');
+                    dropzone.className = 'board-subcolumn flex-1 p-3 flex flex-col gap-2 min-h-[140px]';
+                    dropzone.dataset.main = column.masterColumnName;
+                    dropzone.dataset.sub = column.id;
+                    dropzone.dataset.projectBoardColumnId = column.id;
+                    dropzone.addEventListener('dragover', handleDragOver);
+                    dropzone.addEventListener('dragleave', handleDragLeave);
+                    dropzone.addEventListener('drop', event => handleDrop(event, column.masterColumnName, column.id));
+                    laneTasks.forEach(task => dropzone.appendChild(createCard(task)));
+                    columnBody.appendChild(dropzone);
+                }
+
+                columnPanel.append(toggle, columnBody);
+                grid.appendChild(columnPanel);
+            });
+            container.appendChild(grid);
+        }
+
         function boardGridColumns() {
             return boardColumns.map(col => collapsedBoardColumns.has(col) ? "48px" : "minmax(250px, 1fr)").join(" ");
         }
 
         function updateBoardContainerFlex() {
             const container = document.getElementById('board-container');
+            if (activeProjectBoardId) {
+                container.style.flexGrow = '1';
+                container.style.flexBasis = '0';
+                return;
+            }
             container.style.flexGrow = boardColumns.length - collapsedBoardColumns.size;
             container.style.flexBasis = `calc(${collapsedBoardColumns.size * 48}px + var(--board-grid-gaps))`;
         }
@@ -2505,6 +2858,23 @@
                 panel.querySelector('.board-column-toggle').setAttribute('aria-expanded', String(!collapsed));
                 panel.querySelector('.board-column-body').hidden = collapsed;
             });
+        }
+
+        function setProjectBoardColumnCollapsed(columnId, collapsed) {
+            if (collapsed) collapsedProjectBoardColumns.add(columnId);
+            else collapsedProjectBoardColumns.delete(columnId);
+
+            const columns = [...activeProjectBoard.columns].sort((a, b) => a.sortOrder - b.sortOrder);
+            const grid = document.querySelector('.project-board-grid');
+            if (grid)
+                grid.style.gridTemplateColumns = columns.map(column =>
+                    collapsedProjectBoardColumns.has(column.id) ? '48px' : 'minmax(250px, 1fr)').join(' ');
+            const panel = [...document.querySelectorAll('.project-board-column')]
+                .find(item => item.dataset.projectBoardColumn === columnId);
+            if (!panel) return;
+            panel.classList.toggle('is-collapsed', collapsed);
+            panel.querySelector('.board-column-toggle').setAttribute('aria-expanded', String(!collapsed));
+            panel.querySelector('.board-column-body').hidden = collapsed;
         }
 
         function createSwimlaneHeader(row, column) {
@@ -2671,19 +3041,38 @@
 
             let moveOptionsHtml = '';
             if (!task.isArchived) {
-                const allowedCols = workflowPaths[task.taskType]?.path || [];
                 const moveOptions = [];
-                if (task.column !== "Backlog") {
-                    moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', 'Backlog', 'Backlog')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(t('board.backlog', 'Backlog'))}</button>`);
-                }
-                allowedCols.forEach(col => {
-                    ["Doing", "Done"].forEach(subCol => {
-                        if (!(task.column === col && task.subColumn === subCol)) {
-                            const subColLabel = subCol === 'Doing' ? t('board.doing', 'Doing') : t('board.done', 'Done');
-                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(getColLabel(col))} (${escapeHtml(subColLabel)})</button>`);
+                if (activeProjectBoardId && activeProjectBoard) {
+                    const allowedCols = workflowPaths[task.taskType]?.path || [];
+                    activeProjectBoard.columns.forEach(column => {
+                        if (column.masterColumnName !== 'Backlog' && !allowedCols.includes(column.masterColumnName)) return;
+                        const taskId = escapeSingleQuotedJs(task.id);
+                        const columnId = escapeSingleQuotedJs(column.id);
+                        if (column.showSubLanes) {
+                            ['Doing', 'Done'].forEach(subColumn => {
+                                if (column.id === task.projectBoardColumnId && subColumn === task.subColumn) return;
+                                const subColumnId = escapeSingleQuotedJs(subColumn);
+                                const subColumnLabel = t(subColumn === 'Doing' ? 'board.doing' : 'board.done', subColumn);
+                                moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveProjectTask('${taskId}', '${columnId}', '${subColumnId}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(column.name)} (${escapeHtml(subColumnLabel)})</button>`);
+                            });
+                        } else if (column.id !== task.projectBoardColumnId) {
+                            moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveProjectTask('${taskId}', '${columnId}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(column.name)}</button>`);
                         }
                     });
-                });
+                } else {
+                    const allowedCols = workflowPaths[task.taskType]?.path || [];
+                    if (task.column !== "Backlog") {
+                        moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', 'Backlog', 'Backlog')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(t('board.backlog', 'Backlog'))}</button>`);
+                    }
+                    allowedCols.forEach(col => {
+                        ["Doing", "Done"].forEach(subCol => {
+                            if (!(task.column === col && task.subColumn === subCol)) {
+                                const subColLabel = subCol === 'Doing' ? t('board.doing', 'Doing') : t('board.done', 'Done');
+                                moveOptions.push(`<button onclick="event.stopPropagation(); manualMoveTask('${task.id}', '${col}', '${subCol}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors">${escapeHtml(getColLabel(col))} (${escapeHtml(subColLabel)})</button>`);
+                            }
+                        });
+                    });
+                }
                 moveOptionsHtml = `<div class="text-[9px] px-3 py-1 text-slate-500 uppercase font-semibold">${escapeHtml(t('task.moveTo', 'Verschieben nach:'))}</div>${moveOptions.join('')}`;
             }
 
@@ -2806,6 +3195,7 @@
                 showToast(t('task.invalidMove', 'Fehler: Der Typ "{type}" darf die Spalte "{column}" nicht nutzen!', { type: task.taskType, column: getColLabel(targetColumn) }));
                 return false;
             }
+            if (activeProjectBoardId) return true;
 
             const limit = targetColumn === "Backlog" ? null : wipLimits[getWipLimitKey(targetColumn, targetSubColumn)];
             if ((task.column !== targetColumn || task.subColumn !== targetSubColumn) && limit != null) {
@@ -2910,6 +3300,8 @@
             dragDropState = {
                 mainCol: dropzone.dataset.main,
                 subCol: dropzone.dataset.sub,
+                projectBoardColumnId: dropzone.dataset.projectBoardColumnId || null,
+                subColumnName: dropzone.dataset.subColumnName || null,
                 beforeTaskId: beforeCard ? beforeCard.getAttribute('data-task-id') : null
             };
         }
@@ -2956,6 +3348,10 @@
 
             const targetMain = effectiveDropzone?.dataset.main || dragDropState?.mainCol || mainCol;
             const targetSub = effectiveDropzone?.dataset.sub || dragDropState?.subCol || subCol;
+            const projectBoardColumnId = effectiveDropzone?.dataset.projectBoardColumnId ||
+                dragDropState?.projectBoardColumnId || null;
+            const projectSubColumn = effectiveDropzone?.dataset.subColumnName ||
+                dragDropState?.subColumnName || null;
             let beforeTaskId = getBeforeTaskIdFromIndicator(indicator);
 
             if (!beforeTaskId && effectiveDropzone) {
@@ -2964,8 +3360,9 @@
             }
 
             const fallbackIndex = getInsertIndexFromDropzone(effectiveDropzone, draggedTaskId, beforeTaskId);
-            if (beforeTaskId === null && fallbackIndex < getLaneTasks(targetMain, targetSub, draggedTaskId).length) {
-                const lane = getLaneTasks(targetMain, targetSub, draggedTaskId);
+            const lane = getLaneTasks(
+                targetMain, targetSub, draggedTaskId, projectBoardColumnId, projectSubColumn);
+            if (beforeTaskId === null && fallbackIndex < lane.length) {
                 beforeTaskId = lane[fallbackIndex]?.id || null;
             }
 
@@ -2973,7 +3370,8 @@
             clearDropIndicators();
 
             if (validateWorkflowMove(draggedTaskId, targetMain, targetSub)) {
-                const success = await reorderTaskAndPersist(draggedTaskId, targetMain, targetSub, beforeTaskId);
+                const success = await reorderTaskAndPersist(
+                    draggedTaskId, targetMain, targetSub, beforeTaskId, projectBoardColumnId, projectSubColumn);
                 if (!success) {
                     draggedTaskId = null;
                     return;
@@ -2986,6 +3384,13 @@
             if (validateWorkflowMove(taskId, mainCol, subCol)) {
                 await reorderTaskAndPersist(taskId, mainCol, subCol, null);
             }
+        }
+
+        window.manualMoveProjectTask = async function(taskId, projectBoardColumnId, subColumnName = null) {
+            const column = activeProjectBoard?.columns.find(item => item.id === projectBoardColumnId);
+            if (!column || !activeProjectBoardId) return;
+            await reorderTaskAndPersist(
+                taskId, column.masterColumnName, projectBoardColumnId, null, projectBoardColumnId, subColumnName);
         }
 
         window.toggleCardDropdown = function(event, taskId) {
@@ -3016,6 +3421,8 @@
             const isNewTask = !taskId;
             const refreshHierarchy = window.viewTabs?.current() === 'projects';
             if (isNewTask) {
+                if (newTaskProjectColumnId)
+                    taskData.projectBoardColumnId = newTaskProjectColumnId;
                 const project = taskHierarchy.projects.find(item => item.id === form.querySelector('#modal-project').value);
                 if (!project?.shortKey) {
                     showToast(t('hierarchy.projectKeyRequired', 'Bitte zuerst in Kunden und Projekte ein Projektkürzel hinterlegen.'));
@@ -3074,9 +3481,24 @@
                 await window.hierarchyView.refreshTasks();
         }
 
-        window.openAddTaskModal = async function(column = "ToDo", deliverableId = '') {
+        window.openAddTaskModal = async function(column = "ToDo", deliverableId = '', projectBoardColumnId = '') {
             selectDescriptionImage(null);
             newTaskColumn = column;
+            newTaskProjectColumnId = '';
+            const isProjectBoardContext = !!activeProjectBoardId &&
+                !!activeProjectBoard &&
+                window.viewTabs?.current() !== 'projects' &&
+                !deliverableId;
+            if (isProjectBoardContext) {
+                const projectColumn = activeProjectBoard.columns.find(item =>
+                    item.id === projectBoardColumnId ||
+                    (!projectBoardColumnId && item.masterColumnName === normalizeColumnName(column))
+                ) || activeProjectBoard.columns[0];
+                if (projectColumn) {
+                    newTaskProjectColumnId = projectColumn.id;
+                    newTaskColumn = projectColumn.masterColumnName;
+                }
+            }
             document.getElementById('panel-heading').innerHTML = `<i class="fa-solid fa-square-plus text-blue-500"></i> ${escapeHtml(column === "Backlog" ? t('task.createBacklog', 'Neuen Backlog-Task erstellen') : t('task.create', 'Neuen Task erstellen'))}`;
             document.getElementById('task-form').reset();
             lastProjectDefaultAssignee = '';
@@ -3091,7 +3513,7 @@
             updateAllDropdowns();
             renderModalTagsSelection();
             openDetailsPanel();
-            await loadTaskHierarchy(deliverableId);
+            await loadTaskHierarchy(deliverableId, isProjectBoardContext ? activeProjectBoardId : '');
         }
 
         window.openEditTaskModal = async function(taskId, event) {
@@ -3245,6 +3667,217 @@
             document.getElementById('types-modal').classList.remove('hidden');
         }
         window.closeTypesModal = function() { document.getElementById('types-modal').classList.add('hidden'); }
+
+        function setProjectBoardModalError(message = '') {
+            const error = document.getElementById('project-board-modal-error');
+            error.textContent = message;
+            error.classList.toggle('hidden', !message);
+        }
+
+        function populateProjectBoardMasterSelect(select, selected = '') {
+            select.replaceChildren();
+            (activeProjectBoard?.masterColumns || []).forEach(column =>
+                select.add(new Option(column.label, column.name)));
+            if (selected) select.value = selected;
+        }
+
+        async function refreshProjectBoard() {
+            if (!activeProjectBoardId) return;
+            activeProjectBoard = await window.ProjectBoardAPI.getBoard(activeProjectBoardId);
+            updateProjectBoardControls();
+            renderBoard();
+            renderProjectBoardColumnList();
+        }
+
+        function renderProjectBoardColumnList() {
+            const list = document.getElementById('project-board-column-list');
+            list.replaceChildren();
+            if (!activeProjectBoard) return;
+            const columns = [...activeProjectBoard.columns].sort((a, b) => a.sortOrder - b.sortOrder);
+            columns.forEach((column, index) => {
+                const row = document.createElement('div');
+                row.className = 'project-board-column-row bg-slate-50 dark:bg-slate-800/50 p-3 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-wrap items-center gap-2';
+                row.dataset.columnId = column.id;
+                const name = document.createElement('input');
+                name.type = 'text';
+                name.maxLength = 100;
+                name.value = column.name;
+                name.setAttribute('aria-label', t('projectBoard.columnName', 'Spaltenname'));
+                name.className = 'min-w-[140px] flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-white';
+                const master = document.createElement('select');
+                master.setAttribute('aria-label', t('projectBoard.masterCategory', 'Master-Kategorie'));
+                master.className = 'min-w-[150px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-white';
+                populateProjectBoardMasterSelect(master, column.masterColumnName);
+                const laneLabel = document.createElement('label');
+                laneLabel.className = 'inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300';
+                const showSubLanes = document.createElement('input');
+                showSubLanes.type = 'checkbox';
+                showSubLanes.checked = column.showSubLanes;
+                showSubLanes.disabled = column.masterColumnName === 'Backlog';
+                showSubLanes.className = 'rounded border-slate-300 text-blue-600 focus:ring-blue-500';
+                const laneText = document.createElement('span');
+                laneText.textContent = t('projectBoard.showSubLanes', 'Zwei Unterspalten anzeigen (Doing/Done)');
+                laneLabel.append(showSubLanes, laneText);
+                master.addEventListener('change', () => {
+                    showSubLanes.disabled = master.value === 'Backlog';
+                    if (showSubLanes.disabled) showSubLanes.checked = false;
+                });
+
+                const actions = document.createElement('div');
+                actions.className = 'flex items-center gap-1';
+                const move = (offset) => async () => {
+                    const rows = [...list.children];
+                    const from = rows.indexOf(row);
+                    const to = from + offset;
+                    if (to < 0 || to >= rows.length) return;
+                    list.insertBefore(row, offset < 0 ? rows[to] : rows[to].nextSibling);
+                    try {
+                        await window.ProjectBoardAPI.reorderColumns(
+                            activeProjectBoardId,
+                            [...list.children].map(element => element.dataset.columnId));
+                        await refreshProjectBoard();
+                        setProjectBoardModalError();
+                    } catch (error) {
+                        console.error('Could not reorder project board columns:', error);
+                        setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+                        renderProjectBoardColumnList();
+                    }
+                };
+                const up = document.createElement('button');
+                up.type = 'button';
+                up.disabled = index === 0;
+                up.title = t('projectBoard.moveLeft', 'Spalte nach links verschieben');
+                up.className = 'px-2 py-1 text-slate-600 dark:text-slate-300 disabled:opacity-40';
+                up.innerHTML = '<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>';
+                up.addEventListener('click', move(-1));
+                const down = document.createElement('button');
+                down.type = 'button';
+                down.disabled = index === columns.length - 1;
+                down.title = t('projectBoard.moveRight', 'Spalte nach rechts verschieben');
+                down.className = 'px-2 py-1 text-slate-600 dark:text-slate-300 disabled:opacity-40';
+                down.innerHTML = '<i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
+                down.addEventListener('click', move(1));
+                const save = document.createElement('button');
+                save.type = 'button';
+                save.textContent = t('common.save', 'Speichern');
+                save.className = 'bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg';
+                save.addEventListener('click', async () => {
+                    try {
+                        await window.ProjectBoardAPI.updateColumn(
+                            activeProjectBoardId, column.id, name.value.trim(), master.value,
+                            master.value !== 'Backlog' && showSubLanes.checked);
+                        await refreshProjectBoard();
+                        setProjectBoardModalError();
+                        showToast(t('projectBoard.saved', 'Spalte wurde gespeichert.'));
+                    } catch (error) {
+                        console.error('Could not update project board column:', error);
+                        setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+                    }
+                });
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.title = t('common.delete', 'Löschen');
+                remove.className = 'px-2 py-1 text-red-600 hover:text-red-500';
+                remove.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+                remove.addEventListener('click', async () => {
+                    if (!confirm(t('projectBoard.confirmDelete', 'Spalte "{column}" löschen? Sie muss leer sein.', { column: column.name }))) return;
+                    try {
+                        await window.ProjectBoardAPI.deleteColumn(activeProjectBoardId, column.id);
+                        await refreshProjectBoard();
+                        setProjectBoardModalError();
+                        showToast(t('projectBoard.deleted', 'Spalte wurde gelöscht.'));
+                    } catch (error) {
+                        console.error('Could not delete project board column:', error);
+                        setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+                    }
+                });
+                actions.append(up, down, save, remove);
+                row.append(name, master, laneLabel, actions);
+                list.appendChild(row);
+            });
+        }
+
+        async function loadProjectBoardLeads() {
+            const section = document.getElementById('project-board-leads-section');
+            section.classList.toggle('hidden', !window.currentUser?.isAdmin);
+            if (!window.currentUser?.isAdmin || !activeProjectBoard) return;
+            const response = await fetch(`${location.origin}/api/v1/admin/users`, { credentials: 'include' });
+            if (!response.ok) throw new Error(t('projectBoard.loadUsersFailed', 'Benutzerliste konnte nicht geladen werden.'));
+            const users = await response.json();
+            const select = document.getElementById('project-board-leads-select');
+            select.replaceChildren();
+            const selectedIds = new Set(activeProjectBoard.leads.map(lead => lead.userId));
+            users.filter(user => user.active).forEach(user => {
+                const option = new Option(`${user.name} (${user.email})`, user.id, false, selectedIds.has(user.id));
+                select.add(option);
+            });
+        }
+
+        window.openProjectBoardManager = async function() {
+            if (!activeProjectBoardId || !activeProjectBoard?.canManage) return;
+            setProjectBoardModalError();
+            try {
+                await refreshProjectBoard();
+                document.getElementById('project-board-modal-title').textContent =
+                    t('projectBoard.manageTitle', 'Projektboard verwalten: {project}', { project: activeProjectBoard.projectName });
+                const masterSelect = document.getElementById('project-board-new-column-master');
+                const showSubLanes = document.getElementById('project-board-new-column-show-sub-lanes');
+                populateProjectBoardMasterSelect(masterSelect, 'ToDo');
+                showSubLanes.checked = false;
+                showSubLanes.disabled = false;
+                masterSelect.onchange = () => {
+                    showSubLanes.disabled = masterSelect.value === 'Backlog';
+                    if (showSubLanes.disabled) showSubLanes.checked = false;
+                };
+                document.getElementById('project-board-modal').classList.remove('hidden');
+                await loadProjectBoardLeads();
+            } catch (error) {
+                console.error('Could not open project board manager:', error);
+                setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+                document.getElementById('project-board-modal').classList.remove('hidden');
+            }
+        }
+
+        window.closeProjectBoardManager = function() {
+            document.getElementById('project-board-modal').classList.add('hidden');
+        }
+
+        window.createProjectBoardColumn = async function() {
+            const nameInput = document.getElementById('project-board-new-column-name');
+            const name = nameInput.value.trim();
+            if (!name) {
+                setProjectBoardModalError(t('projectBoard.nameRequired', 'Bitte einen Spaltennamen eingeben.'));
+                return;
+            }
+            try {
+                await window.ProjectBoardAPI.createColumn(
+                    activeProjectBoardId, name,
+                    document.getElementById('project-board-new-column-master').value,
+                    document.getElementById('project-board-new-column-show-sub-lanes').checked);
+                nameInput.value = '';
+                await refreshProjectBoard();
+                setProjectBoardModalError();
+                showToast(t('projectBoard.created', 'Spalte wurde erstellt.'));
+            } catch (error) {
+                console.error('Could not create project board column:', error);
+                setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+            }
+        }
+
+        window.saveProjectBoardLeads = async function() {
+            if (!window.currentUser?.isAdmin) return;
+            const userIds = [...document.getElementById('project-board-leads-select').selectedOptions]
+                .map(option => option.value);
+            try {
+                await window.ProjectBoardAPI.setLeads(activeProjectBoardId, userIds);
+                await refreshProjectBoard();
+                await loadProjectBoardLeads();
+                showToast(t('projectBoard.leadsSaved', 'Projektleiter wurden gespeichert.'));
+            } catch (error) {
+                console.error('Could not save project board leads:', error);
+                setProjectBoardModalError(error.message || t('common.unknownError', 'Unbekannter Fehler'));
+            }
+        }
 
         function renderModalTagsSelection() {
             const container = document.getElementById('modal-tags-selection');

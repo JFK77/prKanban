@@ -5,7 +5,7 @@ using PrKanban.Models;
 
 namespace PrKanban.Services;
 
-public sealed class ProjectHierarchyService(PrKanbanContext db) : IProjectHierarchyService
+public sealed class ProjectHierarchyService(PrKanbanContext db, IProjectBoardService projectBoards) : IProjectHierarchyService
 {
     private static CustomerResponse Map(Customer x) => new(x.Id, x.Name, x.Details?.DebitorNo, x.Details?.CrmUrl);
     private static ProjectResponse Map(Project x) => new(x.Id, x.Name, x.CustomerId, x.Details?.ShortKey, x.Details?.CrmLink, x.Details?.CrmUrl, x.Details?.InternalOrderNumber, x.Details?.CustomerOrderNumber, x.Details?.DefaultAssignee);
@@ -72,6 +72,7 @@ public sealed class ProjectHierarchyService(PrKanbanContext db) : IProjectHierar
         if (id is null)
         {
             db.Projects.Add(entity);
+            await projectBoards.EnsureDefaultColumnsAsync(entity.Id, ct);
             db.HierarchyPositions.Add(new HierarchyPosition
             {
                 ItemKind = "projects",
@@ -194,6 +195,13 @@ public sealed class ProjectHierarchyService(PrKanbanContext db) : IProjectHierar
             Reindex(source);
             item.ProjectId = projectId;
             position.ParentId = projectId;
+            var tasks = await db.Tasks
+                .Include(task => task.ProjectBoardPosition)
+                .Where(task => task.DeliverableAssignment != null &&
+                    task.DeliverableAssignment.DeliverableId == item.Id)
+                .ToListAsync(ct);
+            foreach (var task in tasks)
+                await projectBoards.EnsureTaskPositionAsync(task, projectId, task.ColumnName, ct);
         }
         InsertAt(target, position, index);
         return true;
@@ -202,10 +210,19 @@ public sealed class ProjectHierarchyService(PrKanbanContext db) : IProjectHierar
     private async Task<bool> MoveTaskAsync(string id, string deliverableId, int index, CancellationToken ct)
     {
         if (!await db.Deliverables.AnyAsync(x => x.Id == deliverableId, ct)) return false;
-        var task = await db.Tasks.Include(x => x.DeliverableAssignment).FirstOrDefaultAsync(x => x.Id == id, ct);
+        var task = await db.Tasks
+            .Include(x => x.DeliverableAssignment)
+            .ThenInclude(assignment => assignment!.Deliverable)
+            .Include(x => x.ProjectBoardPosition)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (task is null) return false;
         var assignment = task.DeliverableAssignment;
         var sourceDeliverableId = assignment?.DeliverableId;
+        var sourceProjectId = assignment?.Deliverable?.ProjectId;
+        var targetProjectId = await db.Deliverables
+            .Where(x => x.Id == deliverableId)
+            .Select(x => x.ProjectId)
+            .FirstAsync(ct);
         var position = await GetOrCreatePositionAsync("tasks", id, sourceDeliverableId ?? deliverableId, ct);
         var source = sourceDeliverableId is null
             ? new List<HierarchyPosition>()
@@ -226,6 +243,8 @@ public sealed class ProjectHierarchyService(PrKanbanContext db) : IProjectHierar
             assignment.DeliverableId = deliverableId;
             position.ParentId = deliverableId;
         }
+        if (sourceProjectId != targetProjectId)
+            await projectBoards.EnsureTaskPositionAsync(task, targetProjectId, task.ColumnName, ct);
         InsertAt(target, position, index);
         return true;
     }

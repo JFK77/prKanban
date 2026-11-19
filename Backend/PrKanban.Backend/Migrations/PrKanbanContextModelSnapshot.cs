@@ -399,6 +399,82 @@ namespace PrKanban.Migrations
                     b.ToTable("ProjectDetails");
                 });
 
+            modelBuilder.Entity("PrKanban.Models.ProjectBoardColumn", b =>
+                {
+                    b.Property<string>("Id")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MasterColumnName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ShowSubLanes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "MasterColumnName");
+
+                    b.HasIndex("ProjectId", "SortOrder");
+
+                    b.ToTable("ProjectBoardColumns");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectBoardLead", b =>
+                {
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ProjectId", "UserId");
+
+                    b.ToTable("ProjectBoardLeads");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectBoardTaskPosition", b =>
+                {
+                    b.Property<string>("TaskId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProjectBoardColumnId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("SortOrder")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("TaskId");
+
+                    b.HasIndex("ProjectBoardColumnId", "SortOrder");
+
+                    b.ToTable("ProjectBoardTaskPositions");
+                });
+
             modelBuilder.Entity("PrKanban.Models.Task", b =>
                 {
                     b.Property<string>("Id")
@@ -703,6 +779,47 @@ namespace PrKanban.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PrKanban.Models.ProjectBoardColumn", b =>
+                {
+                    b.HasOne("PrKanban.Models.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectBoardLead", b =>
+                {
+                    b.HasOne("PrKanban.Models.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrKanban.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectBoardTaskPosition", b =>
+                {
+                    b.HasOne("PrKanban.Models.ProjectBoardColumn", "Column")
+                        .WithMany()
+                        .HasForeignKey("ProjectBoardColumnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrKanban.Models.Task", null)
+                        .WithOne("ProjectBoardPosition")
+                        .HasForeignKey("PrKanban.Models.ProjectBoardTaskPosition", "TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Column");
+                });
+
             modelBuilder.Entity("PrKanban.Models.Task", b =>
                 {
                     b.HasOne("PrKanban.Models.ApplicationUser", "User")
@@ -776,6 +893,8 @@ namespace PrKanban.Migrations
                     b.Navigation("DeliverableAssignment");
 
                     b.Navigation("Ordering");
+
+                    b.Navigation("ProjectBoardPosition");
                 });
 #pragma warning restore 612, 618
         }

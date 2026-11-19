@@ -36,8 +36,20 @@ namespace PrKanban.Models
         [JsonIgnore]
         public TaskDeliverable? DeliverableAssignment { get; set; }
 
+        [JsonIgnore]
+        public ProjectBoardTaskPosition? ProjectBoardPosition { get; set; }
+
         [NotMapped]
         public string? DeliverableId => DeliverableAssignment?.DeliverableId;
+
+        [NotMapped]
+        public string? ProjectId => DeliverableAssignment?.Deliverable?.ProjectId;
+
+        [NotMapped]
+        public string? ProjectBoardColumnId => ProjectBoardPosition?.ProjectBoardColumnId;
+
+        [NotMapped]
+        public double? ProjectBoardSortOrder => ProjectBoardPosition?.SortOrder;
 
         [NotMapped]
         public string? DeliverableName => DeliverableAssignment?.Deliverable?.Name;

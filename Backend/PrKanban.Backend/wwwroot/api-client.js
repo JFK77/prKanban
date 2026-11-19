@@ -389,6 +389,65 @@ const TaskAPI = {
   }
 };
 
+const ProjectBoardAPI = {
+  async request(projectId, path = '', options = {}) {
+    const response = await fetch(
+      `${API_BASE}/project-boards/${encodeURIComponent(projectId)}${path}`,
+      { credentials: 'include', ...options }
+    );
+    if (response.status === 204) {
+      if (!response.ok) throw new Error(`Project board request failed (${response.status})`);
+      return null;
+    }
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || data.title || data.error?.message || `Project board request failed (${response.status})`);
+    }
+    return data;
+  },
+  getBoard(projectId) {
+    return this.request(projectId);
+  },
+  createColumn(projectId, name, masterColumnName, showSubLanes = false) {
+    return this.request(projectId, '/columns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, masterColumnName, showSubLanes })
+    });
+  },
+  updateColumn(projectId, columnId, name, masterColumnName, showSubLanes) {
+    return this.request(projectId, `/columns/${encodeURIComponent(columnId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, masterColumnName, showSubLanes })
+    });
+  },
+  deleteColumn(projectId, columnId) {
+    return this.request(projectId, `/columns/${encodeURIComponent(columnId)}`, { method: 'DELETE' });
+  },
+  reorderColumns(projectId, columnIds) {
+    return this.request(projectId, '/columns/order', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ columnIds })
+    });
+  },
+  setLeads(projectId, userIds) {
+    return this.request(projectId, '/leads', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds })
+    });
+  },
+  moveTask(projectId, taskId, projectBoardColumnId, beforeTaskId, subColumnName) {
+    return this.request(projectId, `/tasks/${encodeURIComponent(taskId)}/position`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectBoardColumnId, beforeTaskId, subColumnName })
+    });
+  }
+};
+
 /**
  * Board Config API
  * Handles board layout and configuration (future enhancement)
@@ -448,9 +507,10 @@ const BoardConfigAPI = {
 if (typeof window !== 'undefined') {
   window.AuthAPI = AuthAPI;
   window.TaskAPI = TaskAPI;
+  window.ProjectBoardAPI = ProjectBoardAPI;
   window.BoardConfigAPI = BoardConfigAPI;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { AuthAPI, TaskAPI, BoardConfigAPI };
+  module.exports = { AuthAPI, TaskAPI, ProjectBoardAPI, BoardConfigAPI };
 }

@@ -8,6 +8,10 @@
         dashboard: document.getElementById('dashboard-panel')
     };
     const boardControls = ['board-header-actions', 'board-filters', 'board-groupings'].map(id => document.getElementById(id));
+    const breadcrumbViews = {
+        projects: document.getElementById('project-board-breadcrumb-projects'),
+        kanban: document.getElementById('project-board-breadcrumb-kanban')
+    };
     const taskPanel = document.getElementById('task-details-panel');
     const detailsResizer = document.getElementById('details-resizer');
     const hierarchyTaskSlot = document.getElementById('hierarchy-task-panel-slot');
@@ -38,11 +42,23 @@
         detailsResizer.classList.toggle('hidden', taskPanel.classList.contains('hidden'));
     }
 
+    function updateBreadcrumb(view) {
+        for (const [name, button] of Object.entries(breadcrumbViews)) {
+            const current = name === view;
+            if (current) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
+            button.classList.toggle('text-blue-700', current);
+            button.classList.toggle('dark:text-blue-400', current);
+            button.classList.toggle('font-bold', current);
+        }
+    }
+
     function show(view, updateUrl = true) {
         if (!Object.hasOwn(panels, view) || view === active) return false;
         if (active === 'projects' && !window.hierarchyView.leave()) return false;
         placeTaskPanel(view);
         active = view;
+        updateBreadcrumb(view);
         for (const tab of tabs) {
             const selected = tab.dataset.view === view;
             tab.setAttribute('aria-selected', String(selected));
@@ -79,6 +95,8 @@
             if (show(tabs[target].dataset.view)) tabs[target].focus();
         });
     }
+    breadcrumbViews.projects?.addEventListener('click', () => show('projects'));
+    breadcrumbViews.kanban?.addEventListener('click', () => show('kanban'));
     window.addEventListener('app-auth-changed', event => {
         const id = event.detail?.userId || event.detail?.id || event.detail?.email || null;
         if (id === currentUserId) return;

@@ -142,6 +142,26 @@ function treeNode(kind, item, depth, children, childLabel) {
         count.append(icon(['M6 4v5a4 4 0 0 0 4 4h4', 'M6 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M17 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6']), document.createTextNode(String(children.length)));
         row.append(count);
     }
+    if (kind === 'projects') {
+        const label = t('projectBoard.openBoard', 'Projektboard öffnen');
+        const boardAction = action(`${label}: ${item.name}`, [
+            'M3 3h8v8H3z', 'M13 3h8v8h-8z', 'M3 13h8v8H3z', 'M13 13h8v8h-8z'
+        ], () => {
+            if (!window.viewTabs?.show('kanban')) return;
+            window.selectProjectBoard(item.id).then(loaded => {
+                if (!loaded) window.viewTabs?.show('projects');
+            }).catch(error => {
+                console.error('Could not open project board:', error);
+                message(t('projectBoard.loadFailed', 'Projektboard konnte nicht geladen werden: {error}', {
+                    error: error.message || t('common.unknownError', 'Unbekannter Fehler')
+                }), true);
+                window.viewTabs?.show('projects');
+            });
+        });
+        boardAction.classList.add('tree-action--board');
+        boardAction.append(document.createTextNode('Board'));
+        row.append(boardAction);
+    }
     const actions = document.createElement('span');
     actions.className = 'tree-actions';
     if (kind === 'deliverables') {
@@ -285,6 +305,7 @@ async function moveItem(source, plan) {
         treeTasks = nextTasks;
         hierarchyLoaded = true;
         renderTree();
+        if (source.kind === 'projects') window.refreshProjectBoardOptions?.();
         if (editing?.kind === source.kind && editing.id === source.id && source.kind !== 'tasks') {
             const collection = source.kind === 'customers' ? data.customers :
                 source.kind === 'projects' ? data.projects : data.deliverables;
@@ -448,6 +469,7 @@ form.addEventListener('submit', async event => {
         treeTasks = nextTasks;
         hierarchyLoaded = true;
         renderTree();
+        if (kind === 'projects') window.refreshProjectBoardOptions?.();
         select(kind, saved);
         message(t('hierarchy.saved', 'Gespeichert.'));
     } catch (error) {
@@ -482,6 +504,7 @@ async function activate() {
         treeTasks = nextTasks;
         hierarchyLoaded = true;
         renderTree();
+        window.refreshProjectBoardOptions?.();
         message('');
     } catch (error) {
         if (requestId !== activation) return;

@@ -1,0 +1,56 @@
+@baseUrl = http://localhost:5000/api/v1
+@projectId = replace-with-project-id
+@columnId = replace-with-column-id
+@taskId = replace-with-task-id
+
+### Get a project board and its column mappings
+GET {{baseUrl}}/project-boards/{{projectId}}
+
+### Create a project-specific column mapped to a master category
+POST {{baseUrl}}/project-boards/{{projectId}}/columns
+Content-Type: application/json
+
+{
+  "name": "Customer review",
+  "masterColumnName": "Analysis"
+}
+
+### Rename or remap an empty column
+PUT {{baseUrl}}/project-boards/{{projectId}}/columns/{{columnId}}
+Content-Type: application/json
+
+{
+  "name": "Customer review",
+  "masterColumnName": "Analysis"
+}
+
+### Reorder all project columns
+PUT {{baseUrl}}/project-boards/{{projectId}}/columns/order
+Content-Type: application/json
+
+{
+  "columnIds": ["replace-with-first-column-id", "replace-with-second-column-id"]
+}
+
+### Assign project board leads (administrator only)
+PUT {{baseUrl}}/project-boards/{{projectId}}/leads
+Content-Type: application/json
+
+{
+  "userIds": ["replace-with-user-id"]
+}
+
+### Move a task to a project-specific column
+PUT {{baseUrl}}/project-boards/{{projectId}}/tasks/{{taskId}}/position
+Content-Type: application/json
+
+{
+  "projectBoardColumnId": "{{columnId}}",
+  "beforeTaskId": null
+}
+
+### Delete an empty project column that is not the last mapping for its master category
+DELETE {{baseUrl}}/project-boards/{{projectId}}/columns/{{columnId}}
+
+### Error path: project board not found
+GET {{baseUrl}}/project-boards/does-not-exist

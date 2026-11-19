@@ -12,6 +12,7 @@ builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<IUserLanguageService, UserLanguageService>();
 builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
 builder.Services.AddScoped<ITaskMoveService, TaskMoveService>();
+builder.Services.AddScoped<IProjectBoardService, ProjectBoardService>();
 builder.Services.AddScoped<IProjectHierarchyService, ProjectHierarchyService>();
 
 // 1. Add DbContext
@@ -94,11 +95,7 @@ try
         
         logger.LogInformation("Attempting database initialization...");
         
-        // Create database if not exists
-        dbContext.Database.EnsureCreated();
-        logger.LogInformation("✅ Database created");
-        
-        // Apply migrations
+        // Migrations create the database and keep the schema history consistent.
         dbContext.Database.Migrate();
         _ = dbContext.AppTranslations.AsNoTracking().Take(1).ToList();
         logger.LogInformation("✅ Database migrations applied");

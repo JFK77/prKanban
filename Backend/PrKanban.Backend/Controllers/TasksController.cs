@@ -20,12 +20,18 @@ namespace PrKanban.Controllers
         private readonly PrKanbanContext _context;
         private readonly ILogger<TasksController> _logger;
         private readonly ITaskMoveService _taskMoves;
+        private readonly IProjectBoardService _projectBoards;
 
-        public TasksController(PrKanbanContext context, ILogger<TasksController> logger, ITaskMoveService taskMoves)
+        public TasksController(
+            PrKanbanContext context,
+            ILogger<TasksController> logger,
+            ITaskMoveService taskMoves,
+            IProjectBoardService projectBoards)
         {
             _context = context;
             _logger = logger;
             _taskMoves = taskMoves;
+            _projectBoards = projectBoards;
         }
 
         /// <summary>Moves a task within the shared board and persists the target lane order.</summary>
@@ -58,7 +64,8 @@ namespace PrKanban.Controllers
         {
             var query = _context.Tasks.Include(t => t.Ordering)
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
-                .ThenInclude(d => d.Project).ThenInclude(p => p.Customer).AsQueryable();
+                .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
+                .Include(t => t.ProjectBoardPosition).AsQueryable();
 
             // Apply optional filters
             if (archived.HasValue)
@@ -106,6 +113,7 @@ namespace PrKanban.Controllers
                 .Include(t => t.Ordering)
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
                 .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
+                .Include(t => t.ProjectBoardPosition)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
@@ -119,7 +127,7 @@ namespace PrKanban.Controllers
         /// POST /api/v1/tasks - Create new task
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromBody] CreateTaskRequest request)
+        public async Task<IActionResult> CreateTask([FromBody] CreateTaskRequest request, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -131,7 +139,7 @@ namespace PrKanban.Controllers
             var deliverable = await _context.Deliverables
                 .Include(d => d.Project).ThenInclude(p => p.Customer)
                 .Include(d => d.Project).ThenInclude(p => p.Details)
-                .FirstOrDefaultAsync(d => d.Id == request.DeliverableId);
+                .FirstOrDefaultAsync(d => d.Id == request.DeliverableId, cancellationToken);
             if (deliverable is null)
                 return BadRequest(new { success = false, error = new { code = "INVALID_DELIVERABLE", message = "A valid deliverable is required." } });
             if (string.IsNullOrEmpty(deliverable.Project.Details?.ShortKey))
@@ -140,7 +148,18 @@ namespace PrKanban.Controllers
             var hierarchyOrder = (await _context.HierarchyPositions
                 .Where(p => p.ItemKind == "tasks" && p.ParentId == deliverable.Id)
                 .Select(p => (int?)p.SortOrder)
-                .MaxAsync()) ?? -1;
+                .MaxAsync(cancellationToken)) ?? -1;
+            var masterColumnName = MasterBoardColumns.Normalize(request.ColumnName);
+            ProjectBoardColumn? requestedProjectColumn = null;
+            if (!string.IsNullOrWhiteSpace(request.ProjectBoardColumnId))
+            {
+                requestedProjectColumn = await _context.ProjectBoardColumns.FirstOrDefaultAsync(
+                    column => column.Id == request.ProjectBoardColumnId && column.ProjectId == deliverable.ProjectId,
+                    cancellationToken);
+                if (requestedProjectColumn is null)
+                    return BadRequest(new ProblemDetails { Status = 400, Title = "The selected project-board column is invalid." });
+                masterColumnName = requestedProjectColumn.MasterColumnName;
+            }
             var task = new Task
             {
                 Id = $"{deliverable.Project.Details.ShortKey}-T-{Guid.NewGuid():N}",
@@ -149,13 +168,27 @@ namespace PrKanban.Controllers
                 Owner = string.IsNullOrWhiteSpace(request.Owner) ? deliverable.Project.Details.DefaultAssignee : request.Owner,
                 Customer = request.Customer,
                 Description = TaskDescriptionSanitizer.Sanitize(request.Description),
-                ColumnName = request.ColumnName ?? "todo",
-                SubColumnName = request.SubColumnName,
+                ColumnName = masterColumnName,
+                SubColumnName = masterColumnName == MasterBoardColumns.Backlog
+                    ? MasterBoardColumns.Backlog
+                    : request.SubColumnName is "Doing" or "Done" ? request.SubColumnName : "Doing",
                 UserId = userId,
                 Tags = request.Tags ?? Array.Empty<string>(),
                 Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null,
-                DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable, SortOrder = hierarchyOrder + 1 }
+                DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable, SortOrder = hierarchyOrder + 1 },
+                ProjectBoardPosition = requestedProjectColumn is null
+                    ? null
+                    : new ProjectBoardTaskPosition
+                    {
+                        ProjectBoardColumnId = requestedProjectColumn.Id,
+                        SortOrder = ((await _context.ProjectBoardTaskPositions
+                            .Where(position => position.ProjectBoardColumnId == requestedProjectColumn.Id)
+                            .Select(position => (double?)position.SortOrder)
+                            .MaxAsync(cancellationToken)) ?? -1024d) + 1024d
+                    }
             };
+            if (requestedProjectColumn is null)
+                await _projectBoards.EnsureTaskPositionAsync(task, deliverable.ProjectId, masterColumnName, cancellationToken);
 
             _context.Tasks.Add(task);
             _context.HierarchyPositions.Add(new HierarchyPosition
@@ -165,7 +198,7 @@ namespace PrKanban.Controllers
                 ParentId = deliverable.Id,
                 SortOrder = hierarchyOrder + 1
             });
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             _logger.LogInformation($"Task {task.Id} created by user {userId}");
 
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new { success = true, data = task });
@@ -175,7 +208,8 @@ namespace PrKanban.Controllers
         /// PUT /api/v1/tasks/:id - Update task
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(string id, [FromBody] UpdateTaskRequest request)
+        public async Task<IActionResult> UpdateTask(
+            string id, [FromBody] UpdateTaskRequest request, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -184,22 +218,31 @@ namespace PrKanban.Controllers
             var task = await _context.Tasks
                 .Include(t => t.Ordering)
                 .Include(t => t.DeliverableAssignment)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                    .ThenInclude(assignment => assignment!.Deliverable)
+                .Include(t => t.ProjectBoardPosition)
+                .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
             if (task == null)
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Task not found" } });
 
+            var previousProjectId = task.DeliverableAssignment?.Deliverable?.ProjectId;
+            var previousMasterColumn = MasterBoardColumns.Normalize(task.ColumnName);
+            var projectChanged = false;
             if (request.DeliverableId != null)
             {
-                if (string.IsNullOrWhiteSpace(request.DeliverableId) ||
-                    !await _context.Deliverables.AnyAsync(d => d.Id == request.DeliverableId))
+                var targetDeliverable = string.IsNullOrWhiteSpace(request.DeliverableId)
+                    ? null
+                    : await _context.Deliverables.FirstOrDefaultAsync(
+                        deliverable => deliverable.Id == request.DeliverableId, cancellationToken);
+                if (targetDeliverable is null)
                     return BadRequest(new { success = false, error = new { code = "INVALID_DELIVERABLE", message = "A valid deliverable is required." } });
                 if (task.DeliverableAssignment?.DeliverableId != request.DeliverableId)
                 {
                     var hierarchyOrder = (await _context.HierarchyPositions
                         .Where(p => p.ItemKind == "tasks" && p.ParentId == request.DeliverableId)
                         .Select(p => (int?)p.SortOrder)
-                        .MaxAsync()) ?? -1;
+                        .MaxAsync(cancellationToken)) ?? -1;
+                    projectChanged = previousProjectId != targetDeliverable.ProjectId;
                     var previousDeliverableId = task.DeliverableAssignment?.DeliverableId;
                     if (previousDeliverableId is not null)
                     {
@@ -207,12 +250,12 @@ namespace PrKanban.Controllers
                             .Where(p => p.ItemKind == "tasks" && p.ParentId == previousDeliverableId && p.ItemId != task.Id)
                             .OrderBy(p => p.SortOrder)
                             .ThenBy(p => p.ItemId)
-                            .ToListAsync();
+                            .ToListAsync(cancellationToken);
                         for (var index = 0; index < previousPositions.Count; index++)
                             previousPositions[index].SortOrder = index;
                     }
                     var position = await _context.HierarchyPositions
-                        .FirstOrDefaultAsync(p => p.ItemKind == "tasks" && p.ItemId == task.Id);
+                        .FirstOrDefaultAsync(p => p.ItemKind == "tasks" && p.ItemId == task.Id, cancellationToken);
                     if (position is null)
                     {
                         position = new HierarchyPosition { ItemKind = "tasks", ItemId = task.Id };
@@ -222,12 +265,19 @@ namespace PrKanban.Controllers
                     position.SortOrder = hierarchyOrder + 1;
                     if (task.DeliverableAssignment is null)
                     {
-                        task.DeliverableAssignment = new TaskDeliverable { TaskId = task.Id, DeliverableId = request.DeliverableId, SortOrder = hierarchyOrder + 1 };
+                        task.DeliverableAssignment = new TaskDeliverable
+                        {
+                            TaskId = task.Id,
+                            DeliverableId = targetDeliverable.Id,
+                            Deliverable = targetDeliverable,
+                            SortOrder = hierarchyOrder + 1
+                        };
                         _context.TaskDeliverables.Add(task.DeliverableAssignment);
                     }
                     else
                     {
-                        task.DeliverableAssignment.DeliverableId = request.DeliverableId;
+                        task.DeliverableAssignment.DeliverableId = targetDeliverable.Id;
+                        task.DeliverableAssignment.Deliverable = targetDeliverable;
                         task.DeliverableAssignment.SortOrder = hierarchyOrder + 1;
                     }
                 }
@@ -244,9 +294,22 @@ namespace PrKanban.Controllers
             if (request.Description != null)
                 task.Description = TaskDescriptionSanitizer.Sanitize(request.Description);
             if (!string.IsNullOrEmpty(request.ColumnName))
-                task.ColumnName = request.ColumnName;
+                task.ColumnName = MasterBoardColumns.Normalize(request.ColumnName);
             if (request.SubColumnName != null)
                 task.SubColumnName = request.SubColumnName;
+            else if (task.ColumnName == MasterBoardColumns.Backlog)
+                task.SubColumnName = MasterBoardColumns.Backlog;
+            else if (task.SubColumnName is not ("Doing" or "Done"))
+                task.SubColumnName = "Doing";
+            var masterColumnChanged = previousMasterColumn != MasterBoardColumns.Normalize(task.ColumnName);
+            if (task.DeliverableAssignment is not null && (projectChanged || masterColumnChanged))
+            {
+                var projectId = await _context.Deliverables
+                    .Where(deliverable => deliverable.Id == task.DeliverableAssignment.DeliverableId)
+                    .Select(deliverable => deliverable.ProjectId)
+                    .FirstAsync(cancellationToken);
+                await _projectBoards.EnsureTaskPositionAsync(task, projectId, task.ColumnName, cancellationToken);
+            }
             if (request.Tags != null)
                 task.Tags = request.Tags;
             if (request.Order.HasValue)
@@ -257,13 +320,14 @@ namespace PrKanban.Controllers
                     task.Ordering.Value = request.Order.Value;
             }
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             
             // Reload the task to get updated values
             task = await _context.Tasks.Include(t => t.Ordering)
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
                 .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
-                .FirstAsync(t => t.Id == id);
+                .Include(t => t.ProjectBoardPosition)
+                .FirstAsync(t => t.Id == id, cancellationToken);
             await PopulateHierarchyOrdersAsync(new[] { task });
             
             _logger.LogInformation($"Task {task.Id} updated by user {userId}");
@@ -390,6 +454,7 @@ namespace PrKanban.Controllers
         public string? Description { get; set; }
         public string? ColumnName { get; set; }
         public string? SubColumnName { get; set; }
+        public string? ProjectBoardColumnId { get; set; }
         public string[]? Tags { get; set; }
         public double? Order { get; set; }
     }

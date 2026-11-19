@@ -23,6 +23,9 @@ namespace PrKanban.Data
         public DbSet<Deliverable> Deliverables { get; set; }
         public DbSet<TaskDeliverable> TaskDeliverables { get; set; }
         public DbSet<HierarchyPosition> HierarchyPositions { get; set; }
+        public DbSet<ProjectBoardColumn> ProjectBoardColumns { get; set; }
+        public DbSet<ProjectBoardLead> ProjectBoardLeads { get; set; }
+        public DbSet<ProjectBoardTaskPosition> ProjectBoardTaskPositions { get; set; }
 
         /// <summary>
         /// DbSet for board configurations
@@ -96,6 +99,36 @@ namespace PrKanban.Data
                 entity.Property(x => x.ItemId).IsRequired().HasMaxLength(256);
                 entity.Property(x => x.ParentId).IsRequired().HasMaxLength(256);
                 entity.HasIndex(x => new { x.ItemKind, x.ParentId, x.SortOrder });
+            });
+            modelBuilder.Entity<ProjectBoardColumn>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Id).IsRequired().HasMaxLength(256);
+                entity.Property(x => x.ProjectId).IsRequired().HasMaxLength(256);
+                entity.Property(x => x.Name).IsRequired().HasMaxLength(100);
+                entity.Property(x => x.MasterColumnName).IsRequired().HasMaxLength(100);
+                entity.Property(x => x.ShowSubLanes).IsRequired().HasDefaultValue(false);
+                entity.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(x => new { x.ProjectId, x.SortOrder });
+                entity.HasIndex(x => new { x.ProjectId, x.MasterColumnName });
+            });
+            modelBuilder.Entity<ProjectBoardLead>(entity =>
+            {
+                entity.HasKey(x => new { x.ProjectId, x.UserId });
+                entity.Property(x => x.ProjectId).IsRequired().HasMaxLength(256);
+                entity.Property(x => x.UserId).IsRequired();
+                entity.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<ProjectBoardTaskPosition>(entity =>
+            {
+                entity.HasKey(x => x.TaskId);
+                entity.Property(x => x.TaskId).IsRequired();
+                entity.Property(x => x.ProjectBoardColumnId).IsRequired().HasMaxLength(256);
+                entity.HasOne<Task>().WithOne(x => x.ProjectBoardPosition)
+                    .HasForeignKey<ProjectBoardTaskPosition>(x => x.TaskId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.Column).WithMany().HasForeignKey(x => x.ProjectBoardColumnId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(x => new { x.ProjectBoardColumnId, x.SortOrder });
             });
 
             modelBuilder.Entity<TranslationEntry>(entity =>
