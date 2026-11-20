@@ -3752,9 +3752,6 @@
                         groupSelect.type = 'checkbox';
                         groupSelect.className = 'task-table-group-select';
                         groupSelect.disabled = tableBulkBusy || taskDataStatus !== 'ready';
-                        if (subgroup) {
-                            groupSelect.style.marginLeft = '28px';
-                        }
                         groupSelect.setAttribute('aria-label', t('tableBulk.selectGroup', 'Gruppe {group} auswählen', { group: item.label }));
                         groupSelect.addEventListener('change', () => {
                             for (const task of item.tasks) {
@@ -3812,7 +3809,7 @@
                         for (const task of subgroup.tasks) {
                             const values = getValues(task);
                             const row = document.createElement('tr');
-                            row.className = 'task-table-row';
+                            row.className = hasSubgroups ? 'task-table-row task-table-row-subgroup' : 'task-table-row';
                             row.dataset.taskId = task.id;
                             row.hidden = collapsed || (hasSubgroups && collapsedTableGroups.has(subgroupKey));
                             const selectionCell = document.createElement('td');

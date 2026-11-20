@@ -73,6 +73,7 @@ button.tree-name:hover { text-decoration: underline; }
 .task-table-row td:nth-child(2) { white-space: nowrap; }
 .task-table-group th { padding-top: 16px; background: #f8fafc; }
 .task-table-subgroup th { padding-left: 32px; padding-top: 10px; }
+.task-table-row-subgroup .task-table-select { padding-left: calc(12px + 32px); }
 .task-table-group button { display: inline-flex; align-items: center; gap: 9px; font-size: 11px; }
 .task-table-group i { width: 12px; text-align: center; color: #64748b; }
 .task-table-status { border-radius: 4px; background: #dbeafe; color: #1d4ed8; padding: 3px 7px; font-weight: 700; }
