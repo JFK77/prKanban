@@ -63,6 +63,7 @@ namespace PrKanban.Controllers
             [FromQuery] int take = 100)
         {
             var query = _context.Tasks.Include(t => t.Ordering)
+                .Include(t => t.StatusHistory)
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
                 .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
                 .Include(t => t.ProjectBoardPosition).AsQueryable();
@@ -111,6 +112,7 @@ namespace PrKanban.Controllers
         {
             var task = await _context.Tasks
                 .Include(t => t.Ordering)
+                .Include(t => t.StatusHistory)
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
                 .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
                 .Include(t => t.ProjectBoardPosition)
@@ -337,6 +339,7 @@ namespace PrKanban.Controllers
             
             // Reload the task to get updated values
             task = await _context.Tasks.Include(t => t.Ordering)
+                .Include(t => t.StatusHistory)
                 .Include(t => t.DeliverableAssignment).ThenInclude(a => a!.Deliverable)
                 .ThenInclude(d => d.Project).ThenInclude(p => p.Customer)
                 .Include(t => t.ProjectBoardPosition)

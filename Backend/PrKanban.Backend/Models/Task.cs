@@ -102,6 +102,9 @@ namespace PrKanban.Models
         /// </summary>
         public string? SubColumnName { get; set; }
 
+        /// <summary>Recorded master-board positions, including the initial position.</summary>
+        public List<TaskStatusEvent> StatusHistory { get; set; } = new();
+
         /// <summary>
         /// Saved position within the column and sub-column
         /// </summary>

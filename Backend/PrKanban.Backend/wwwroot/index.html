@@ -28,7 +28,7 @@
     <script src="i18n.js?v=3" defer></script>
     <link rel="stylesheet" href="hierarchy.css?v=project-board-navigation-8">
     <script src="hierarchy.js?v=project-board-navigation-16" defer></script>
-    <script src="view-tabs.js?v=project-board-navigation-10" defer></script>
+    <script src="view-tabs.js?v=project-board-navigation-12" defer></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -664,7 +664,6 @@
                 <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden" aria-hidden="true"></i>
                 <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden" aria-hidden="true"></i>
             </button>
-            <button id="open-dashboard" type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"><i class="fa-solid fa-chart-column mr-1.5" aria-hidden="true"></i><span data-i18n="views.dashboard">Dashboard</span></button>
             <div id="board-header-actions" class="flex flex-wrap items-center gap-2">
             <button id="project-board-manage-button" type="button" onclick="openProjectBoardManager()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg">
                 <i class="fa-solid fa-table-columns mr-1.5" aria-hidden="true"></i><span data-i18n="projectBoard.manage">Spalten verwalten</span>
@@ -723,6 +722,7 @@
         <nav id="view-tabs" role="tablist" aria-label="Ansichten" data-i18n-aria-label="views.label" class="flex items-center">
             <button id="tab-list" type="button" role="tab" aria-controls="hierarchy-panel" aria-selected="false" tabindex="-1" data-view="list" class="view-tab"><span data-i18n="views.list">Liste</span></button>
             <button id="tab-kanban" type="button" role="tab" aria-controls="kanban-panel" aria-selected="true" data-view="kanban" class="view-tab"><span data-i18n="views.kanban">Kanban</span></button>
+            <button id="tab-dashboard" type="button" role="tab" aria-controls="dashboard-panel" aria-selected="false" tabindex="-1" data-view="dashboard" class="view-tab"><span data-i18n="views.dashboard">Dashboard</span></button>
         </nav>
         <!-- Filters -->
         <div id="board-filters" class="flex flex-wrap items-center gap-3">
@@ -1009,13 +1009,21 @@
             </section>
         </main>
     </section>
-    <section id="dashboard-panel" role="region" aria-label="Dashboard" data-i18n-aria-label="views.dashboard" class="hidden flex-1 p-6">
+    <section id="dashboard-panel" role="tabpanel" aria-labelledby="tab-dashboard" class="hidden flex-1 p-6">
         <h2 data-i18n="views.dashboard" class="text-xl font-bold">Dashboard</h2>
-        <p data-i18n="views.dashboardLater" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Das Dashboard wird später ergänzt.</p>
+        <nav id="dashboard-tabs" role="tablist" aria-label="Dashboard-Kennzahlen" data-i18n-aria-label="views.dashboardKpis" class="mt-4 flex flex-wrap items-center">
+            <button id="tab-kanban-kpis" type="button" role="tab" aria-controls="kanban-kpis-panel" aria-selected="true" tabindex="0" class="view-tab"><span data-i18n="views.kanbanKpis">Kanban KPIs</span></button>
+            <button id="tab-budget-kpis" type="button" role="tab" aria-controls="budget-kpis-panel" aria-selected="false" tabindex="-1" class="view-tab"><span data-i18n="views.budgetKpis">Budget KPIs</span></button>
+        </nav>
+        <section id="kanban-kpis-panel" role="tabpanel" aria-labelledby="tab-kanban-kpis">
+            <div id="kanban-kpis" aria-live="polite" class="mt-4 space-y-5"></div>
+        </section>
+        <section id="budget-kpis-panel" role="tabpanel" aria-labelledby="tab-budget-kpis" class="hidden">
+            <p data-i18n="views.dashboardLater" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Das Dashboard wird später ergänzt.</p>
+        </section>
     </section>
     <!-- Footer -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
-        <span data-i18n="board.footer">Präsentations-Demo-Anwendung für agile Dynamics 365 Integrationen. Drag-and-Drop aktiv. Column Validation, WIP-Limits &amp; Collapsible Swimlanes implementiert.</span>
     </footer>
 
     <!-- Task Add / Edit Modal -->
@@ -1242,6 +1250,7 @@
     </script>
 
     <script type="module">
+        import { calculateKanbanKpis, renderEmptyFlowChart, renderFlowChart } from './kanban-kpis.js?v=4';
         const t = window.i18n.text;
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
@@ -1749,6 +1758,7 @@
                 timeLink: apiTask.timeLink || "",
                 userId: apiTask.userId,
                 createdAt: apiTask.createdAt,
+                statusHistory: Array.isArray(apiTask.statusHistory) ? apiTask.statusHistory : null,
                 updatedAt: apiTask.updatedAt
             };
         }
@@ -1770,6 +1780,7 @@
         // --- REST API INTEGRATION ---
         async function loadTasksFromCloud() {
             if (!window.currentUser) {
+                taskDataStatus = 'signedOut';
                 tasks = [];
                 activeProjectBoardId = '';
                 activeProjectBoard = null;
@@ -1778,6 +1789,7 @@
                 renderBoard();
                 return;
             }
+            taskDataStatus = 'loading';
             try {
                 const apiTasks = [];
                 let total;
@@ -1797,6 +1809,7 @@
                 updateDynamicListsFromTasks(cloudTasks);
                 console.log("Tasks successfully loaded from API:", cloudTasks);
                 tasks = cloudTasks;
+                taskDataStatus = 'ready';
                 persistTaskSnapshot();
 
                 if (tasks.length === 0) {
@@ -1807,6 +1820,7 @@
                 renderBoard();
             } catch (error) {
                 console.error("Error loading tasks from API:", error);
+                taskDataStatus = 'error';
                 const localFallback = loadFromStorage('kanban_tasks', []);
                 tasks = Array.isArray(localFallback) ? localFallback : [];
                 activeProjectBoardId = '';
@@ -1879,6 +1893,7 @@
 
         // --- GLOBAL STATE & CONFIGURATION ---
         let tasks = [];
+        let taskDataStatus = 'loading';
         let selectedModalTags = [];
         let selectedTaskChecklists = [];
         let selectedFilterOwners = loadFromStorage('kanban_selectedFilterOwners', []);
@@ -2967,6 +2982,10 @@
                 return;
             }
             const filteredTasks = getFilteredTasks();
+            if (window.viewTabs?.current() === 'dashboard') {
+                renderKanbanKpis(filteredTasks);
+                return;
+            }
             if (activeProjectBoardId) {
                 if (!activeProjectBoard) {
                     const loading = document.createElement('p');
@@ -2987,6 +3006,14 @@
             container.appendChild(createBoardStructure(activeTasks, rows));
         }
 
+        function primarySwimlaneId(group, value) {
+            return `p-${group}-${value}`.replace(/\s+/g, '-');
+        }
+
+        function secondarySwimlaneId(primaryId, group, value) {
+            return `s-${primaryId}-${group}-${value}`.replace(/\s+/g, '-');
+        }
+
         function buildSwimlaneRows(activeTasks, boardTasks) {
             const pGroup = groupPrimary.value;
             const sGroup = groupSecondary.value;
@@ -2998,7 +3025,7 @@
                 const group1Keys = [...new Set(boardTasks.map(t => t[pGroup]))].sort();
                 group1Keys.forEach(g1Value => {
                     const g1Tasks = activeTasks.filter(t => t[pGroup] === g1Value);
-                    const swimlaneId = `p-${pGroup}-${g1Value}`.replace(/\s+/g, '-');
+                    const swimlaneId = primarySwimlaneId(pGroup, g1Value);
                     rows.push({ type: 'group', level: 1, id: swimlaneId, group: pGroup, value: g1Value, tasks: g1Tasks });
                     if (collapsedSwimlanes.has(swimlaneId)) return;
 
@@ -3007,7 +3034,7 @@
                         group2Keys.forEach(g2Value => {
                             const g2Tasks = g1Tasks.filter(t => t[sGroup] === g2Value);
                             if (g2Tasks.length === 0) return;
-                            const subSwimlaneId = `s-${swimlaneId}-${sGroup}-${g2Value}`.replace(/\s+/g, '-');
+                            const subSwimlaneId = secondarySwimlaneId(swimlaneId, sGroup, g2Value);
                             rows.push({ type: 'group', level: 2, id: subSwimlaneId, group: sGroup, value: g2Value, tasks: g2Tasks });
                             if (!collapsedSwimlanes.has(subSwimlaneId)) {
                                 rows.push({ type: 'lane', tasks: g2Tasks });
@@ -3514,6 +3541,188 @@
 
         function getFilteredTasks() {
             return getContextTasks().filter(matchesBoardFilters);
+        }
+
+        function renderKanbanKpis(filteredTasks) {
+            const root = document.getElementById('kanban-kpis');
+            root.replaceChildren();
+
+            function section(title) {
+                const container = document.createElement('section');
+                const heading = document.createElement('h3');
+                heading.className = 'mb-3 text-base font-semibold text-slate-800 dark:text-slate-100';
+                heading.textContent = title;
+                container.append(heading);
+                root.append(container);
+                return container;
+            }
+
+            function card(title, value, description, noteText) {
+                const container = document.createElement('article');
+                container.className = 'rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900';
+                const heading = document.createElement('h4');
+                heading.className = 'text-sm font-semibold text-slate-700 dark:text-slate-200';
+                heading.textContent = title;
+                const number = document.createElement('p');
+                number.className = 'mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100';
+                number.textContent = value;
+                const explanation = document.createElement('p');
+                explanation.className = `mt-2 text-xs text-slate-500 dark:text-slate-400${value ? ' italic' : ''}`;
+                explanation.textContent = description;
+                let note;
+                if (noteText) {
+                    note = document.createElement('p');
+                    note.className = 'mt-2 text-xs text-slate-500 dark:text-slate-400';
+                    note.textContent = noteText;
+                }
+                if (value) {
+                    const header = document.createElement('div');
+                    header.className = 'flex items-start justify-between gap-3';
+                    const labels = document.createElement('div');
+                    labels.className = 'min-w-0 flex-1';
+                    labels.append(heading);
+                    if (note) labels.append(note);
+                    number.className = 'max-w-[50%] break-words text-right text-3xl font-bold text-slate-900 dark:text-slate-100';
+                    header.append(labels, number);
+                    container.append(header, explanation);
+                } else {
+                    container.append(heading, number, explanation);
+                    if (note) container.append(note);
+                }
+                return container;
+            }
+
+            let status = '';
+            if (!window.currentUser || taskDataStatus === 'signedOut')
+                status = t('kpi.signIn', 'Bitte anmelden, um die Kennzahlen zu sehen.');
+            else if (taskDataStatus === 'loading')
+                status = t('kpi.loading', 'Aufgaben werden geladen …');
+            else if (taskDataStatus === 'error')
+                status = t('kpi.loadFailed', 'Kennzahlen nicht verfügbar: Aufgaben konnten nicht geladen werden.');
+            if (status) {
+                const notice = document.createElement('p');
+                notice.className = 'text-sm text-slate-600 dark:text-slate-400';
+                notice.setAttribute('role', 'status');
+                notice.textContent = status;
+                root.append(notice);
+            }
+
+            const metrics = section(t('kpi.flowMetrics', 'Flow-Kennzahlen'));
+            const metricGrid = document.createElement('div');
+            metricGrid.className = 'grid gap-3 sm:grid-cols-2 xl:grid-cols-4';
+            const wip = filteredTasks.filter(task => task.column === 'InProgress').length;
+            const historyUnavailable = filteredTasks.some(task => {
+                if (!Array.isArray(task.statusHistory) || task.statusHistory.length === 0) return true;
+                const latest = task.statusHistory.reduce((a, b) => a.id > b.id ? a : b);
+                return normalizeColumnName(latest.columnName) !== task.column;
+            });
+            const data = status || historyUnavailable ? null : calculateKanbanKpis(filteredTasks);
+            const days = t('kpi.days', 'Tage');
+            const period = t('kpi.last30Days', 'Letzte 30 Kalendertage (UTC).');
+            const meanPeriod = t('kpi.meanPeriod', 'Durchschnitt der Abschlüsse der letzten 30 Kalendertage (UTC).');
+            const noCompleted = t('kpi.noCompletedData', 'Keine vollständig erfassten Abschlüsse im Zeitraum.');
+            const formatDays = value => value === null ? '—' : `${value.toFixed(1)} ${days}`;
+            metricGrid.append(
+                card(t('kpi.wip', 'Work in Progress (WIP)'), status ? '—' : String(wip),
+                    t('kpi.wipExplanation', 'Die Anzahl der Aufgaben, die sich aktuell gleichzeitig in Bearbeitung befinden. Ein hoher WIP führt oft zu Kontextwechseln und längeren Durchlaufzeiten (Little’s Law).'),
+                    t('kpi.wipDescription', 'Tasks in der Spalte In Progress, einschließlich ihrer Unterspalten.')),
+                card(t('kpi.cycleTime', 'Cycle Time'), data ? formatDays(data.cycle) : '—',
+                    t('kpi.cycleTimeExplanation', 'Die Zeit, die eine Aufgabe benötigt, ab dem Moment, in dem aktiv daran gearbeitet wird (In Progress), bis zur Fertigstellung (Done). Sie misst die reine Arbeitsgeschwindigkeit des Teams.'), data?.cycle === null ? noCompleted : meanPeriod),
+                card(t('kpi.leadTime', 'Lead Time'), data ? formatDays(data.lead) : '—',
+                    t('kpi.leadTimeExplanation', 'Die gesamte Zeit von der Erstellung eines Tickets (Kundenwunsch im Backlog) bis zur Auslieferung (Done). Sie spiegelt die Wartezeit aus Kundensicht wider.'), data?.lead === null ? noCompleted : meanPeriod),
+                card(t('kpi.throughput', 'Throughput'), data ? String(data.throughput) : '—',
+                    t('kpi.throughputExplanation', 'Die Anzahl der abgeschlossenen Aufgaben innerhalb eines definierten Zeitraums (z. B. Tickets pro Woche). Dient als Basis für Kapazitätsprognosen.'), period)
+            );
+            metrics.append(metricGrid);
+            if (!status && historyUnavailable) {
+                const notice = document.createElement('p');
+                notice.className = 'mt-3 text-xs text-amber-700 dark:text-amber-300';
+                notice.setAttribute('role', 'status');
+                notice.textContent = t('kpi.historyUnavailable', 'Statusverläufe fehlen für mindestens eine Aufgabe. Bitte Serverversion und Datenmigration prüfen.');
+                metrics.append(notice);
+            }
+            const coverage = document.createElement('p');
+            coverage.className = 'mt-3 text-xs text-slate-500 dark:text-slate-400';
+            coverage.textContent = t('kpi.coverage', 'Auswertung nach aktuellen Filtern. Statusverläufe bestehender Aufgaben beginnen erst mit der Aktivierung; unbekannte Zeiten werden nicht geschätzt. Wiedereröffnete Aufgaben zählen bei jedem erneuten Abschluss.');
+            metrics.append(coverage);
+
+            const distribution = section(t('kpi.currentDistribution', 'Aktuelle Aufgabenverteilung'));
+            const distributionNote = document.createElement('p');
+            distributionNote.className = 'mb-3 text-xs text-slate-500 dark:text-slate-400';
+            distributionNote.textContent = t('kpi.currentDistributionNote', 'Aktueller Stand nach Master-Board-Spalte; kein zeitlicher Verlauf.');
+            distribution.append(distributionNote);
+            if (!status) {
+                const counts = new Map();
+                filteredTasks.forEach(task => counts.set(task.column, (counts.get(task.column) || 0) + 1));
+                const columns = ['Backlog', 'ToDo', 'Analysis', 'InProgress', 'Done'];
+                const extraColumns = [...counts.keys()].filter(column => !columns.includes(column)).sort();
+                const maxCount = Math.max(1, ...counts.values());
+                const list = document.createElement('div');
+                list.className = 'space-y-2 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900';
+                if (!filteredTasks.length) list.append(renderEmptyFlowChart(t));
+                for (const column of filteredTasks.length ? [...columns, ...extraColumns] : []) {
+                    const count = counts.get(column) || 0;
+                    const row = document.createElement('div');
+                    row.className = 'grid grid-cols-[minmax(5rem,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm';
+                    const label = document.createElement('span');
+                    label.className = 'text-slate-700 dark:text-slate-200';
+                    label.textContent = getColLabel(column);
+                    const track = document.createElement('div');
+                    track.className = 'h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800';
+                    track.setAttribute('aria-hidden', 'true');
+                    const bar = document.createElement('div');
+                    bar.className = 'h-full rounded-full bg-blue-500';
+                    bar.style.width = `${count / maxCount * 100}%`;
+                    track.append(bar);
+                    const value = document.createElement('span');
+                    value.className = 'tabular-nums text-slate-700 dark:text-slate-200';
+                    value.textContent = String(count);
+                    row.append(label, track, value);
+                    list.append(row);
+                }
+                distribution.append(list);
+            }
+
+            const charts = section(t('kpi.flowCharts', 'Verlaufsdiagramme'));
+            const chartGrid = document.createElement('div');
+            chartGrid.className = 'grid gap-3 sm:grid-cols-2 xl:grid-cols-4';
+            [
+                ['cfd', 'kpi.cfd', 'Cumulative Flow Diagram', 'kpi.cfdExplanation', 'Zeigt die Verteilung der Aufgaben über alle Board-Spalten im Zeitverlauf. Laufend breiter werdende Bänder weisen direkt auf einen Engpass (Bottleneck) hin.'],
+                ['control', 'kpi.controlChart', 'Control Chart', 'kpi.controlChartExplanation', 'Stellt die Cycle Time jeder einzelnen Aufgabe als Punkt dar. Hilft dabei, Ausreißer (ungewöhnlich lange Tasks) zu identifizieren und die Prozessstabilität zu bewerten.'],
+                ['aging', 'kpi.agingWip', 'Aging WIP Chart', 'kpi.agingWipExplanation', 'Zeigt an, wie lange sich aktuell laufende Aufgaben bereits in einer Spalte befinden. Warnt proaktiv vor Aufgaben, die liegen bleiben, noch bevor sie abgeschlossen sind.'],
+                ['scatter', 'kpi.scatterplot', 'Cycle Time Scatterplot', 'kpi.scatterplotExplanation', 'Ähnlich wie das Control Chart, ergänzt um Perzentil-Linien (z. B. 85 %). Damit lassen sich verlässliche Aussagen treffen (z. B. "85 % aller Aufgaben erledigen wir in unter 6 Tagen").']
+            ].forEach(([kind, key, fallback, descriptionKey, description]) => {
+                const chart = card(t(key, fallback), '', t(descriptionKey, description), kind === 'aging' ? '' : period);
+                if (data) chart.append(renderFlowChart(kind, data, t, getColLabel, openKpiTask));
+                chartGrid.append(chart);
+            });
+            charts.append(chartGrid);
+        }
+
+        function openKpiTask(taskId) {
+            const task = getFilteredTasks().find(item => item.id === taskId);
+            if (!task) {
+                showToast(t('hierarchy.taskNotFound', 'Task konnte im Kanban nicht gefunden werden.'));
+                return;
+            }
+            if (groupPrimary.value !== 'NONE') {
+                const primaryId = primarySwimlaneId(groupPrimary.value, task[groupPrimary.value]);
+                collapsedSwimlanes.delete(primaryId);
+                if (groupSecondary.value !== 'NONE' && groupSecondary.value !== groupPrimary.value)
+                    collapsedSwimlanes.delete(secondarySwimlaneId(primaryId, groupSecondary.value, task[groupSecondary.value]));
+            }
+            if (activeProjectBoardId) collapsedProjectBoardColumns.delete(task.projectBoardColumnId);
+            else collapsedBoardColumns.delete(task.column);
+            if (!window.viewTabs.show('kanban')) return;
+            if (!activeProjectBoardId && task.column === 'Backlog') {
+                const toggle = document.getElementById('backlog-toggle');
+                if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+            }
+            window.selectTask(taskId);
+            const card = [...document.querySelectorAll('#kanban-panel [data-task-id]')]
+                .find(element => element.dataset.taskId === taskId);
+            if (card) card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            else showToast(t('hierarchy.taskNotFound', 'Task konnte im Kanban nicht gefunden werden.'));
         }
 
         window.getHierarchyBoardView = () => ({

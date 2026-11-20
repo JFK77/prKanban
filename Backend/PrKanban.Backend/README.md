@@ -138,8 +138,24 @@ cannot deactivate themselves or remove their own administrator role.
 
 Administrators can create and edit customers, projects and deliverables in
 the **Customers and projects** tab next to the Kanban filters, also accessible
-from administration. The Kanban tab preserves the current board and the Dashboard
-tab is a placeholder for a future dashboard.
+from administration. The Kanban tab preserves the current board. The Dashboard
+contains Kanban KPIs and Budget KPIs tabs. Kanban KPIs uses the current customer,
+project, assignee, type, tag and archive filters for current WIP and flow history.
+Master-board column and subcolumn changes are recorded automatically for new and
+existing tasks. Existing tasks receive a baseline at migration time, not an
+invented historical entry date. Cycle time and lead time are averages of recorded
+completions in the last 30 UTC calendar days; throughput counts those completions.
+Cycle time requires a known entry into In Progress since the previous completion;
+lead time uses task creation. Each subsequent completion of a reopened task counts
+again. The CFD shows known daily column states for the same period; control and
+scatter charts use known cycle times, with the scatter chart showing the nearest
+rank 85th percentile. Aging shows time in the current master column for active
+tasks with known entry times. History follows current task attributes and filters,
+not historical assignments; deleted tasks and their history are removed.
+Select an individual control-chart or scatterplot point, or an Aging WIP bar,
+to open its task on the Kanban board with the current filters preserved. When
+scatterplot points overlap exactly, select the desired task from the offered list.
+Budget KPIs is a placeholder for future metrics.
 Users can browse the hierarchy and, like Admins, reorder items and move them
 between valid parents. Only Admins can create items or edit their fields.
 The expandable tree shows tasks under their deliverables, including archived

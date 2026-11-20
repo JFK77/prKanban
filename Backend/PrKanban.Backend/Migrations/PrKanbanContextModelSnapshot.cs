@@ -347,6 +347,31 @@ namespace PrKanban.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PrKanban.Models.HierarchyPosition", b =>
+                {
+                    b.Property<string>("ItemKind")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemId")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ItemKind", "ItemId");
+
+                    b.HasIndex("ItemKind", "ParentId", "SortOrder");
+
+                    b.ToTable("HierarchyPositions");
+                });
+
             modelBuilder.Entity("PrKanban.Models.Project", b =>
                 {
                     b.Property<string>("Id")
@@ -368,44 +393,9 @@ namespace PrKanban.Migrations
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("PrKanban.Models.ProjectDetails", b =>
-                {
-                    b.Property<string>("ProjectId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CrmLink")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CrmUrl")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CustomerOrderNumber")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DefaultAssignee")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("InternalOrderNumber")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("LastTaskNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ShortKey")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("ProjectId");
-
-                    b.HasIndex("ShortKey")
-                        .IsUnique();
-
-                    b.ToTable("ProjectDetails");
-                });
-
             modelBuilder.Entity("PrKanban.Models.ProjectBoardColumn", b =>
                 {
                     b.Property<string>("Id")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
@@ -444,15 +434,15 @@ namespace PrKanban.Migrations
             modelBuilder.Entity("PrKanban.Models.ProjectBoardLead", b =>
                 {
                     b.Property<string>("ProjectId")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("ProjectId", "UserId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("ProjectBoardLeads");
                 });
@@ -460,7 +450,6 @@ namespace PrKanban.Migrations
             modelBuilder.Entity("PrKanban.Models.ProjectBoardTaskPosition", b =>
                 {
                     b.Property<string>("TaskId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ProjectBoardColumnId")
@@ -478,17 +467,51 @@ namespace PrKanban.Migrations
                     b.ToTable("ProjectBoardTaskPositions");
                 });
 
+            modelBuilder.Entity("PrKanban.Models.ProjectDetails", b =>
+                {
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CrmLink")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CrmUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerOrderNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DefaultAssignee")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InternalOrderNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LastTaskNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ShortKey")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ProjectId");
+
+                    b.HasIndex("ShortKey")
+                        .IsUnique();
+
+                    b.ToTable("ProjectDetails");
+                });
+
             modelBuilder.Entity("PrKanban.Models.Task", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ChecklistsJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ColumnName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ChecklistsJson")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -512,15 +535,15 @@ namespace PrKanban.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TaskNumber")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Tags")
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasAnnotation("Relational:JsonPropertyName", "tags");
 
                     b.Property<string>("TagsJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskNumber")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TaskType")
@@ -545,14 +568,14 @@ namespace PrKanban.Migrations
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("TaskNumber")
+                        .IsUnique();
+
                     b.HasIndex("UpdatedAt");
 
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "IsArchived");
-
-                    b.HasIndex("TaskNumber")
-                        .IsUnique();
 
                     b.ToTable("Tasks");
                 });
@@ -616,31 +639,6 @@ namespace PrKanban.Migrations
                     b.ToTable("TaskDeliverables");
                 });
 
-            modelBuilder.Entity("PrKanban.Models.HierarchyPosition", b =>
-                {
-                    b.Property<string>("ItemKind")
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ItemId")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ParentId")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("ItemKind", "ItemId");
-
-                    b.HasIndex("ItemKind", "ParentId", "SortOrder");
-
-                    b.ToTable("HierarchyPositions");
-                });
-
             modelBuilder.Entity("PrKanban.Models.TaskOrder", b =>
                 {
                     b.Property<string>("TaskId")
@@ -652,6 +650,38 @@ namespace PrKanban.Migrations
                     b.HasKey("TaskId");
 
                     b.ToTable("TaskOrder");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TaskStatusEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ColumnName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsBaseline")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubColumnName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId", "Id");
+
+                    b.ToTable("TaskStatusEvents");
                 });
 
             modelBuilder.Entity("PrKanban.Models.TranslationEntry", b =>
@@ -782,15 +812,6 @@ namespace PrKanban.Migrations
                     b.Navigation("Customer");
                 });
 
-            modelBuilder.Entity("PrKanban.Models.ProjectDetails", b =>
-                {
-                    b.HasOne("PrKanban.Models.Project", null)
-                        .WithOne("Details")
-                        .HasForeignKey("PrKanban.Models.ProjectDetails", "ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("PrKanban.Models.ProjectBoardColumn", b =>
                 {
                     b.HasOne("PrKanban.Models.Project", null)
@@ -830,6 +851,15 @@ namespace PrKanban.Migrations
                         .IsRequired();
 
                     b.Navigation("Column");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.ProjectDetails", b =>
+                {
+                    b.HasOne("PrKanban.Models.Project", null)
+                        .WithOne("Details")
+                        .HasForeignKey("PrKanban.Models.ProjectDetails", "ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("PrKanban.Models.Task", b =>
@@ -878,6 +908,15 @@ namespace PrKanban.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PrKanban.Models.TaskStatusEvent", b =>
+                {
+                    b.HasOne("PrKanban.Models.Task", null)
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PrKanban.Models.ApplicationUser", b =>
                 {
                     b.Navigation("BoardConfig");
@@ -907,6 +946,8 @@ namespace PrKanban.Migrations
                     b.Navigation("Ordering");
 
                     b.Navigation("ProjectBoardPosition");
+
+                    b.Navigation("StatusHistory");
                 });
 #pragma warning restore 612, 618
         }

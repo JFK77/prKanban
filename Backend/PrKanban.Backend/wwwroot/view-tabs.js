@@ -7,7 +7,7 @@
         kanban: document.getElementById('kanban-panel'),
         dashboard: document.getElementById('dashboard-panel')
     };
-    const boardControls = ['board-header-actions', 'board-filters', 'board-groupings'].map(id => document.getElementById(id));
+    const boardControls = ['board-header-actions', 'board-groupings'].map(id => document.getElementById(id));
     const taskPanel = document.getElementById('task-details-panel');
     const detailsResizer = document.getElementById('details-resizer');
     const hierarchyTaskSlot = document.getElementById('hierarchy-task-panel-slot');
@@ -48,7 +48,7 @@
         for (const tab of tabs) {
             const selected = tab.dataset.view === view;
             tab.setAttribute('aria-selected', String(selected));
-            tab.tabIndex = selected || (!isBoardView && tab.dataset.view === 'kanban') ? 0 : -1;
+            tab.tabIndex = selected ? 0 : -1;
         }
         for (const [name, panel] of Object.entries(panels)) {
             const selected = name === view;
@@ -71,18 +71,30 @@
         return true;
     }
 
-    for (const tab of tabs) {
-        tab.addEventListener('click', () => show(tab.dataset.view));
-        tab.addEventListener('keydown', event => {
-            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-            event.preventDefault();
-            const index = tabs.indexOf(tab);
-            const target = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 :
-                (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-            if (show(tabs[target].dataset.view)) tabs[target].focus();
-        });
+    function bindTabNavigation(tabList, activate) {
+        for (const tab of tabList) {
+            tab.addEventListener('click', () => activate(tab));
+            tab.addEventListener('keydown', event => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                event.preventDefault();
+                const index = tabList.indexOf(tab);
+                const target = event.key === 'Home' ? 0 : event.key === 'End' ? tabList.length - 1 :
+                    (index + (event.key === 'ArrowRight' ? 1 : -1) + tabList.length) % tabList.length;
+                if (activate(tabList[target])) tabList[target].focus();
+            });
+        }
     }
-    document.getElementById('open-dashboard').addEventListener('click', () => show('dashboard'));
+    bindTabNavigation(tabs, tab => show(tab.dataset.view));
+    const dashboardTabs = [...document.querySelectorAll('#dashboard-tabs [role="tab"]')];
+    bindTabNavigation(dashboardTabs, selected => {
+        for (const tab of dashboardTabs) {
+            const activeTab = tab === selected;
+            tab.setAttribute('aria-selected', String(activeTab));
+            tab.tabIndex = activeTab ? 0 : -1;
+            document.getElementById(tab.getAttribute('aria-controls')).classList.toggle('hidden', !activeTab);
+        }
+        return true;
+    });
     window.addEventListener('app-auth-changed', event => {
         const id = event.detail?.userId || event.detail?.id || event.detail?.email || null;
         if (id === currentUserId) return;

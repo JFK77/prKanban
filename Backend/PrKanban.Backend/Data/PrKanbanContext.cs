@@ -16,6 +16,7 @@ namespace PrKanban.Data
         /// DbSet for tasks
         /// </summary>
         public DbSet<Task> Tasks { get; set; }
+        public DbSet<TaskStatusEvent> TaskStatusEvents { get; set; }
 
         public DbSet<TaskAttachment> TaskAttachments { get; set; }
         public DbSet<Customer> Customers { get; set; }
@@ -190,6 +191,17 @@ namespace PrKanban.Data
 
             modelBuilder.Entity<TaskOrder>().HasKey(e => e.TaskId);
 
+            modelBuilder.Entity<TaskStatusEvent>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.TaskId).IsRequired();
+                entity.Property(e => e.ColumnName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.SubColumnName).HasMaxLength(100);
+                entity.HasIndex(e => new { e.TaskId, e.Id });
+                entity.HasOne<Task>().WithMany(t => t.StatusHistory)
+                    .HasForeignKey(e => e.TaskId).OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<TaskAttachment>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -229,6 +241,7 @@ namespace PrKanban.Data
         public override int SaveChanges()
         {
             UpdateTimestamps();
+            RecordTaskStatuses();
             return base.SaveChanges();
         }
 
@@ -238,7 +251,35 @@ namespace PrKanban.Data
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             UpdateTimestamps();
+            RecordTaskStatuses();
             return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void RecordTaskStatuses()
+        {
+            var now = DateTimeOffset.UtcNow;
+            foreach (var entry in ChangeTracker.Entries<Task>().ToArray())
+            {
+                if (entry.State != EntityState.Added && entry.State != EntityState.Modified)
+                    continue;
+
+                var column = MasterBoardColumns.Normalize(entry.Entity.ColumnName);
+                var subColumn = entry.Entity.SubColumnName;
+                if (entry.State == EntityState.Modified &&
+                    MasterBoardColumns.Normalize(entry.Property(t => t.ColumnName).OriginalValue) == column &&
+                    entry.Property(t => t.SubColumnName).OriginalValue == subColumn)
+                    continue;
+
+                TaskStatusEvents.Add(new TaskStatusEvent
+                {
+                    TaskId = entry.Entity.Id,
+                    ColumnName = column,
+                    SubColumnName = subColumn,
+                    OccurredAt = entry.State == EntityState.Added
+                        ? new DateTimeOffset(DateTime.SpecifyKind(entry.Entity.CreatedAt, DateTimeKind.Utc))
+                        : now
+                });
+            }
         }
 
         /// <summary>
