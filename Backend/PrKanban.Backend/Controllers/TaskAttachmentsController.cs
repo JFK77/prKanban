@@ -34,7 +34,7 @@ public sealed class TaskAttachmentsController(ITaskAttachmentService attachments
     [RequestFormLimits(MultipartBodyLengthLimit = MaximumRequestSize)]
     public async Task<IActionResult> Upload(
         string taskId,
-        [FromForm] IFormFile? file,
+        IFormFile? file,
         [FromForm] bool isInlineImage,
         CancellationToken cancellationToken)
     {

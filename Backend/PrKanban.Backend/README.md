@@ -44,6 +44,7 @@ dotnet restore
 ```
 
 ### 3. Create Initial EF Core Migration
+Use `dotnet-ef` version 10 to match the project's EF Core version.
 ```bash
 dotnet ef migrations add InitialCreate
 ```

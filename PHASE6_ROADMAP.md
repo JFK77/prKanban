@@ -221,8 +221,8 @@ public async Task<IActionResult> Restore(string id)
 **Effort**: 4 Hours  
 **Dockerfile**:
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
-COPY ./Backend/PrKanban.Backend/bin/Release/net8.0/publish/ /app
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+COPY ./Backend/PrKanban.Backend/bin/Release/net10.0/publish/ /app
 WORKDIR /app
 EXPOSE 5000
 ENTRYPOINT ["dotnet", "PrKanban.Backend.dll"]
