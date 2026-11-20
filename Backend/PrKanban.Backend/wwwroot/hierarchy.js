@@ -101,11 +101,13 @@ function entityIcon(kind) {
     return container;
 }
 
-function treeNode(kind, item, depth, children, childLabel) {
+function treeNode(kind, item, depth, children, childLabel, childCount = children.length) {
     const node = document.createElement('details');
     const key = `${kind}:${item.id}`;
     node.open = expandedNodes.get(key) ?? true;
-    node.addEventListener('toggle', () => expandedNodes.set(key, node.open));
+    node.addEventListener('toggle', () => {
+        if (node.isConnected) expandedNodes.set(key, node.open);
+    });
     const row = document.createElement('summary');
     row.className = 'tree-row';
     row.dataset.itemKey = key;
@@ -135,11 +137,11 @@ function treeNode(kind, item, depth, children, childLabel) {
         keyLabel.textContent = item.shortKey;
         row.append(keyLabel);
     }
-    if (children.length) {
+    if (childCount) {
         const count = document.createElement('span');
         count.className = 'tree-count';
-        count.setAttribute('aria-label', `${children.length} ${childLabel}`);
-        count.append(icon(['M6 4v5a4 4 0 0 0 4 4h4', 'M6 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M17 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6']), document.createTextNode(String(children.length)));
+        count.setAttribute('aria-label', `${childCount} ${childLabel}`);
+        count.append(icon(['M6 4v5a4 4 0 0 0 4 4h4', 'M6 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4', 'M17 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6']), document.createTextNode(String(childCount)));
         row.append(count);
     }
     if (kind === 'projects') {
@@ -149,13 +151,13 @@ function treeNode(kind, item, depth, children, childLabel) {
         ], () => {
             if (!window.viewTabs?.show('kanban')) return;
             window.selectProjectBoard(item.id).then(loaded => {
-                if (!loaded) window.viewTabs?.show('projects');
+                if (!loaded) window.viewTabs?.show('list');
             }).catch(error => {
                 console.error('Could not open project board:', error);
                 message(t('projectBoard.loadFailed', 'Projektboard konnte nicht geladen werden: {error}', {
                     error: error.message || t('common.unknownError', 'Unbekannter Fehler')
                 }), true);
-                window.viewTabs?.show('projects');
+                window.viewTabs?.show('list');
             });
         });
         boardAction.classList.add('tree-action--board');
@@ -182,14 +184,14 @@ function treeNode(kind, item, depth, children, childLabel) {
     return node;
 }
 
-function taskRow(task) {
+function taskRow(task, depth = 3) {
     const row = document.createElement('div');
     row.className = 'tree-row';
     row.dataset.itemKey = `tasks:${task.id}`;
     row.dataset.itemKind = 'tasks';
     row.dataset.itemId = task.id;
     row.dataset.parentId = task.deliverableId || '';
-    row.style.setProperty('--depth', 3);
+    row.style.setProperty('--depth', depth);
     row.draggable = canRearrange;
     if (canRearrange) row.title = t('hierarchy.dragItem', 'Ziehen, um zu verschieben');
     const spacer = document.createElement('span');
@@ -219,20 +221,44 @@ function renderTree() {
     const tree = document.getElementById('tree');
     tree.replaceChildren();
     if (!hierarchyLoaded) return;
-    if (!data.customers.length) {
+    const view = window.getHierarchyBoardView();
+    const customers = data.customers.filter(customer => !view.customerId || customer.id === view.customerId);
+    if (!customers.length) {
         const empty = document.createElement('p');
         empty.className = 'text-sm text-slate-500';
         empty.textContent = t('hierarchy.empty', 'Noch keine Kunden vorhanden.');
         tree.append(empty);
     }
-    for (const customer of data.customers) {
-        const projects = data.projects.filter(project => project.customerId === customer.id);
+    for (const customer of customers) {
+        const projects = data.projects.filter(project => project.customerId === customer.id &&
+            (!view.projectId || project.id === view.projectId));
         const projectNodes = projects.map(project => {
             const deliverables = data.deliverables.filter(deliverable => deliverable.projectId === project.id);
             const deliverableNodes = deliverables.map(deliverable => {
-                const tasks = treeTasks.filter(task => task.deliverableId === deliverable.id)
+                const tasks = treeTasks.filter(task => task.deliverableId === deliverable.id && view.matchesTask(task))
                     .sort((a, b) => (a.hierarchyOrder ?? 0) - (b.hierarchyOrder ?? 0));
-                return treeNode('deliverables', deliverable, 2, tasks.map(taskRow), t('hierarchy.tasks', 'Tasks'));
+                const rows = view.rows(tasks);
+                const grouped = rows.some(row => row.type === 'group');
+                const taskNodes = rows.flatMap(row => {
+                    if (row.type === 'lane')
+                        return row.tasks.map(task => taskRow(task, grouped ? 3 + (document.getElementById('group-secondary').value === 'NONE' ? 1 : 2) : 3));
+                    const group = document.createElement('button');
+                    group.type = 'button';
+                    group.dataset.swimlaneId = row.id;
+                    group.className = 'tree-row w-full text-left text-xs font-semibold text-slate-600 dark:text-slate-300';
+                    group.style.setProperty('--depth', 2 + row.level);
+                    group.setAttribute('aria-expanded', String(!view.isCollapsed(row.id)));
+                    const labels = { customer: ['board.customer', 'Kunde'], taskType: ['board.taskType', 'Task Typ'], owner: ['board.owner', 'Zugewiesen an'] };
+                    const label = labels[row.group] ? t(...labels[row.group]) : row.group;
+                    group.textContent = `${view.isCollapsed(row.id) ? '▸' : '▾'} ${label}: ${row.value} (${row.tasks.length})`;
+                    group.addEventListener('click', () => {
+                        window.toggleSwimlane(row.id);
+                        [...tree.querySelectorAll('[data-swimlane-id]')]
+                            .find(item => item.dataset.swimlaneId === row.id)?.focus();
+                    });
+                    return [group];
+                });
+                return treeNode('deliverables', deliverable, 2, taskNodes, t('hierarchy.tasks', 'Tasks'), tasks.length);
             });
             return treeNode('projects', project, 1, deliverableNodes, t('hierarchy.deliverables', 'Lieferobjekte'));
         });
@@ -392,7 +418,7 @@ function select(kind, item = null, parentId = '') {
         return;
     }
     if (!discardChanges()) return;
-    if (window.viewTabs.current() === 'projects' && !document.getElementById('task-details-panel').classList.contains('hidden'))
+    if (window.viewTabs.current() === 'list' && !document.getElementById('task-details-panel').classList.contains('hidden'))
         window.closeDetailsPanel();
     dirty = false;
     selectedItemKey = item ? `${kind}:${item.id}` : null;
@@ -476,7 +502,7 @@ form.addEventListener('submit', async event => {
         treeTasks = nextTasks;
         hierarchyLoaded = true;
         renderTree();
-        if (kind === 'projects') window.refreshProjectBoardOptions?.();
+        if (kind === 'customers' || kind === 'projects') window.refreshProjectBoardOptions?.();
         select(kind, saved);
         message(t('hierarchy.saved', 'Gespeichert.'));
     } catch (error) {
@@ -587,5 +613,12 @@ function leave() {
     return true;
 }
 
-window.hierarchyView = { activate, leave, reset, refreshTasks, returnFromTaskEditor };
+function setAllExpanded(expanded) {
+    for (const [kind, items] of Object.entries(data)) {
+        for (const item of items) expandedNodes.set(`${kind}:${item.id}`, expanded);
+    }
+    renderTree();
+}
+
+window.hierarchyView = { activate, leave, reset, refreshTasks, returnFromTaskEditor, render: renderTree, setAllExpanded };
 })();

@@ -6,7 +6,7 @@
     <title data-i18n="admin.pageTitle">Administration – Dynamic Workflow Kanban</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="i18n.js?v=2" defer></script>
-    <script src="admin.js?v=hierarchy-2" defer></script>
+    <script src="admin.js?v=admin-content-management-3" defer></script>
     <style>
         #user-panel-resizer {
             width: 8px;
@@ -39,6 +39,8 @@
             </div>
             <nav aria-label="Administration" data-i18n-aria-label="common.administration" class="space-y-1">
                 <button type="button" data-view="users" data-i18n="admin.users" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Benutzer</button>
+                <button type="button" data-view="types" data-i18n="board.manageTypes" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Task-Typen verwalten</button>
+                <button type="button" data-view="tags" data-i18n="board.manageTags" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Tags verwalten</button>
                 <a href="index.html?view=projects" data-i18n="hierarchy.title" class="block w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Kunden und Projekte</a>
                 <button type="button" data-view="translations" data-i18n="admin.translations" class="hidden w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Übersetzungen</button>
                 <button type="button" data-view="database" data-i18n="admin.database" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold">Datenbank</button>
@@ -63,6 +65,55 @@
                     </table>
                     <p id="empty-users" data-i18n="admin.noUsers" class="hidden p-6 text-sm text-slate-500">Keine passenden Benutzer gefunden.</p>
                 </div>
+            </section>
+            <section id="types-view" class="hidden">
+                <h1 data-i18n="types.manage" class="text-xl font-bold">Task Typen verwalten</h1>
+                <p data-i18n="admin.taskTypesDescription" class="text-sm text-slate-500 mt-1">Task-Typen, Farben und Workflow-Pfade für das Board verwalten.</p>
+                <form id="task-type-form" class="mt-6 bg-white border border-slate-200 rounded-2xl p-6 max-w-2xl space-y-4">
+                    <h2 data-i18n="types.create" class="font-bold">Neuen Typ erstellen</h2>
+                    <label class="block text-sm">
+                        <span data-i18n="common.name">Name</span>
+                        <input id="new-type-name" type="text" required maxlength="100" data-i18n-placeholder="types.namePlaceholder" placeholder="z.B. Hardware Test" class="block mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+                    </label>
+                    <fieldset>
+                        <legend data-i18n="types.workflowPath" class="mb-2 text-sm text-slate-600">Erlaubter Workflow-Pfad (Spalten)</legend>
+                        <div class="flex flex-wrap gap-4 text-sm">
+                            <label class="inline-flex items-center gap-2"><input type="checkbox" checked disabled class="accent-blue-600"> <span data-i18n="board.todo">To Do</span></label>
+                            <label class="inline-flex items-center gap-2"><input id="path-analysis" type="checkbox" checked class="accent-blue-600"> <span data-i18n="board.analysis">Analysis</span></label>
+                            <label class="inline-flex items-center gap-2"><input id="path-inprogress" type="checkbox" checked class="accent-blue-600"> <span data-i18n="board.inProgress">In Progress</span></label>
+                            <label class="inline-flex items-center gap-2"><input type="checkbox" checked disabled class="accent-blue-600"> <span data-i18n="board.done">Done</span></label>
+                        </div>
+                    </fieldset>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="inline-flex items-center gap-2 text-sm">
+                            <span data-i18n="common.color">Farbe</span>
+                            <input id="new-type-color" type="color" value="#8b5cf6" class="h-8 w-10 cursor-pointer">
+                        </label>
+                        <button type="submit" data-i18n="types.createButton" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Typ erstellen</button>
+                    </div>
+                </form>
+                <div id="types-manager-list" class="mt-6 max-w-2xl space-y-2"></div>
+                <p id="empty-types" data-i18n="admin.noTaskTypes" class="hidden mt-4 text-sm text-slate-500">Keine Task-Typen konfiguriert.</p>
+            </section>
+            <section id="tags-view" class="hidden">
+                <h1 data-i18n="board.manageTags" class="text-xl font-bold">Tags verwalten</h1>
+                <p data-i18n="admin.tagsDescription" class="text-sm text-slate-500 mt-1">Tags, Farben und die zugehörigen Task-Zuweisungen verwalten.</p>
+                <form id="tag-form" class="mt-6 bg-white border border-slate-200 rounded-2xl p-6 max-w-2xl space-y-4">
+                    <h2 data-i18n="tags.create" class="font-bold">Neuen Tag erstellen</h2>
+                    <div class="flex flex-wrap items-end gap-3">
+                        <label class="min-w-[220px] flex-1 text-sm">
+                            <span data-i18n="common.name">Name</span>
+                            <input id="new-tag-name" type="text" required maxlength="100" data-i18n-placeholder="tags.namePlaceholder" placeholder="Tag Name (z.B. Prio A)" class="block mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm">
+                            <span data-i18n="common.color">Farbe</span>
+                            <input id="new-tag-color" type="color" value="#3b82f6" class="h-8 w-10 cursor-pointer">
+                        </label>
+                        <button type="submit" data-i18n="common.create" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Erstellen</button>
+                    </div>
+                </form>
+                <div id="tag-manager-list" class="mt-6 max-w-2xl space-y-2"></div>
+                <p id="empty-tags" data-i18n="admin.noTags" class="hidden mt-4 text-sm text-slate-500">Keine Tags konfiguriert.</p>
             </section>
             <section id="database-view" class="hidden">
                 <h1 data-i18n="admin.databaseTitle" class="text-xl font-bold">Datenbankinformationen</h1>

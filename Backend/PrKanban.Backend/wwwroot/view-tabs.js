@@ -3,15 +3,11 @@
 (() => {
     const tabs = [...document.querySelectorAll('#view-tabs [role="tab"]')];
     const panels = {
-        projects: document.getElementById('hierarchy-panel'),
+        list: document.getElementById('hierarchy-panel'),
         kanban: document.getElementById('kanban-panel'),
         dashboard: document.getElementById('dashboard-panel')
     };
     const boardControls = ['board-header-actions', 'board-filters', 'board-groupings'].map(id => document.getElementById(id));
-    const breadcrumbViews = {
-        projects: document.getElementById('project-board-breadcrumb-projects'),
-        kanban: document.getElementById('project-board-breadcrumb-kanban')
-    };
     const taskPanel = document.getElementById('task-details-panel');
     const detailsResizer = document.getElementById('details-resizer');
     const hierarchyTaskSlot = document.getElementById('hierarchy-task-panel-slot');
@@ -20,7 +16,7 @@
     let currentUserId;
 
     function placeTaskPanel(view) {
-        if (view === 'projects') {
+        if (view === 'list') {
             if (taskPanel.parentElement !== hierarchyTaskSlot) {
                 taskPanel.dataset.kanbanWidth = taskPanel.style.width || '450px';
                 hierarchyTaskSlot.append(taskPanel);
@@ -42,27 +38,17 @@
         detailsResizer.classList.toggle('hidden', taskPanel.classList.contains('hidden'));
     }
 
-    function updateBreadcrumb(view) {
-        for (const [name, button] of Object.entries(breadcrumbViews)) {
-            const current = name === view;
-            if (current) button.setAttribute('aria-current', 'page');
-            else button.removeAttribute('aria-current');
-            button.classList.toggle('text-blue-700', current);
-            button.classList.toggle('dark:text-blue-400', current);
-            button.classList.toggle('font-bold', current);
-        }
-    }
-
     function show(view, updateUrl = true) {
+        if (view === 'projects') view = 'list';
         if (!Object.hasOwn(panels, view) || view === active) return false;
-        if (active === 'projects' && !window.hierarchyView.leave()) return false;
+        if (active === 'list' && !window.hierarchyView.leave()) return false;
         placeTaskPanel(view);
         active = view;
-        updateBreadcrumb(view);
+        const isBoardView = view === 'kanban' || view === 'list';
         for (const tab of tabs) {
             const selected = tab.dataset.view === view;
             tab.setAttribute('aria-selected', String(selected));
-            tab.tabIndex = selected ? 0 : -1;
+            tab.tabIndex = selected || (!isBoardView && tab.dataset.view === 'kanban') ? 0 : -1;
         }
         for (const [name, panel] of Object.entries(panels)) {
             const selected = name === view;
@@ -70,11 +56,12 @@
             if (name === 'kanban') panel.classList.toggle('flex', selected);
         }
         for (const control of boardControls) {
-            control.classList.toggle('hidden', view !== 'kanban');
-            control.classList.toggle('flex', view === 'kanban');
+            control.classList.toggle('hidden', !isBoardView);
+            control.classList.toggle('flex', isBoardView);
         }
-        document.body.classList.toggle('details-panel-open', view === 'kanban' && !document.getElementById('task-details-panel').classList.contains('hidden'));
-        if (view === 'projects') window.hierarchyView.activate();
+        document.body.classList.toggle('details-panel-open', isBoardView && !document.getElementById('task-details-panel').classList.contains('hidden'));
+        if (view === 'list') window.hierarchyView.activate();
+        window.dispatchEvent(new CustomEvent('board-view-changed', { detail: view }));
         if (updateUrl) {
             const url = new URL(window.location.href);
             if (view === 'kanban') url.searchParams.delete('view');
@@ -95,18 +82,17 @@
             if (show(tabs[target].dataset.view)) tabs[target].focus();
         });
     }
-    breadcrumbViews.projects?.addEventListener('click', () => show('projects'));
-    breadcrumbViews.kanban?.addEventListener('click', () => show('kanban'));
+    document.getElementById('open-dashboard').addEventListener('click', () => show('dashboard'));
     window.addEventListener('app-auth-changed', event => {
         const id = event.detail?.userId || event.detail?.id || event.detail?.email || null;
         if (id === currentUserId) return;
         currentUserId = id;
-        if (active === 'projects') {
+        if (active === 'list') {
             window.hierarchyView.reset();
             window.hierarchyView.activate();
         }
     });
     window.viewTabs = { current: () => active, show };
     const requested = new URLSearchParams(window.location.search).get('view');
-    show(requested && Object.hasOwn(panels, requested) ? requested : 'kanban', false);
+    show(requested === 'projects' ? 'list' : requested && Object.hasOwn(panels, requested) ? requested : 'kanban', false);
 })();

@@ -27,8 +27,8 @@
     <script src="api-client.js?v=hierarchy-1"></script>
     <script src="i18n.js?v=3" defer></script>
     <link rel="stylesheet" href="hierarchy.css?v=project-board-navigation-8">
-    <script src="hierarchy.js?v=project-board-navigation-13" defer></script>
-    <script src="view-tabs.js?v=project-board-navigation-7" defer></script>
+    <script src="hierarchy.js?v=project-board-navigation-16" defer></script>
+    <script src="view-tabs.js?v=project-board-navigation-10" defer></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -664,15 +664,10 @@
                 <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden" aria-hidden="true"></i>
                 <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden" aria-hidden="true"></i>
             </button>
+            <button id="open-dashboard" type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"><i class="fa-solid fa-chart-column mr-1.5" aria-hidden="true"></i><span data-i18n="views.dashboard">Dashboard</span></button>
             <div id="board-header-actions" class="flex flex-wrap items-center gap-2">
             <button id="project-board-manage-button" type="button" onclick="openProjectBoardManager()" class="hidden bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg">
                 <i class="fa-solid fa-table-columns mr-1.5" aria-hidden="true"></i><span data-i18n="projectBoard.manage">Spalten verwalten</span>
-            </button>
-            <button onclick="openTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-tag text-slate-500" aria-hidden="true"></i> <span data-i18n="board.manageTags">Tags verwalten</span>
-            </button>
-            <button onclick="openTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
-                <i class="fa-solid fa-sliders text-slate-500" aria-hidden="true"></i> <span data-i18n="board.manageTypes">Typen verwalten</span>
             </button>
             <button onclick="openAddTaskModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="board.addTask">Task hinzufügen</span>
@@ -683,31 +678,55 @@
     <div id="language-error" hidden role="alert" class="px-4 py-2 text-sm text-red-700 bg-red-50"></div>
 
     <!-- Controls Panel: Filters & Grouping -->
-    <section aria-label="Board-Einstellungen" data-i18n-aria-label="board.settings" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-        <nav id="project-board-breadcrumb" aria-label="Board auswählen" data-i18n-aria-label="projectBoard.select" class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5">
-            <button id="project-board-breadcrumb-projects" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400">
-                <i class="fa-solid fa-folder-tree text-slate-400" aria-hidden="true"></i>
-                <span data-i18n="hierarchy.open">Kunden und Projekte</span>
-            </button>
+    <section aria-label="Board-Einstellungen" data-i18n-aria-label="board.settings" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 py-[10px] dark:border-slate-800">
+        <nav id="project-board-breadcrumb" aria-label="Kunden- und Projektkontext" data-i18n-aria-label="projectBoard.context" class="flex max-w-full flex-wrap items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5">
+            <div id="board-customer-selector" class="relative">
+                <button id="board-customer-select" type="button" aria-label="Kunde auswählen" data-i18n-aria-label="projectBoard.selectCustomer" aria-expanded="false" aria-controls="board-customer-dropdown" class="flex max-w-[180px] items-center gap-2 rounded px-1 py-1 text-left text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span id="board-customer-selected-label" class="truncate">Alle Kunden</span>
+                    <i class="fa-solid fa-chevron-down text-slate-400" aria-hidden="true"></i>
+                </button>
+                <div id="board-customer-dropdown" class="tag-filter-dropdown hidden" style="width: 360px">
+                    <div class="p-2">
+                        <input id="board-customer-search" type="search" autocomplete="off" placeholder="Kunden suchen" data-i18n-placeholder="projectBoard.searchCustomers" aria-label="Kunden suchen" data-i18n-aria-label="projectBoard.searchCustomers" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400">
+                    </div>
+                    <div id="board-customer-options" role="listbox" aria-label="Kunde auswählen" data-i18n-aria-label="projectBoard.selectCustomer"></div>
+                    <p id="board-customer-no-results" class="hidden px-3 py-2 text-sm text-slate-500 dark:text-slate-400" data-i18n="projectBoard.noCustomers">Keine Kunden gefunden.</p>
+                </div>
+            </div>
             <i class="fa-solid fa-chevron-right text-[10px] text-slate-400" aria-hidden="true"></i>
-            <button id="project-board-breadcrumb-kanban" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400">
-                <i class="fa-solid fa-table-columns text-blue-500" aria-hidden="true"></i>
-                <span data-i18n="views.kanban">Kanban</span>
-            </button>
-            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400" aria-hidden="true"></i>
-            <label for="project-board-select" class="sr-only" data-i18n="projectBoard.select">Board auswählen</label>
-            <select id="project-board-select" onchange="selectProjectBoard(this.value)" aria-label="Board auswählen" data-i18n-aria-label="projectBoard.select" class="max-w-[260px] bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 py-1">
-                <option value="" data-i18n="projectBoard.master">Masterboard</option>
-            </select>
+            <div id="project-board-selector" class="relative">
+                <button id="project-board-select" type="button" aria-label="Projekt auswählen" data-i18n-aria-label="projectBoard.selectProject" aria-expanded="false" aria-controls="project-board-dropdown" class="flex max-w-[180px] items-center gap-2 rounded px-1 py-1 text-left text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span id="project-board-selected-label" class="truncate">Alle Projekte</span>
+                    <i class="fa-solid fa-chevron-down text-slate-400" aria-hidden="true"></i>
+                </button>
+                <div id="project-board-dropdown" class="tag-filter-dropdown hidden" style="width: 360px">
+                    <div class="p-2">
+                        <input id="project-board-search" type="search" autocomplete="off" placeholder="Projekte suchen" data-i18n-placeholder="projectBoard.search" aria-label="Projekte suchen" data-i18n-aria-label="projectBoard.search" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400">
+                    </div>
+                    <div id="project-board-options" role="listbox" aria-label="Projekt auswählen" data-i18n-aria-label="projectBoard.selectProject"></div>
+                    <p id="project-board-no-results" class="hidden px-3 py-2 text-sm text-slate-500 dark:text-slate-400" data-i18n="projectBoard.noResults">Keine Projekte gefunden.</p>
+                </div>
+            </div>
         </nav>
-        <nav id="view-tabs" role="tablist" aria-label="Ansichten" data-i18n-aria-label="views.label" class="flex flex-wrap items-center gap-1">
-            <button id="tab-dashboard" type="button" role="tab" aria-controls="dashboard-panel" aria-selected="false" tabindex="-1" data-view="dashboard" class="view-tab"><i class="fa-solid fa-chart-column text-purple-600" aria-hidden="true"></i><span data-i18n="views.dashboard">Dashboard</span></button>
+        <label for="filter-archived" class="h-8 inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
+            <i class="fa-solid fa-box-archive text-slate-400" aria-hidden="true"></i>
+            <span data-i18n="board.archive">Archiv</span>
+            <span class="relative inline-flex items-center">
+                <input type="checkbox" id="filter-archived" class="sr-only peer">
+                <span class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-4 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></span>
+            </span>
+        </label>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 py-[10px]">
+        <div class="flex flex-wrap items-center gap-3">
+        <nav id="view-tabs" role="tablist" aria-label="Ansichten" data-i18n-aria-label="views.label" class="flex items-center">
+            <button id="tab-list" type="button" role="tab" aria-controls="hierarchy-panel" aria-selected="false" tabindex="-1" data-view="list" class="view-tab"><span data-i18n="views.list">Liste</span></button>
+            <button id="tab-kanban" type="button" role="tab" aria-controls="kanban-panel" aria-selected="true" data-view="kanban" class="view-tab"><span data-i18n="views.kanban">Kanban</span></button>
         </nav>
         <!-- Filters -->
-        <div id="board-filters" class="flex flex-wrap items-center gap-2">
-            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                <i class="fa-solid fa-filter mr-1" aria-hidden="true"></i><span data-i18n="board.filters">Filter:</span>
-            </span>
+        <div id="board-filters" class="flex flex-wrap items-center gap-3">
+            <i class="fa-solid fa-filter text-slate-400" aria-hidden="true"></i>
             <div class="relative" id="filter-owner-container">
                 <button id="filter-owner-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
                     <span class="sr-only" data-i18n="board.filterOwner">Zugewiesene Person filtern:</span>
@@ -715,16 +734,6 @@
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
                 </button>
                 <div id="filter-owner-dropdown" class="tag-filter-dropdown hidden">
-                    <!-- Filled dynamically -->
-                </div>
-            </div>
-            <div class="relative" id="filter-customer-container">
-                <button id="filter-customer-trigger" type="button" class="min-w-[112px] h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-2">
-                    <span class="sr-only" data-i18n="board.filterCustomer">Kunde filtern:</span>
-                    <span id="filter-customer-label" class="max-w-[140px] truncate">Alle Kunden</span>
-                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
-                </button>
-                <div id="filter-customer-dropdown" class="tag-filter-dropdown hidden">
                     <!-- Filled dynamically -->
                 </div>
             </div>
@@ -749,13 +758,12 @@
                 </div>
             </div>
         </div>
+        </div>
 
         <!-- Groupings / Swimlanes -->
-        <div id="board-groupings" class="flex flex-wrap items-center gap-2">
-            <div id="board-grouping-options" class="flex flex-wrap items-center gap-2">
-            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i><span data-i18n="board.swimlanes">Swimlanes:</span>
-            </span>
+        <div id="board-groupings" class="flex flex-wrap items-center gap-3">
+            <div id="board-grouping-options" class="flex flex-wrap items-center gap-3">
+            <i class="fa-solid fa-layer-group text-slate-400" aria-hidden="true"></i>
             <div class="relative" id="group-primary-container">
                 <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" data-i18n-aria-label="board.primaryGroup" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
                     <option value="NONE" data-i18n="board.noGrouping">Keine Gruppierung</option>
@@ -785,27 +793,20 @@
                 <div id="group-secondary-dropdown" role="listbox" aria-label="Sub-Gruppe (Innere Swimlane)" data-i18n-aria-label="board.secondaryGroup" class="tag-filter-dropdown hidden"></div>
             </div>
             <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" data-i18n-aria-label="board.expandPanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i> <span data-i18n="board.expand">Öffnen</span>
+                <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" data-i18n-aria-label="board.expandPanels" title="Alle Panels öffnen" data-i18n-title="board.expandPanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center transition-all">
+                    <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i>
                 </button>
-                <button id="collapse-all-panels" type="button" aria-label="Alle Panels einklappen" data-i18n-aria-label="board.collapsePanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i> <span data-i18n="board.collapse">Einklappen</span>
+                <button id="collapse-all-panels" type="button" aria-label="Alle Panels einklappen" data-i18n-aria-label="board.collapsePanels" title="Alle Panels einklappen" data-i18n-title="board.collapsePanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center transition-all">
+                    <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i>
                 </button>
             </div>
             </div>
-            <label for="filter-archived" class="h-8 inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
-                <i class="fa-solid fa-box-archive text-slate-400" aria-hidden="true"></i>
-                <span data-i18n="board.archive">Archiv</span>
-                <span class="relative inline-flex items-center">
-                    <input type="checkbox" id="filter-archived" class="sr-only peer">
-                    <span class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:after:translate-x-4 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></span>
-                </span>
-            </label>
+        </div>
         </div>
     </section>
 
     <!-- Board Area -->
-    <section id="kanban-panel" role="region" aria-label="Kanban" data-i18n-aria-label="views.kanban" class="board-area flex flex-1 overflow-hidden">
+    <section id="kanban-panel" role="tabpanel" aria-labelledby="tab-kanban" class="board-area flex flex-1 overflow-hidden">
         <aside id="backlog-panel" class="bg-white dark:bg-slate-900" aria-label="Backlog" data-i18n-aria-label="board.backlog">
             <button type="button" id="backlog-toggle" aria-label="Backlog" data-i18n-aria-label="board.backlog" aria-expanded="false" aria-controls="backlog-content" title="Backlog auf- oder zuklappen" data-i18n-title="board.toggleBacklog" class="font-semibold tracking-wide">
                 <i id="backlog-chevron" class="fa-solid fa-chevron-right" aria-hidden="true"></i>
@@ -902,6 +903,15 @@
                         <p data-i18n="task.pasteImageHint" class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Bilder können direkt in die Beschreibung eingefügt werden.</p>
                         <p data-i18n="task.resizeImageHint" class="text-[11px] text-slate-500 dark:text-slate-400">Bild anklicken und an den Griffen ziehen, um die Größe zu ändern.</p>
                     </div>
+                    <div id="task-attachments-section">
+                        <div class="flex items-center justify-between gap-2">
+                            <label data-i18n="task.attachments" class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Anhänge</label>
+                            <button id="task-attachment-add" type="button" data-i18n="task.addAttachments" class="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Dateien anhängen</button>
+                            <input id="task-attachment-input" type="file" multiple hidden>
+                        </div>
+                        <p data-i18n="task.attachmentLimit" class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Bis zu 20 MB pro Datei. Beliebige Dateitypen; Anhänge werden heruntergeladen.</p>
+                        <div id="task-attachment-list" class="mt-2 space-y-2"></div>
+                    </div>
                     <section id="task-checklists-section" class="space-y-3">
                         <div class="flex items-center justify-between gap-3">
                             <button id="task-checklists-toggle" type="button" aria-expanded="true" aria-controls="task-checklists-content" class="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -933,15 +943,6 @@
                             </div>
                         </div>
                     </section>
-                    <div id="task-attachments-section">
-                        <div class="flex items-center justify-between gap-2">
-                            <label data-i18n="task.attachments" class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Anhänge</label>
-                            <button id="task-attachment-add" type="button" data-i18n="task.addAttachments" class="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Dateien anhängen</button>
-                            <input id="task-attachment-input" type="file" multiple hidden>
-                        </div>
-                        <p data-i18n="task.attachmentLimit" class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Bis zu 20 MB pro Datei. Beliebige Dateitypen; Anhänge werden heruntergeladen.</p>
-                        <div id="task-attachment-list" class="mt-2 space-y-2"></div>
-                    </div>
                     <!-- Integration Links (D365 & Zeiterfassung) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -973,7 +974,7 @@
             </div>
         </aside>
     </section>
-    <section id="hierarchy-panel" role="region" aria-label="Kunden und Projekte" data-i18n-aria-label="hierarchy.open" class="hidden flex-1 p-4 sm:p-5">
+    <section id="hierarchy-panel" role="tabpanel" aria-labelledby="tab-list" class="hidden flex-1 p-4 sm:p-5">
         <main class="grid gap-5 lg:grid-cols-[minmax(24rem,1fr)_minmax(22rem,1fr)]">
             <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 min-w-0">
                 <div class="flex items-center justify-between gap-2 mb-4"><h2 data-i18n="hierarchy.customers" class="font-bold">Kunden</h2><button id="new-customer" type="button" data-i18n="hierarchy.addCustomer" class="hidden rounded-lg bg-blue-600 px-3 py-2 text-sm text-white">+ Kunde</button></div>
@@ -1008,7 +1009,7 @@
             </section>
         </main>
     </section>
-    <section id="dashboard-panel" role="tabpanel" aria-labelledby="tab-dashboard" class="hidden flex-1 p-6">
+    <section id="dashboard-panel" role="region" aria-label="Dashboard" data-i18n-aria-label="views.dashboard" class="hidden flex-1 p-6">
         <h2 data-i18n="views.dashboard" class="text-xl font-bold">Dashboard</h2>
         <p data-i18n="views.dashboardLater" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Das Dashboard wird später ergänzt.</p>
     </section>
@@ -1020,97 +1021,16 @@
     <!-- Task Add / Edit Modal -->
     <div id="task-modal" class="hidden"></div> <!-- Old modal is now obsolete, but we keep the div to not break old references if any -->
 
-    <!-- Tags Management Modal -->
-    <div id="tags-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-tags text-blue-500"></i> <span data-i18n="board.manageTags">Tags verwalten</span>
-                </h3>
-                <button onclick="closeTagsModal()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+    <dialog id="wip-dialog" aria-labelledby="wip-dialog-label" class="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-slate-800 dark:text-white shadow-2xl backdrop:bg-black/60">
+        <form id="wip-form">
+            <label id="wip-dialog-label" for="wip-input" class="block text-sm font-semibold mb-3"></label>
+            <input id="wip-input" type="number" min="0" step="1" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex justify-end gap-3 mt-5">
+                <button id="wip-cancel" type="button" data-i18n="common.cancel" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-4 py-2 rounded-lg text-sm">Abbrechen</button>
+                <button type="submit" data-i18n="common.save" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg text-sm">Speichern</button>
             </div>
-            
-            <!-- Quick Creator for Tags -->
-            <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4 space-y-3">
-                <h4 data-i18n="tags.create" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Tag erstellen</h4>
-                <div class="flex gap-2">
-                    <input type="text" id="new-tag-name" placeholder="Tag Name (z.B. Prio A)" data-i18n-placeholder="tags.namePlaceholder" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
-                    <input type="color" id="new-tag-color" value="#3b82f6" class="w-10 h-8 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer">
-                    <button onclick="addNewTag()" data-i18n="common.create" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg">Erstellen</button>
-                </div>
-            </div>
-
-            <!-- Scrollable list of defined Tags -->
-            <div id="tags-manager-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                <!-- Tag configs populated here -->
-            </div>
-
-            <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
-                <button onclick="closeTagsModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
-                    <span data-i18n="common.close">Schließen</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Types Management Modal -->
-    <div id="types-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-gears text-blue-500"></i> <span data-i18n="types.manage">Task Typen verwalten</span>
-                </h3>
-                <button onclick="closeTypesModal()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Creator for Types -->
-            <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 rounded-lg mb-4 space-y-3">
-                <h4 data-i18n="types.create" class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Neuen Typ erstellen</h4>
-                <div class="space-y-2">
-                    <input type="text" id="new-type-name" placeholder="z.B. Hardware Test" data-i18n-placeholder="types.namePlaceholder" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none">
-                    <div>
-                        <span data-i18n="types.workflowPath" class="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">Erlaubter Workflow-Pfad (Spalten):</span>
-                        <div class="flex flex-wrap gap-4">
-                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-todo" checked disabled class="accent-blue-500"> <span data-i18n="board.todo">To Do</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-analysis" checked class="accent-blue-500"> <span data-i18n="board.analysis">Analysis</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-inprogress" checked class="accent-blue-500"> <span data-i18n="board.inProgress">In Progress</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="path-done" checked disabled class="accent-blue-500"> <span data-i18n="board.done">Done</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                            <span data-i18n="common.color">Farbe:</span>
-                            <input type="color" id="new-type-color" value="#8b5cf6" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
-                        </label>
-                        <button onclick="addNewType()" data-i18n="types.createButton" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-lg">Typ erstellen</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- List of Types -->
-            <div id="types-manager-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                <!-- Configured Types dynamically populated -->
-            </div>
-
-            <div class="flex justify-end pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
-                <button onclick="closeTypesModal()" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
-                    <span data-i18n="common.close">Schließen</span>
-                </button>
-            </div>
-        </div>
-    </div>
+        </form>
+    </dialog>
 
             <!-- Project Board Management Modal -->
             <div id="project-board-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -1589,7 +1509,7 @@
         }
 
         window.logoutFromFirebase = async function() {
-            if (window.viewTabs?.current() === 'projects' && !window.hierarchyView.leave()) return;
+            if (window.viewTabs?.current() === 'list' && !window.hierarchyView.leave()) return;
             try {
                 await window.AuthAPI.logout();
                 window.currentUser = null;
@@ -1723,11 +1643,12 @@
             }
 
             try {
-                await window.BoardConfigAPI.updateBoardConfig({
+                const result = await window.BoardConfigAPI.updateBoardConfig({
                     tagsConfig,
                     workflowPaths,
                     wipLimits
                 });
+                if (!result?.success) throw new Error('Board configuration was not saved to the server.');
                 return true;
             } catch (error) {
                 console.error("Could not flush board config to API:", error);
@@ -1761,10 +1682,8 @@
                 }
 
                 if (isPlainObject(cloudConfig.wipLimits)) {
-                    Object.keys(wipLimits).forEach((column) => {
-                        wipLimits[column] = Object.prototype.hasOwnProperty.call(cloudConfig.wipLimits, column)
-                            ? cloudConfig.wipLimits[column]
-                            : wipLimits[column];
+                    Object.entries(cloudConfig.wipLimits).forEach(([key, limit]) => {
+                        wipLimits[key] = limit;
                     });
                 }
 
@@ -1873,6 +1792,8 @@
                 } while (apiTasks.length < total);
                 const cloudTasks = apiTasks.map(t => normalizeTaskFromAPI(t));
                 console.log("Extracted and normalized cloudTasks:", cloudTasks);
+
+
                 updateDynamicListsFromTasks(cloudTasks);
                 console.log("Tasks successfully loaded from API:", cloudTasks);
                 tasks = cloudTasks;
@@ -1896,6 +1817,94 @@
                 renderBoard();
             }
         }
+
+        async function addTaskToCloud(taskData) {
+            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTasks', 'Tasks zu erstellen'))) return null;
+            try {
+                const payload = normalizeTaskPayload(taskData, false);
+                const newTask = await window.TaskAPI.createTask(payload);
+                // Convert API response back to frontend format
+                const normalizedNewTask = normalizeTaskFromAPI(newTask);
+                tasks = [...tasks, normalizedNewTask];
+                persistTaskSnapshot();
+                console.log("Task added with ID: ", normalizedNewTask.id);
+                return newTask.id;
+            } catch (e) {
+                console.error("Error adding task: ", e);
+                showToast(t('task.saveFailed', 'Task konnte nicht gespeichert werden.'));
+                return null;
+            }
+        }
+
+        async function updateTaskInCloud(taskId, taskData) {
+            if (!ensureAuthenticatedOrToast(t('auth.operationSaveTasks', 'Tasks zu speichern'))) return false;
+            try {
+                const payload = normalizeTaskPayload(taskData, true);
+                await window.TaskAPI.updateTask(taskId, payload);
+
+                // Normalize the payload back to frontend format for local state update
+                const frontendPayload = {
+                    ...taskData, // Keep the original frontend format fields
+                    updatedAt: payload.updatedAt // But update the timestamp
+                };
+
+                const taskIndex = tasks.findIndex((task) => task.id === taskId);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex] = { ...tasks[taskIndex], ...frontendPayload };
+                }
+                persistTaskSnapshot();
+                console.log(`Task ${taskId} updated.`);
+                return true;
+            } catch (e) {
+                console.error("Error updating task: ", e);
+                showToast(t('task.saveFailed', 'Task konnte nicht gespeichert werden.'));
+                return false;
+            }
+        }
+
+        async function deleteTaskFromCloud(taskId) {
+            if (!ensureAuthenticatedOrToast(t('auth.operationDeleteTasks', 'Tasks zu löschen'))) return false;
+            try {
+                await window.TaskAPI.deleteTask(taskId);
+                tasks = tasks.filter((task) => task.id !== taskId);
+                persistTaskSnapshot();
+                console.log(`Task ${taskId} deleted.`);
+                return true;
+            } catch (e) {
+                console.error("Error deleting task: ", e);
+                showToast(t('task.deleteFailed', 'Task konnte nicht gelöscht werden.'));
+                return false;
+            }
+        }
+
+        // --- GLOBAL STATE & CONFIGURATION ---
+        let tasks = [];
+        let selectedModalTags = [];
+        let selectedTaskChecklists = [];
+        let selectedFilterOwners = loadFromStorage('kanban_selectedFilterOwners', []);
+        let selectedFilterTypes = loadFromStorage('kanban_selectedFilterTypes', []);
+        let selectedFilterTags = loadFromStorage('kanban_selectedFilterTags', []);
+        let draggedTaskId = null;
+        let selectedTaskId = null;
+        let newTaskColumn = "ToDo";
+        let newTaskProjectColumnId = "";
+        let newTaskInheritedProjectId = "";
+        let activeProjectBoardId = loadFromStorage('kanban_activeProjectBoard', '');
+        let activeCustomerId = loadFromStorage('kanban_activeCustomer', '');
+        let activeProjectBoard = null;
+        let projectBoardRequest = 0;
+        let projectBoardOptions = [];
+        let boardCustomers = [];
+        let dragDropState = null;
+        const collapsedSwimlanes = new Set();
+        const collapsedBoardColumns = new Set();
+        const collapsedProjectBoardColumns = new Set();
+        const boardColumns = ["ToDo", "Analysis", "InProgress", "Done"];
+
+        let owners = [];
+        let taskHierarchy = { customers: [], projects: [], deliverables: [] };
+        let taskHierarchyRequest = 0;
+        let lastProjectDefaultAssignee = '';
 
         function createChecklistEntryId() {
             return globalThis.crypto?.randomUUID?.() || `checklist-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -2078,102 +2087,151 @@
         });
         window.addEventListener('languagechange', renderTaskChecklists);
 
-        async function addTaskToCloud(taskData) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTasks', 'Tasks zu erstellen'))) return null;
-            try {
-                const payload = normalizeTaskPayload(taskData, false);
-                const newTask = await window.TaskAPI.createTask(payload);
-                // Convert API response back to frontend format
-                const normalizedNewTask = normalizeTaskFromAPI(newTask);
-                tasks = [...tasks, normalizedNewTask];
-                persistTaskSnapshot();
-                console.log("Task added with ID: ", normalizedNewTask.id);
-                return newTask.id;
-            } catch (e) {
-                console.error("Error adding task: ", e);
-                showToast(t('task.saveFailed', 'Task konnte nicht gespeichert werden.'));
-                return null;
-            }
+        function projectBoardLabel(project) {
+            return project.customerName ? `${project.customerName} / ${project.name}` : project.name;
         }
 
-        async function updateTaskInCloud(taskId, taskData) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationSaveTasks', 'Tasks zu speichern'))) return false;
-            try {
-                const payload = normalizeTaskPayload(taskData, true);
-                await window.TaskAPI.updateTask(taskId, payload);
+        function addContextOption(list, id, label, shortKey, selectedId, onSelect) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.setAttribute('role', 'option');
+            button.setAttribute('aria-selected', String(id === selectedId));
+            button.className = 'flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700';
+            if (id === selectedId) button.classList.add('bg-blue-50', 'dark:bg-slate-700');
+            const name = document.createElement('span');
+            name.textContent = label;
+            button.append(name);
+            if (shortKey) {
+                const key = document.createElement('span');
+                key.className = 'shrink-0 text-xs text-slate-500 dark:text-slate-400';
+                key.textContent = shortKey;
+                button.append(key);
+            }
+            button.addEventListener('click', onSelect);
+            list.append(button);
+        }
 
-                // Normalize the payload back to frontend format for local state update
-                const frontendPayload = {
-                    ...taskData, // Keep the original frontend format fields
-                    updatedAt: payload.updatedAt // But update the timestamp
-                };
+        function renderCustomerOptions() {
+            const list = document.getElementById('board-customer-options');
+            const query = document.getElementById('board-customer-search').value.trim().toLocaleLowerCase();
+            const allCustomersLabel = t('board.allCustomers', 'Alle Kunden');
+            list.replaceChildren();
+            function addOption(id, label) {
+                addContextOption(list, id, label, '', activeCustomerId, () => {
+                    closeCustomerDropdown();
+                    document.getElementById('board-customer-select').focus();
+                    if (id === activeCustomerId) return;
+                    activeCustomerId = id;
+                    saveToStorage('kanban_activeCustomer', activeCustomerId);
+                    window.selectProjectBoard('');
+                });
+            }
+            if (!query || allCustomersLabel.toLocaleLowerCase().includes(query)) addOption('', allCustomersLabel);
+            boardCustomers.filter(customer => customer.name.toLocaleLowerCase().includes(query))
+                .forEach(customer => addOption(customer.id, customer.name));
+            document.getElementById('board-customer-no-results').classList.toggle('hidden', list.childElementCount > 0);
+        }
 
-                const taskIndex = tasks.findIndex((task) => task.id === taskId);
-                if (taskIndex !== -1) {
-                    tasks[taskIndex] = { ...tasks[taskIndex], ...frontendPayload };
+        function renderProjectBoardOptions() {
+            const list = document.getElementById('project-board-options');
+            const query = document.getElementById('project-board-search').value.trim().toLocaleLowerCase();
+            const masterLabel = t('projectBoard.allProjects', 'Alle Projekte');
+            const matches = projectBoardOptions.filter(project =>
+                (!activeCustomerId || project.customerId === activeCustomerId) &&
+                [project.name, project.shortKey, project.customerName].some(value =>
+                    (value || '').toLocaleLowerCase().includes(query)));
+            list.replaceChildren();
+
+            function addOption(id, label, shortKey) {
+                addContextOption(list, id, label, shortKey, activeProjectBoardId, () => {
+                    closeProjectBoardDropdown();
+                    document.getElementById('project-board-select').focus();
+                    if (id !== activeProjectBoardId) window.selectProjectBoard(id);
+                });
+            }
+
+            if (!query || masterLabel.toLocaleLowerCase().includes(query)) addOption('', masterLabel);
+            matches.forEach(project => addOption(project.id, activeCustomerId ? project.name : projectBoardLabel(project), project.shortKey));
+            document.getElementById('project-board-no-results').classList.toggle('hidden', list.childElementCount > 0);
+        }
+
+        function setupContextDropdown(prefix, renderOptions) {
+            const selector = document.getElementById(`${prefix}-selector`);
+            const trigger = document.getElementById(`${prefix}-select`);
+            const dropdown = document.getElementById(`${prefix}-dropdown`);
+            const search = document.getElementById(`${prefix}-search`);
+            const list = document.getElementById(`${prefix}-options`);
+            function close() {
+                dropdown.classList.add('hidden');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+            trigger.addEventListener('click', () => {
+                if (!dropdown.classList.contains('hidden')) {
+                    close();
+                    return;
                 }
-                persistTaskSnapshot();
-                console.log(`Task ${taskId} updated.`);
-                return true;
-            } catch (e) {
-                console.error("Error updating task: ", e);
-                showToast(t('task.saveFailed', 'Task konnte nicht gespeichert werden.'));
-                return false;
-            }
+                search.value = '';
+                renderOptions();
+                dropdown.classList.remove('hidden');
+                trigger.setAttribute('aria-expanded', 'true');
+                fitFilterDropdown(dropdown);
+                search.focus();
+            });
+            trigger.addEventListener('keydown', event => {
+                if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && dropdown.classList.contains('hidden')) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    trigger.click();
+                }
+            });
+            search.addEventListener('input', renderOptions);
+            selector.addEventListener('keydown', event => {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    close();
+                    trigger.focus();
+                    return;
+                }
+                if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+                const options = [...list.querySelectorAll('[role="option"]')];
+                if (!options.length) return;
+                const index = options.indexOf(document.activeElement);
+                const next = event.key === 'ArrowDown'
+                    ? Math.min(index + 1, options.length - 1)
+                    : index < 0 ? options.length - 1 : Math.max(index - 1, 0);
+                event.preventDefault();
+                options[next].focus();
+            });
+            selector.addEventListener('focusout', event => {
+                if (!selector.contains(event.relatedTarget)) close();
+            });
+            document.addEventListener('click', event => {
+                if (!selector.contains(event.target)) close();
+            });
+            return close;
         }
-
-        async function deleteTaskFromCloud(taskId) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationDeleteTasks', 'Tasks zu löschen'))) return false;
-            try {
-                await window.TaskAPI.deleteTask(taskId);
-                tasks = tasks.filter((task) => task.id !== taskId);
-                persistTaskSnapshot();
-                console.log(`Task ${taskId} deleted.`);
-                return true;
-            } catch (e) {
-                console.error("Error deleting task: ", e);
-                showToast(t('task.deleteFailed', 'Task konnte nicht gelöscht werden.'));
-                return false;
-            }
-        }
-
-        // --- GLOBAL STATE & CONFIGURATION ---
-        let tasks = [];
-        let selectedModalTags = [];
-        let selectedTaskChecklists = [];
-        let selectedFilterOwners = loadFromStorage('kanban_selectedFilterOwners', []);
-        let selectedFilterCustomers = loadFromStorage('kanban_selectedFilterCustomers', []);
-        let selectedFilterTypes = loadFromStorage('kanban_selectedFilterTypes', []);
-        let selectedFilterTags = loadFromStorage('kanban_selectedFilterTags', []);
-        let draggedTaskId = null;
-        let selectedTaskId = null;
-        let newTaskColumn = "ToDo";
-        let newTaskProjectColumnId = "";
-        let activeProjectBoardId = loadFromStorage('kanban_activeProjectBoard', '');
-        let activeProjectBoard = null;
-        let projectBoardRequest = 0;
-        let dragDropState = null;
-        const collapsedSwimlanes = new Set();
-        const collapsedBoardColumns = new Set();
-        const collapsedProjectBoardColumns = new Set();
-        const boardColumns = ["ToDo", "Analysis", "InProgress", "Done"];
-
-        let owners = [];
-        let customers = [];
-        let taskHierarchy = { customers: [], projects: [], deliverables: [] };
-        let taskHierarchyRequest = 0;
-        let lastProjectDefaultAssignee = '';
+        const closeCustomerDropdown = setupContextDropdown('board-customer', renderCustomerOptions);
+        const closeProjectBoardDropdown = setupContextDropdown('project-board', renderProjectBoardOptions);
+        window.addEventListener('languagechange', () => {
+            updateProjectBoardControls();
+            renderProjectBoardOptions();
+        });
 
         function updateProjectBoardControls() {
             const manageButton = document.getElementById('project-board-manage-button');
-            const select = document.getElementById('project-board-select');
             const backlog = document.getElementById('backlog-panel');
             if (manageButton)
                 manageButton.classList.toggle('hidden', !activeProjectBoardId || !activeProjectBoard?.canManage);
-            if (select)
-                select.value = activeProjectBoardId || '';
+            const project = projectBoardOptions.find(item => item.id === activeProjectBoardId);
+            document.getElementById('project-board-selected-label').textContent =
+                project ? project.name : t('projectBoard.allProjects', 'Alle Projekte');
+            const customer = boardCustomers.find(item => item.id === activeCustomerId);
+            document.getElementById('board-customer-selected-label').textContent =
+                customer ? customer.name : t('board.allCustomers', 'Alle Kunden');
+            renderCustomerOptions();
+            renderProjectBoardOptions();
             if (backlog)
-                backlog.classList.toggle('hidden', !!activeProjectBoardId);
+                backlog.classList.toggle('hidden', !!activeProjectBoardId || window.viewTabs?.current() === 'list');
         }
 
         async function loadProjectBoard(projectId) {
@@ -2203,11 +2261,13 @@
         }
 
         async function loadProjectBoardOptions() {
-            const select = document.getElementById('project-board-select');
             if (!window.currentUser) {
+                ++projectBoardRequest;
                 activeProjectBoardId = '';
                 activeProjectBoard = null;
-                select?.replaceChildren(new Option(t('projectBoard.master', 'Masterboard'), ''));
+                projectBoardOptions = [];
+                boardCustomers = [];
+                activeCustomerId = '';
                 updateProjectBoardControls();
                 return;
             }
@@ -2215,17 +2275,21 @@
             try {
                 const hierarchy = await window.TaskAPI.getHierarchy();
                 taskHierarchy = hierarchy;
+                boardCustomers = hierarchy.customers;
                 const requestedProjectId = activeProjectBoardId || loadFromStorage('kanban_activeProjectBoard', '');
-                select.replaceChildren(new Option(t('projectBoard.master', 'Masterboard'), ''));
-                hierarchy.projects.forEach(project => {
+                const requestedCustomerId = activeCustomerId || loadFromStorage('kanban_activeCustomer', '');
+                projectBoardOptions = hierarchy.projects.map(project => {
                     const customer = hierarchy.customers.find(item => item.id === project.customerId);
-                    const label = customer ? `${customer.name} / ${project.name}` : project.name;
-                    select.add(new Option(label, project.id));
+                    return { id: project.id, name: project.name, shortKey: project.shortKey, customerId: project.customerId, customerName: customer?.name };
                 });
 
                 activeProjectBoardId = hierarchy.projects.some(project => project.id === requestedProjectId)
                     ? requestedProjectId
                     : '';
+                const selectedProject = projectBoardOptions.find(project => project.id === activeProjectBoardId);
+                activeCustomerId = selectedProject?.customerId ||
+                    (boardCustomers.some(customer => customer.id === requestedCustomerId) ? requestedCustomerId : '');
+                saveToStorage('kanban_activeCustomer', activeCustomerId);
                 saveToStorage('kanban_activeProjectBoard', activeProjectBoardId);
                 if (activeProjectBoardId)
                     await loadProjectBoard(activeProjectBoardId);
@@ -2245,14 +2309,18 @@
         window.updateProjectBoardControls = updateProjectBoardControls;
         window.refreshProjectBoardOptions = loadProjectBoardOptions;
         window.selectProjectBoard = async function(projectId) {
+            ++projectBoardRequest;
             activeProjectBoardId = projectId || '';
+            const project = projectBoardOptions.find(item => item.id === activeProjectBoardId);
+            if (project) {
+                activeCustomerId = project.customerId;
+                saveToStorage('kanban_activeCustomer', activeCustomerId);
+            }
             activeProjectBoard = null;
             saveToStorage('kanban_activeProjectBoard', activeProjectBoardId);
             updateProjectBoardControls();
-            if (!activeProjectBoardId) {
-                renderBoard();
-                return true;
-            }
+            renderBoard();
+            if (!activeProjectBoardId) return true;
             return await loadProjectBoard(activeProjectBoardId);
         };
 
@@ -2293,8 +2361,8 @@
                 const project = data.projects.find(item => item.id === (deliverable?.projectId || selectedProjectId));
                 hierarchyOptions(document.getElementById('modal-customer'), data.customers, project?.customerId);
                 renderTaskProjects(project?.id, deliverable?.id);
-                const inheritedFromTree = !!deliverable && window.viewTabs?.current() === 'projects';
-                const inheritedFromBoard = !!selectedProjectId && window.viewTabs?.current() !== 'projects';
+                const inheritedFromTree = !!deliverable && window.viewTabs?.current() === 'list';
+                const inheritedFromBoard = !!selectedProjectId && window.viewTabs?.current() !== 'list';
                 relationshipSelects.forEach((select, index) => {
                     select.disabled = inheritedFromTree || (inheritedFromBoard && index < 2);
                 });
@@ -2332,8 +2400,52 @@
             return subColumn === "Doing" ? column : `${column}:Done`;
         }
 
+        function getProjectWipLimitKey(projectId, columnId, subColumn = null) {
+            return `project:${projectId}:${columnId}:${subColumn || 'All'}`;
+        }
+
         function getWipTaskCount(column, subColumn) {
             return tasks.filter(t => t.column === column && t.subColumn === subColumn && !t.isArchived).length;
+        }
+
+        function getProjectWipTaskCount(projectId, columnId, subColumn = null) {
+            return tasks.filter(task =>
+                task.projectId === projectId &&
+                task.projectBoardColumnId === columnId &&
+                (subColumn === null || task.subColumn === subColumn) &&
+                !task.isArchived).length;
+        }
+
+        function createProjectWipLimitButton(column, subColumn, count) {
+            const key = getProjectWipLimitKey(activeProjectBoardId, column.id, subColumn);
+            const limit = wipLimits[key];
+            const isOverWip = limit !== null && limit !== undefined && count > limit;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = limit !== null && limit !== undefined
+                ? `px-1.5 py-0.5 rounded border text-[9px] font-bold cursor-pointer ${isOverWip
+                    ? 'bg-red-600 text-white border-red-700 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 animate-pulse hover:bg-red-700 dark:hover:bg-red-500/30'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700/50 hover:bg-slate-300 dark:hover:bg-slate-700'}`
+                : 'bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700';
+            const subColumnLabel = subColumn === 'Doing'
+                ? t('board.doing', 'Doing')
+                : subColumn === 'Done' ? t('board.done', 'Done') : '';
+            const actionLabel = t('board.changeWip', 'Klicken, um WIP Limit anzupassen');
+            button.title = actionLabel;
+            button.setAttribute('aria-label', `${actionLabel}: ${column.name}${subColumnLabel ? ` (${subColumnLabel})` : ''}`);
+            if (isOverWip) {
+                const warning = document.createElement('i');
+                warning.className = 'fa-solid fa-triangle-exclamation mr-1 text-white dark:text-red-400';
+                warning.setAttribute('aria-hidden', 'true');
+                button.appendChild(warning);
+            }
+            button.appendChild(document.createTextNode(
+                limit !== null && limit !== undefined
+                    ? `${count}/${limit} WIP`
+                    : `${count} (${t('board.noLimit', 'Kein Limit')})`));
+            button.addEventListener('click', () =>
+                window.configureWipLimit(column.masterColumnName, subColumn, column.id));
+            return { button, isOverWip };
         }
 
         function saveAllState() {
@@ -2346,8 +2458,6 @@
         // --- UI ELEMENT SELECTORS ---
         const filterOwnerTrigger = document.getElementById('filter-owner-trigger');
         const filterOwnerDropdown = document.getElementById('filter-owner-dropdown');
-        const filterCustomerTrigger = document.getElementById('filter-customer-trigger');
-        const filterCustomerDropdown = document.getElementById('filter-customer-dropdown');
         const filterTypeTrigger = document.getElementById('filter-type-trigger');
         const filterTypeDropdown = document.getElementById('filter-type-dropdown');
         const filterTagsTrigger = document.getElementById('filter-tags-trigger');
@@ -2435,7 +2545,6 @@
 
         function closeAllFilterDropdowns() {
             filterOwnerDropdown.classList.add('hidden');
-            filterCustomerDropdown.classList.add('hidden');
             filterTypeDropdown.classList.add('hidden');
             filterTagsDropdown.classList.add('hidden');
         }
@@ -2561,22 +2670,6 @@
             });
         }
 
-        function renderCustomerFilterDropdown() {
-            selectedFilterCustomers = sanitizeArrayFilter(selectedFilterCustomers, customers, 'kanban_selectedFilterCustomers');
-            renderMultiFilterDropdown({
-                dropdownEl: filterCustomerDropdown,
-                selectedItems: selectedFilterCustomers,
-                options: [...customers].sort(),
-                onReset: 'resetCustomerFilterToAll',
-                onToggle: 'toggleFilterCustomer',
-                resetLabel: t('board.showAllCustomers', 'Alle Kunden anzeigen'),
-                labelId: 'filter-customer-label',
-                allLabel: t('board.allCustomers', 'Alle Kunden'),
-                singularSuffix: t('board.customer', 'Kunde'),
-                pluralSuffix: t('board.customers', 'Kunden')
-            });
-        }
-
         function renderTypeFilterDropdown() {
             const typeOptions = Object.keys(workflowPaths).sort();
             selectedFilterTypes = sanitizeArrayFilter(selectedFilterTypes, typeOptions, 'kanban_selectedFilterTypes');
@@ -2657,25 +2750,6 @@
             selectedFilterOwners = [];
             saveToStorage('kanban_selectedFilterOwners', selectedFilterOwners);
             renderOwnerFilterDropdown();
-            renderBoard();
-        }
-
-        window.toggleFilterCustomer = function(customer) {
-            if (selectedFilterCustomers.includes(customer)) {
-                selectedFilterCustomers = selectedFilterCustomers.filter(item => item !== customer);
-            } else {
-                selectedFilterCustomers.push(customer);
-            }
-            selectedFilterCustomers = [...new Set(selectedFilterCustomers)];
-            saveToStorage('kanban_selectedFilterCustomers', selectedFilterCustomers);
-            renderCustomerFilterDropdown();
-            renderBoard();
-        }
-
-        window.resetCustomerFilterToAll = function() {
-            selectedFilterCustomers = [];
-            saveToStorage('kanban_selectedFilterCustomers', selectedFilterCustomers);
-            renderCustomerFilterDropdown();
             renderBoard();
         }
 
@@ -2886,7 +2960,12 @@
             if (!container) return;
             container.innerHTML = "";
             updateBoardContainerFlex();
+            updateProjectBoardControls();
 
+            if (window.viewTabs?.current() === 'list') {
+                window.hierarchyView.render();
+                return;
+            }
             const filteredTasks = getFilteredTasks();
             if (activeProjectBoardId) {
                 if (!activeProjectBoard) {
@@ -2896,12 +2975,14 @@
                     container.appendChild(loading);
                     return;
                 }
-                renderProjectBoard(filteredTasks.filter(task => task.projectId === activeProjectBoardId));
+            }
+            if (activeProjectBoardId) {
+                renderProjectBoard(filteredTasks);
                 return;
             }
             renderBacklog(filteredTasks);
             const activeTasks = filteredTasks.filter(task => task.column !== "Backlog");
-            const boardTasks = tasks.filter(task => task.column !== "Backlog");
+            const boardTasks = getContextTasks().filter(task => task.column !== "Backlog");
             const rows = buildSwimlaneRows(activeTasks, boardTasks);
             container.appendChild(createBoardStructure(activeTasks, rows));
         }
@@ -3005,9 +3086,19 @@
                         const bOrder = typeof b.projectBoardSortOrder === 'number' ? b.projectBoardSortOrder : Number.POSITIVE_INFINITY;
                         return aOrder - bOrder || sortTasksByPriority(a, b);
                     });
-                const count = document.createElement('span');
-                count.className = 'shrink-0 rounded-full bg-slate-200 dark:bg-slate-800 px-2 py-1 text-[10px] text-slate-600 dark:text-slate-300';
-                count.textContent = String(laneTasks.length);
+                let count;
+                let singleLaneOverWip = false;
+                if (column.showSubLanes) {
+                    count = document.createElement('span');
+                    count.className = 'shrink-0 rounded-full bg-slate-200 dark:bg-slate-800 px-2 py-1 text-[10px] text-slate-600 dark:text-slate-300';
+                    count.textContent = String(laneTasks.length);
+                } else {
+                    const wipCount = getProjectWipTaskCount(activeProjectBoardId, column.id);
+                    const wipLimit = createProjectWipLimitButton(column, null, wipCount);
+                    count = wipLimit.button;
+                    singleLaneOverWip = wipLimit.isOverWip;
+                    count.classList.add('shrink-0');
+                }
                 toggle.querySelector('.board-column-toggle-count').textContent = String(laneTasks.length);
                 const add = document.createElement('button');
                 add.type = 'button';
@@ -3052,10 +3143,12 @@
                                 ? 'px-1.5 py-0.5 rounded border font-semibold bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
                                 : 'px-1.5 py-0.5 rounded border font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
                             badge.textContent = t(subColumn === 'Doing' ? 'board.doing' : 'board.done', subColumn);
-                            const laneCount = document.createElement('span');
-                            laneCount.className = 'text-slate-500 dark:text-slate-400';
-                            laneCount.textContent = String(subColumnTasks.length);
-                            subColumnHeader.append(badge, laneCount);
+                            const wipCount = getProjectWipTaskCount(activeProjectBoardId, column.id, subColumn);
+                            const wipLimit = createProjectWipLimitButton(column, subColumn, wipCount);
+                            if (wipLimit.isOverWip) {
+                                dropzone.className += ' is-over-wip border-red-500/50 bg-red-50/50 dark:bg-red-950/10 shadow-lg shadow-red-950/20';
+                            }
+                            subColumnHeader.append(badge, wipLimit.button);
                             dropzone.append(subColumnHeader);
                             subColumnTasks.forEach(task => dropzone.appendChild(createCard(task)));
                             lanes.appendChild(dropzone);
@@ -3065,6 +3158,9 @@
                         const dropzone = document.createElement('div');
                         dropzone.className = 'board-subcolumn flex-1 p-3 flex flex-col gap-2 min-h-[140px]';
                         dropzone.style.gridRow = String(rowIndex + 2);
+                        if (singleLaneOverWip) {
+                            dropzone.className += ' is-over-wip border-red-500/50 bg-red-50/50 dark:bg-red-950/10 shadow-lg shadow-red-950/20';
+                        }
                         dropzone.dataset.main = column.masterColumnName;
                         dropzone.dataset.sub = column.id;
                         dropzone.dataset.projectBoardColumnId = column.id;
@@ -3088,7 +3184,7 @@
 
         function updateBoardContainerFlex() {
             const container = document.getElementById('board-container');
-            if (activeProjectBoardId) {
+            if (activeProjectBoardId || window.viewTabs?.current() === 'list') {
                 container.style.flexGrow = '1';
                 container.style.flexBasis = '0';
                 return;
@@ -3253,9 +3349,9 @@
                                 ? 'bg-red-600 text-white border-red-700 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 animate-pulse cursor-pointer hover:bg-red-700 dark:hover:bg-red-500/30'
                                 : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700/50 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700';
                             const warnIcon = isOverWip ? `<i class="fa-solid fa-triangle-exclamation mr-1 text-white dark:text-red-400"></i>` : '';
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}">${warnIcon}${globalSubCount}/${limit} WIP</span>`;
+                            wipLimitPill = `<button type="button" onclick="configureWipLimit('${col}', '${subCol}')" class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${pillClass}" title="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}" aria-label="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}: ${escapeHtml(getColLabel(col))} (${escapeHtml(subColLabel)})">${warnIcon}${globalSubCount}/${limit} WIP</button>`;
                         } else {
-                            wipLimitPill = `<span onclick="configureWipLimit('${col}', '${subCol}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}">${globalSubCount} (${escapeHtml(t('board.noLimit', 'Kein Limit'))})</span>`;
+                            wipLimitPill = `<button type="button" onclick="configureWipLimit('${col}', '${subCol}')" class="bg-slate-200 dark:bg-slate-800 text-[9px] text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/50 font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700" title="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}" aria-label="${escapeHtml(t('board.changeWip', 'Klicken, um WIP Limit anzupassen'))}: ${escapeHtml(getColLabel(col))} (${escapeHtml(subColLabel)})">${globalSubCount} (${escapeHtml(t('board.noLimit', 'Kein Limit'))})</button>`;
                         }
 
                         const subColBadgeHtml = `<div class="flex items-center gap-1.5 justify-between w-full">${badgeInner} ${wipLimitPill}</div>`;
@@ -3399,18 +3495,37 @@
             }
         }
 
-        function getFilteredTasks() {
-            const showArchived = document.getElementById('filter-archived').checked;
-            return tasks.filter(task => {
-                const oMatch = selectedFilterOwners.length === 0 || selectedFilterOwners.includes(task.owner);
-                const cMatch = selectedFilterCustomers.length === 0 || selectedFilterCustomers.includes(task.customer);
-                const tMatch = selectedFilterTypes.length === 0 || selectedFilterTypes.includes(task.taskType);
-                const tags = Array.isArray(task.tags) ? task.tags : [];
-                const tagMatch = selectedFilterTags.length === 0 || selectedFilterTags.some(tag => tags.includes(tag));
-                const archiveMatch = showArchived ? task.isArchived === true : task.isArchived !== true;
-                return oMatch && cMatch && tMatch && tagMatch && archiveMatch;
-            });
+        function getContextTasks() {
+            if (activeProjectBoardId) return tasks.filter(task => task.projectId === activeProjectBoardId);
+            if (!activeCustomerId) return tasks;
+            const projectIds = new Set(projectBoardOptions.filter(project => project.customerId === activeCustomerId).map(project => project.id));
+            return tasks.filter(task => projectIds.has(task.projectId));
         }
+
+        function matchesBoardFilters(task) {
+            const showArchived = document.getElementById('filter-archived').checked;
+            const oMatch = selectedFilterOwners.length === 0 || selectedFilterOwners.includes(task.owner);
+            const tMatch = selectedFilterTypes.length === 0 || selectedFilterTypes.includes(task.taskType);
+            const tags = Array.isArray(task.tags) ? task.tags : [];
+            const tagMatch = selectedFilterTags.length === 0 || selectedFilterTags.some(tag => tags.includes(tag));
+            const archiveMatch = showArchived ? task.isArchived === true : task.isArchived !== true;
+            return oMatch && tMatch && tagMatch && archiveMatch;
+        }
+
+        function getFilteredTasks() {
+            return getContextTasks().filter(matchesBoardFilters);
+        }
+
+        window.getHierarchyBoardView = () => ({
+            customerId: activeCustomerId,
+            projectId: activeProjectBoardId,
+            matchesTask: task => matchesBoardFilters(normalizeTaskFromAPI(task)),
+            rows: tasks => {
+                const normalized = tasks.map(task => ({ ...task, ...normalizeTaskFromAPI(task) }));
+                return buildSwimlaneRows(normalized, normalized);
+            },
+            isCollapsed: id => collapsedSwimlanes.has(id)
+        });
 
         // --- EVENT HANDLERS & MODAL LOGIC ---
         // Note: Functions called by `onclick` are attached to `window`
@@ -3423,26 +3538,84 @@
             renderBoard();
         }
 
-        window.configureWipLimit = async function(col, subCol) {
+        const wipDialog = document.getElementById('wip-dialog');
+        const wipInput = document.getElementById('wip-input');
+        let wipTarget = null;
+
+        window.configureWipLimit = function(col, subCol, projectColumnId = null) {
             if (!ensureAuthenticatedOrToast(t('auth.operationChangeWip', 'WIP Limits zu ändern'))) return;
-            const key = getWipLimitKey(col, subCol);
-            const currentLimit = wipLimits[key];
-            const input = prompt(t('wip.prompt', 'Neues WIP Limit für die Subspalte "{column} ({subcolumn})" eingeben (Leer oder 0 zum Deaktivieren):', { column: getColLabel(col), subcolumn: subCol }), currentLimit != null ? currentLimit : "");
-            if (input === null) return;
-            const num = parseInt(input.trim(), 10);
-            if (input.trim() === "" || isNaN(num) || num <= 0) {
+            const projectColumn = projectColumnId
+                ? activeProjectBoard?.columns.find(column => column.id === projectColumnId)
+                : null;
+            if (projectColumnId && !projectColumn) return;
+            const key = projectColumn
+                ? getProjectWipLimitKey(activeProjectBoardId, projectColumn.id, subCol)
+                : getWipLimitKey(col, subCol);
+            const displayColumn = projectColumn?.name || getColLabel(col);
+            const displaySubColumn = projectColumn && !subCol
+                ? (document.documentElement.lang === 'en' ? 'All' : 'Gesamt')
+                : subCol;
+            wipTarget = { col, subCol, key, displayColumn, displaySubColumn };
+            const prompt = projectColumn && !subCol
+                ? (document.documentElement.lang === 'en'
+                    ? 'Set the WIP limit for project column "{column}" (blank or 0 disables it):'
+                    : 'WIP Limit für Projektspalte "{column}" eingeben (leer oder 0 deaktiviert es):')
+                : 'Neues WIP Limit für die Subspalte "{column} ({subcolumn})" eingeben (Leer oder 0 zum Deaktivieren):';
+            document.getElementById('wip-dialog-label').textContent = t(
+                projectColumn && !subCol ? 'wip.projectColumnPrompt' : 'wip.prompt',
+                prompt,
+                { column: displayColumn, subcolumn: displaySubColumn });
+            wipInput.value = wipLimits[key] ?? '';
+            wipDialog.showModal();
+            wipInput.focus();
+            wipInput.select();
+        };
+
+        document.getElementById('wip-cancel').addEventListener('click', () => wipDialog.close());
+        wipDialog.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                wipDialog.close();
+            }
+        });
+        document.getElementById('wip-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!wipTarget || !ensureAuthenticatedOrToast(t('auth.operationChangeWip', 'WIP Limits zu ändern'))) return;
+            const target = wipTarget;
+            const { col, subCol, key } = target;
+            const num = wipInput.valueAsNumber;
+            if (wipInput.value !== '' && (!Number.isInteger(num) || num < 0)) {
+                showToast(t('wip.invalid', 'Bitte eine positive ganze Zahl, 0 oder ein leeres Feld eingeben.'));
+                return;
+            }
+            if (wipInput.value === "" || num === 0) {
                 wipLimits[key] = null;
-                showToast(t('wip.removed', 'WIP Limit für "{column} ({subcolumn})" wurde aufgehoben.', { column: getColLabel(col), subcolumn: subCol }));
             } else {
                 wipLimits[key] = num;
-                showToast(t('wip.changed', 'WIP Limit für "{column} ({subcolumn})" auf {limit} gesetzt.', { column: getColLabel(col), subcolumn: subCol, limit: num }));
             }
+            wipDialog.close();
             saveAllState();
-            await flushBoardConfigSync(false);
+            const synced = await flushBoardConfigSync(false);
             renderBoard();
-        }
+            if (!synced) {
+                showToast(t('wip.savedLocally', document.documentElement.lang === 'en'
+                    ? 'WIP limit saved locally, but could not be saved to the server.'
+                    : 'WIP Limit lokal gespeichert, konnte aber nicht auf dem Server gespeichert werden.'));
+            } else if (wipLimits[key] === null) {
+                showToast(t('wip.removed', 'WIP Limit für "{column} ({subcolumn})" wurde aufgehoben.', {
+                    column: target.displayColumn,
+                    subcolumn: target.displaySubColumn || subCol
+                }));
+            } else {
+                showToast(t('wip.changed', 'WIP Limit für "{column} ({subcolumn})" auf {limit} gesetzt.', {
+                    column: target.displayColumn,
+                    subcolumn: target.displaySubColumn || subCol,
+                    limit: num
+                }));
+            }
+        });
 
-        function validateWorkflowMove(taskId, targetColumn, targetSubColumn) {
+        function validateWorkflowMove(taskId, targetColumn, targetSubColumn, projectBoardColumnId = null, projectSubColumn = null) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
 
@@ -3451,7 +3624,25 @@
                 showToast(t('task.invalidMove', 'Fehler: Der Typ "{type}" darf die Spalte "{column}" nicht nutzen!', { type: task.taskType, column: getColLabel(targetColumn) }));
                 return false;
             }
-            if (activeProjectBoardId) return true;
+            if (activeProjectBoardId) {
+                const projectColumn = activeProjectBoard?.columns.find(column => column.id === projectBoardColumnId);
+                if (projectColumn) {
+                    const targetLane = projectColumn.showSubLanes ? projectSubColumn : null;
+                    const key = getProjectWipLimitKey(activeProjectBoardId, projectColumn.id, targetLane);
+                    const limit = wipLimits[key];
+                    const isSameLane = task.projectBoardColumnId === projectColumn.id &&
+                        (!projectColumn.showSubLanes || task.subColumn === targetLane);
+                    if (limit != null && !isSameLane &&
+                        getProjectWipTaskCount(activeProjectBoardId, projectColumn.id, targetLane) >= limit) {
+                        showToast(t('wip.exceeded', 'Achtung: WIP Limit für "{column} ({subcolumn})" ({limit}) wird überschritten!', {
+                            column: projectColumn.name,
+                            subcolumn: targetLane || (document.documentElement.lang === 'en' ? 'All' : 'Gesamt'),
+                            limit
+                        }));
+                    }
+                }
+                return true;
+            }
 
             const limit = targetColumn === "Backlog" ? null : wipLimits[getWipLimitKey(targetColumn, targetSubColumn)];
             if ((task.column !== targetColumn || task.subColumn !== targetSubColumn) && limit != null) {
@@ -3625,7 +3816,8 @@
             cleanupDraggingCards();
             clearDropIndicators();
 
-            if (validateWorkflowMove(draggedTaskId, targetMain, targetSub)) {
+            if (validateWorkflowMove(
+                draggedTaskId, targetMain, targetSub, projectBoardColumnId, projectSubColumn)) {
                 const success = await reorderTaskAndPersist(
                     draggedTaskId, targetMain, targetSub, beforeTaskId, projectBoardColumnId, projectSubColumn);
                 if (!success) {
@@ -3645,8 +3837,11 @@
         window.manualMoveProjectTask = async function(taskId, projectBoardColumnId, subColumnName = null) {
             const column = activeProjectBoard?.columns.find(item => item.id === projectBoardColumnId);
             if (!column || !activeProjectBoardId) return;
-            await reorderTaskAndPersist(
-                taskId, column.masterColumnName, projectBoardColumnId, null, projectBoardColumnId, subColumnName);
+            if (validateWorkflowMove(
+                taskId, column.masterColumnName, projectBoardColumnId, projectBoardColumnId, subColumnName)) {
+                await reorderTaskAndPersist(
+                    taskId, column.masterColumnName, projectBoardColumnId, null, projectBoardColumnId, subColumnName);
+            }
         }
 
         window.toggleCardDropdown = function(event, taskId) {
@@ -3676,7 +3871,7 @@
             };
 
             const isNewTask = !taskId;
-            const refreshHierarchy = window.viewTabs?.current() === 'projects';
+            const refreshHierarchy = window.viewTabs?.current() === 'list';
             if (isNewTask) {
                 if (newTaskProjectColumnId)
                     taskData.projectBoardColumnId = newTaskProjectColumnId;
@@ -3698,7 +3893,22 @@
                 const success = await updateTaskInCloud(taskId, taskData);
                 if (!success) return;
             } else {
-                if (newTaskColumn === "ToDo" && wipLimits["ToDo"] !== null) {
+                if (newTaskProjectColumnId && activeProjectBoardId) {
+                    const projectColumn = activeProjectBoard?.columns.find(column => column.id === newTaskProjectColumnId);
+                    if (projectColumn) {
+                        const targetLane = projectColumn.showSubLanes ? 'Doing' : null;
+                        const limit = wipLimits[getProjectWipLimitKey(
+                            activeProjectBoardId, projectColumn.id, targetLane)];
+                        if (limit != null &&
+                            getProjectWipTaskCount(activeProjectBoardId, projectColumn.id, targetLane) >= limit) {
+                            showToast(t('wip.exceeded', 'Achtung: WIP Limit für "{column} ({subcolumn})" ({limit}) wird überschritten!', {
+                                column: projectColumn.name,
+                                subcolumn: targetLane || (document.documentElement.lang === 'en' ? 'All' : 'Gesamt'),
+                                limit
+                            }));
+                        }
+                    }
+                } else if (newTaskColumn === "ToDo" && wipLimits["ToDo"] !== null) {
                     const currentGlobalCount = getWipTaskCount("ToDo", "Doing");
                     if (currentGlobalCount >= wipLimits["ToDo"]) {
                         showToast(t('wip.newTaskExceeded', 'Achtung: WIP Limit für "To Do (Doing)" wird durch den neuen Task überschritten!'));
@@ -3734,7 +3944,7 @@
             }
             closeAddTaskModal();
             await loadTasksFromCloud();
-            if (refreshHierarchy && window.viewTabs?.current() === 'projects')
+            if (refreshHierarchy && window.viewTabs?.current() === 'list')
                 await window.hierarchyView.refreshTasks();
         }
 
@@ -3744,8 +3954,9 @@
             newTaskProjectColumnId = '';
             const isProjectBoardContext = !!activeProjectBoardId &&
                 !!activeProjectBoard &&
-                window.viewTabs?.current() !== 'projects' &&
+                window.viewTabs?.current() !== 'list' &&
                 !deliverableId;
+            newTaskInheritedProjectId = isProjectBoardContext ? activeProjectBoardId : '';
             if (isProjectBoardContext) {
                 const projectColumn = activeProjectBoard.columns.find(item =>
                     item.id === projectBoardColumnId ||
@@ -3772,7 +3983,7 @@
             updateAllDropdowns();
             renderModalTagsSelection();
             openDetailsPanel();
-            await loadTaskHierarchy(deliverableId, isProjectBoardContext ? activeProjectBoardId : '');
+            await loadTaskHierarchy(deliverableId, newTaskInheritedProjectId);
         }
 
         window.openEditTaskModal = async function(taskId, event) {
@@ -3830,9 +4041,8 @@
             else tasks[index] = updatedTask;
             persistTaskSnapshot();
             updateDynamicListsFromTasks(tasks);
-            renderCustomerFilterDropdown();
             renderBoard();
-            if (selectedTaskId === updatedTask.id && window.viewTabs?.current() === 'projects' &&
+            if (selectedTaskId === updatedTask.id && window.viewTabs?.current() === 'list' &&
                 !document.getElementById('task-details-panel').classList.contains('hidden'))
                 await loadTaskHierarchy(updatedTask.deliverableId);
         }
@@ -3845,7 +4055,7 @@
             const panel = document.getElementById('task-details-panel');
             panel.classList.remove('hidden');
             panel.classList.add('flex');
-            if (window.viewTabs?.current() === 'projects') {
+            if (window.viewTabs?.current() === 'list') {
                 document.getElementById('hierarchy-task-panel-slot').classList.remove('hidden');
                 document.getElementById('hierarchy-entity-editor').classList.add('hidden');
                 document.getElementById('details-resizer').classList.add('hidden');
@@ -3865,7 +4075,7 @@
             panel.classList.add('hidden');
             panel.classList.remove('flex');
             document.getElementById('details-resizer').classList.add('hidden');
-            if (window.viewTabs?.current() === 'projects') {
+            if (window.viewTabs?.current() === 'list') {
                 document.getElementById('hierarchy-task-panel-slot').classList.add('hidden');
                 document.getElementById('hierarchy-entity-editor').classList.remove('hidden');
                 window.hierarchyView.returnFromTaskEditor();
@@ -3928,20 +4138,6 @@
                 showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
             }
         }
-
-        // Tag & Type Config Modals
-        window.openTagsModal = function() {
-            renderTagFilterDropdown();
-            renderTagsManagerList();
-            document.getElementById('tags-modal').classList.remove('hidden');
-        }
-        window.closeTagsModal = function() { document.getElementById('tags-modal').classList.add('hidden'); }
-
-        window.openTypesModal = function() {
-            renderTypesManagerList();
-            document.getElementById('types-modal').classList.remove('hidden');
-        }
-        window.closeTypesModal = function() { document.getElementById('types-modal').classList.add('hidden'); }
 
         function setProjectBoardModalError(message = '') {
             const error = document.getElementById('project-board-modal-error');
@@ -4271,256 +4467,6 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function renderTagsManagerList() {
-            document.getElementById('tags-manager-list').innerHTML = Object.keys(tagsConfig).map(tag => {
-                const escapedTag = escapeSingleQuotedJs(tag);
-                const safeTagText = escapeHtml(tag);
-                return `
-                <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-lg">
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="text"
-                            value="${safeTagText}"
-                            class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-white"
-                            onkeydown="handleTagEditKeydown(event, this)"
-                            onblur="renameTagInline(this, '${escapedTag}')"
-                        >
-                        <span class="w-3 h-3 rounded-full border border-slate-300 dark:border-slate-700" style="background-color: ${tagsConfig[tag]}"></span>
-                        <input type="color" onchange="updateTagColor('${escapedTag}', this.value)" value="${tagsConfig[tag]}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
-                        <button onclick="deleteTag('${escapedTag}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        window.addNewTag = async function() {
-            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTags', 'Tags zu erstellen'))) return;
-            const nameInput = document.getElementById('new-tag-name');
-            const name = nameInput.value.trim();
-            if (!name) return;
-            tagsConfig[name] = document.getElementById('new-tag-color').value;
-            nameInput.value = "";
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-            renderTagsManagerList();
-            renderBoard();
-        }
-
-        window.updateTagColor = async function(tag, newColor) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationChangeTagColors', 'Tag-Farben zu ändern'))) return;
-            tagsConfig[tag] = newColor;
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-            renderBoard();
-        }
-
-        window.handleTagEditKeydown = function(event, inputElement) {
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            inputElement.blur();
-        }
-
-        window.renameTagInline = async function(inputElement, oldTag) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationRenameTags', 'Tags umzubenennen'))) return;
-            const newTag = inputElement.value.trim();
-            if (!newTag) {
-                showToast(t('tags.emptyName', 'Tag-Name darf nicht leer sein.'));
-                inputElement.value = oldTag;
-                return;
-            }
-            if (newTag === oldTag) return;
-            if (Object.prototype.hasOwnProperty.call(tagsConfig, newTag)) {
-                showToast(t('tags.duplicateName', 'Tag-Name existiert bereits.'));
-                inputElement.value = oldTag;
-                return;
-            }
-
-            const tasksToUpdate = tasks.filter(task => task.tags && task.tags.includes(oldTag));
-            const oldColor = tagsConfig[oldTag] || '#475569';
-            delete tagsConfig[oldTag];
-            tagsConfig[newTag] = oldColor;
-
-            selectedFilterTags = [...new Set(selectedFilterTags.map(t => t === oldTag ? newTag : t))];
-            selectedModalTags = [...new Set(selectedModalTags.map(t => t === oldTag ? newTag : t))];
-            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
-
-            const updatePromises = tasksToUpdate.map(task => {
-                const replacedTags = task.tags.map(t => t === oldTag ? newTag : t);
-                const dedupedTags = [...new Set(replacedTags)];
-                return updateTaskInCloud(task.id, { tags: dedupedTags });
-            });
-            const updateResults = await Promise.all(updatePromises);
-            if (updateResults.some(result => result === false)) {
-                showToast(t('task.manyUpdateFailed', 'Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.'));
-            }
-
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-
-            renderTagFilterDropdown();
-            renderTagsManagerList();
-            renderModalTagsSelection();
-            await loadTasksFromCloud();
-            showToast(t('tags.renamed', 'Tag "{old}" wurde in "{new}" umbenannt.', { old: oldTag, new: newTag }));
-        }
-
-        window.deleteTag = async function(tag) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationDeleteTags', 'Tags zu löschen'))) return;
-            const tasksToUpdate = tasks.filter(task => task.tags && task.tags.includes(tag));
-            delete tagsConfig[tag];
-            selectedFilterTags = selectedFilterTags.filter(t => t !== tag);
-            saveToStorage('kanban_selectedFilterTags', selectedFilterTags);
-            const updatePromises = tasksToUpdate.map(task => {
-                const newTags = task.tags.filter(t => t !== tag);
-                return updateTaskInCloud(task.id, { tags: newTags });
-            });
-            await Promise.all(updatePromises);
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-            renderTagFilterDropdown();
-            renderTagsManagerList(); // Visuelle Liste im Modal
-            // loadTasksFromCloud wird die Dropdowns nach dem Neuladen der Daten aktualisieren
-            await loadTasksFromCloud();
-        }
-
-        function renderTypesManagerList() {
-            document.getElementById('types-manager-list').innerHTML = Object.keys(workflowPaths).map(type => {
-                const typeConfig = workflowPaths[type];
-                const cols = typeConfig.path.map(c => getColLabel(c)).join(', ');
-                const escapedType = escapeSingleQuotedJs(type);
-                const safeTypeText = escapeHtml(type);
-                return `
-                <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1.5">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full" style="background-color: ${typeConfig.color}"></span>
-                        <input
-                            type="text"
-                            value="${safeTypeText}"
-                            class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-white"
-                            onkeydown="handleTypeEditKeydown(event, this)"
-                            onblur="renameTypeInline(this, '${escapedType}')"
-                        >
-                        <input type="color" onchange="updateTypeColor('${escapedType}', this.value)" value="${typeConfig.color}" class="w-8 h-6 bg-transparent dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded cursor-pointer">
-                        <button onclick="deleteType('${escapedType}')" class="text-slate-500 hover:text-red-600 dark:hover:text-red-500 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block pl-5">${escapeHtml(t('types.path', 'Pfad: {path}', { path: cols }))}</span>
-                </div>`;
-            }).join('');
-        }
-
-        window.handleTypeEditKeydown = function(event, inputElement) {
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            inputElement.blur();
-        }
-
-        window.renameTypeInline = async function(inputElement, oldType) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationRenameTypes', 'Task-Typen umzubenennen'))) return;
-
-            const newType = inputElement.value.trim();
-            if (!newType) {
-                showToast(t('types.emptyName', 'Typ-Name darf nicht leer sein.'));
-                inputElement.value = oldType;
-                return;
-            }
-            if (newType === oldType) return;
-            if (Object.prototype.hasOwnProperty.call(workflowPaths, newType)) {
-                showToast(t('types.duplicateName', 'Typ-Name existiert bereits.'));
-                inputElement.value = oldType;
-                return;
-            }
-
-            const oldConfig = workflowPaths[oldType];
-            if (!oldConfig) return;
-
-            const tasksToUpdate = tasks.filter(task => task.taskType === oldType);
-
-            delete workflowPaths[oldType];
-            workflowPaths[newType] = oldConfig;
-
-            selectedFilterTypes = [...new Set(selectedFilterTypes.map(t => t === oldType ? newType : t))];
-            saveToStorage('kanban_selectedFilterTypes', selectedFilterTypes);
-
-            const updatePromises = tasksToUpdate.map(task => updateTaskInCloud(task.id, {
-                taskType: newType,
-                taskTypeColor: oldConfig.color
-            }));
-            const updateResults = await Promise.all(updatePromises);
-            if (updateResults.some(result => result === false)) {
-                showToast(t('task.manyUpdateFailed', 'Einige Tasks konnten nicht aktualisiert werden. Bitte erneut versuchen.'));
-            }
-
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-
-            updateConfiguredDropdowns();
-            renderTypesManagerList();
-            renderTypeFilterDropdown();
-            renderBoard();
-            await loadTasksFromCloud();
-            showToast(t('types.renamed', 'Task-Typ "{old}" wurde in "{new}" umbenannt.', { old: oldType, new: newType }));
-        }
-
-        window.addNewType = async function() {
-            if (!ensureAuthenticatedOrToast(t('auth.operationCreateTypes', 'Task-Typen zu erstellen'))) return;
-            const nameInput = document.getElementById('new-type-name');
-            const name = nameInput.value.trim();
-            const color = document.getElementById('new-type-color').value;
-            if (!name) return;
-            const path = ["ToDo"];
-            if (document.getElementById('path-analysis').checked) path.push("Analysis");
-            if (document.getElementById('path-inprogress').checked) path.push("InProgress");
-            path.push("Done");
-            workflowPaths[name] = { path, color };
-            nameInput.value = "";
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-            updateConfiguredDropdowns();
-            renderTypesManagerList();
-            renderBoard();
-        }
-
-        window.updateTypeColor = async function(type, newColor) {
-            if (!ensureAuthenticatedOrToast(t('auth.operationChangeTypeColors', 'Task-Typ Farben zu ändern'))) return;
-            if (workflowPaths[type]) {
-                workflowPaths[type].color = newColor;
-            }
-            saveAllState();
-            const saved = await flushBoardConfigSync();
-            if (!saved) return;
-            updateConfiguredDropdowns();
-            renderTypesManagerList();
-            renderBoard();
-
-            const tasksToUpdate = tasks.filter(task => task.taskType === type);
-            if (tasksToUpdate.length > 0) {
-                Promise.all(tasksToUpdate.map(task => updateTaskInCloud(task.id, { taskTypeColor: newColor })))
-                    .then(() => loadTasksFromCloud())
-                    .catch((error) => console.error("Could not update type colors on tasks:", error));
-            }
-        }
-
-        window.deleteType = async function(type) {
-            if (Object.keys(workflowPaths).length <= 1) {
-                return showToast(t('types.oneRequired', 'Mindestens ein Task-Typ muss auf dem Board erhalten bleiben!'));
-            }
-            const tasksToDelete = tasks.filter(task => task.taskType === type);
-            await Promise.all(tasksToDelete.map(task => deleteTaskFromCloud(task.id)));
-            delete workflowPaths[type];
-            selectedFilterTypes = selectedFilterTypes.filter(selected => selected !== type);
-            saveToStorage('kanban_selectedFilterTypes', selectedFilterTypes);
-            saveAllState();
-            updateAllDropdowns();
-            renderTypesManagerList();
-            await loadTasksFromCloud();
-        }
-
         function updateConfiguredDropdowns() {
             const modalTypeSelect = document.getElementById('modal-type');
             const selectedModalVal = modalTypeSelect.value || "";
@@ -4536,21 +4482,16 @@
         }
 
         function updateDynamicListsFromTasks(currentTasks) {
-            // Leitet die Listen für Owner und Kunden direkt aus den vorhandenen Aufgaben ab.
             const ownerSet = new Set();
-            const customerSet = new Set();
             currentTasks.forEach(task => {
                 if (task.owner) ownerSet.add(task.owner);
-                if (task.customer) customerSet.add(task.customer);
             });
             owners = [...ownerSet].sort();
-            customers = [...customerSet].sort();
         }
 
         function updateAllDropdowns() {
             updateConfiguredDropdowns(); // For Task Types
             renderOwnerFilterDropdown();
-            renderCustomerFilterDropdown();
             renderTagFilterDropdown();
         }
 
@@ -4781,6 +4722,16 @@
                 backlogContent.setAttribute('aria-hidden', String(!isOpen));
             }
             function setAllPanelsOpen(isOpen) {
+                if (window.viewTabs?.current() === 'list') {
+                    collapsedSwimlanes.clear();
+                    if (!isOpen) {
+                        buildSwimlaneRows(getFilteredTasks(), getContextTasks())
+                            .filter(row => row.type === 'group')
+                            .forEach(row => collapsedSwimlanes.add(row.id));
+                    }
+                    window.hierarchyView.setAllExpanded(isOpen);
+                    return;
+                }
                 if (activeProjectBoardId) {
                     if (activeProjectBoard)
                         activeProjectBoard.columns.forEach(column => setProjectBoardColumnCollapsed(column.id, !isOpen));
@@ -4821,7 +4772,6 @@
                 syncSecondarySwimlane();
                 updateConnectionUI();
                 renderOwnerFilterDropdown();
-                renderCustomerFilterDropdown();
                 renderTypeFilterDropdown();
                 renderTagFilterDropdown();
                 renderBoard();
@@ -4864,17 +4814,6 @@
                 renderOwnerFilterDropdown();
                 filterOwnerDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterOwnerDropdown);
-                filterCustomerDropdown.classList.add('hidden');
-                filterTypeDropdown.classList.add('hidden');
-                filterTagsDropdown.classList.add('hidden');
-            });
-            filterCustomerTrigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                closeSelectDropdowns();
-                renderCustomerFilterDropdown();
-                filterCustomerDropdown.classList.toggle('hidden');
-                fitFilterDropdown(filterCustomerDropdown);
-                filterOwnerDropdown.classList.add('hidden');
                 filterTypeDropdown.classList.add('hidden');
                 filterTagsDropdown.classList.add('hidden');
             });
@@ -4885,7 +4824,6 @@
                 filterTypeDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterTypeDropdown);
                 filterOwnerDropdown.classList.add('hidden');
-                filterCustomerDropdown.classList.add('hidden');
                 filterTagsDropdown.classList.add('hidden');
             });
             filterTagsTrigger.addEventListener('click', (e) => {
@@ -4895,20 +4833,29 @@
                 filterTagsDropdown.classList.toggle('hidden');
                 fitFilterDropdown(filterTagsDropdown);
                 filterOwnerDropdown.classList.add('hidden');
-                filterCustomerDropdown.classList.add('hidden');
                 filterTypeDropdown.classList.add('hidden');
             });
             filterOwnerDropdown.addEventListener('click', (e) => e.stopPropagation());
-            filterCustomerDropdown.addEventListener('click', (e) => e.stopPropagation());
             filterTypeDropdown.addEventListener('click', (e) => e.stopPropagation());
             filterTagsDropdown.addEventListener('click', (e) => e.stopPropagation());
             window.addEventListener('resize', () => {
-                [filterOwnerDropdown, filterCustomerDropdown, filterTypeDropdown, filterTagsDropdown,
+                [filterOwnerDropdown, filterTypeDropdown, filterTagsDropdown,
                     document.getElementById('group-primary-dropdown'), document.getElementById('group-secondary-dropdown'),
                     document.getElementById('language-selector-dropdown')]
                     .forEach(fitFilterDropdown);
             });
             document.getElementById('filter-archived').addEventListener('change', renderBoard);
+            window.addEventListener('board-view-changed', event => {
+                if (!document.getElementById('task-details-panel').classList.contains('hidden')) {
+                    const inheritedFromTree = event.detail === 'list' && !!document.getElementById('modal-deliverable').value;
+                    const inheritedFromBoard = event.detail === 'kanban' &&
+                        !document.getElementById('modal-task-id').value && !!newTaskInheritedProjectId;
+                    ['modal-customer', 'modal-project', 'modal-deliverable'].forEach((id, index) => {
+                        document.getElementById(id).disabled = inheritedFromTree || (inheritedFromBoard && index < 2);
+                    });
+                }
+                renderBoard();
+            });
             window.addEventListener('click', () => {
                 document.querySelectorAll('[id^="drop-"]').forEach(el => el.classList.add('hidden'));
                 closeAllFilterDropdowns();
