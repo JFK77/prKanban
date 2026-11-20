@@ -54,6 +54,32 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        context.Response.Redirect(context.RedirectUri);
+        return System.Threading.Tasks.Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        context.Response.Redirect(context.RedirectUri);
+        return System.Threading.Tasks.Task.CompletedTask;
+    };
+});
+
 // 4. Add CORS
 builder.Services.AddCors(options =>
 {
