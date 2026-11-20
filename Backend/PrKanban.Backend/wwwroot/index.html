@@ -414,13 +414,13 @@
         }
         .project-board-grid {
             display: grid;
-            gap: var(--board-panel-gap);
+            column-gap: var(--board-panel-gap);
             align-items: start;
             min-width: 100%;
             min-height: 100%;
         }
         .project-board-grid .board-column-panel {
-            grid-row: auto;
+            grid-row: 1 / -1;
             min-width: 0;
             min-height: 100%;
         }
@@ -430,11 +430,12 @@
         .project-board-column-row.drop-before { box-shadow: inset 0 3px #2563eb; }
         .project-board-column-row.drop-after { box-shadow: inset 0 -3px #2563eb; }
         .project-board-grid .project-board-column-body {
-            display: flex;
-            flex-direction: column;
-            grid-row: 1;
+            display: grid;
+            grid-row: 1 / -1;
+            grid-template-rows: subgrid;
             min-height: 0;
         }
+        .project-board-grid .project-board-column-body[hidden] { display: none; }
         .project-board-column-body > .board-subcolumn { flex: 1; }
         #board-container > .board-grid { min-height: 100%; }
         .board-column-panel {
@@ -901,9 +902,6 @@
                         <p data-i18n="task.pasteImageHint" class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Bilder können direkt in die Beschreibung eingefügt werden.</p>
                         <p data-i18n="task.resizeImageHint" class="text-[11px] text-slate-500 dark:text-slate-400">Bild anklicken und an den Griffen ziehen, um die Größe zu ändern.</p>
                     </div>
-                    <div id="task-attachments-section">
-                        <div class="flex items-center justify-between gap-2">
-                            <label data-i18n="task.attachments" class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Anhänge</label>
                     <section id="task-checklists-section" class="space-y-3">
                         <div class="flex items-center justify-between gap-3">
                             <button id="task-checklists-toggle" type="button" aria-expanded="true" aria-controls="task-checklists-content" class="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -935,6 +933,9 @@
                             </div>
                         </div>
                     </section>
+                    <div id="task-attachments-section">
+                        <div class="flex items-center justify-between gap-2">
+                            <label data-i18n="task.attachments" class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Anhänge</label>
                             <button id="task-attachment-add" type="button" data-i18n="task.addAttachments" class="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Dateien anhängen</button>
                             <input id="task-attachment-input" type="file" multiple hidden>
                         </div>
@@ -1735,7 +1736,6 @@
                 }
                 return false;
             }
-                checklists: Array.isArray(apiTask.checklists) ? apiTask.checklists : [],
         }
 
         async function loadBoardConfigFromCloud() {
@@ -1824,6 +1824,7 @@
                 isArchived: apiTask.isArchived || false,
                 order: apiTask.order,
                 tags: apiTask.tags || [],
+                checklists: Array.isArray(apiTask.checklists) ? apiTask.checklists : [],
                 taskTypeColor: undefined, // Wird von Frontend berechnet
                 d365Link: apiTask.d365Link || "",
                 timeLink: apiTask.timeLink || "",
@@ -1872,9 +1873,6 @@
                 } while (apiTasks.length < total);
                 const cloudTasks = apiTasks.map(t => normalizeTaskFromAPI(t));
                 console.log("Extracted and normalized cloudTasks:", cloudTasks);
-        let selectedTaskChecklists = [];
-
-
                 updateDynamicListsFromTasks(cloudTasks);
                 console.log("Tasks successfully loaded from API:", cloudTasks);
                 tasks = cloudTasks;
@@ -1896,6 +1894,9 @@
                 showToast(t('board.offline', 'API momentan nicht erreichbar. Lokale Sicherung wird angezeigt.'));
                 updateAllDropdowns();
                 renderBoard();
+            }
+        }
+
         function createChecklistEntryId() {
             return globalThis.crypto?.randomUUID?.() || `checklist-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         }
@@ -2077,9 +2078,6 @@
         });
         window.addEventListener('languagechange', renderTaskChecklists);
 
-            }
-        }
-
         async function addTaskToCloud(taskData) {
             if (!ensureAuthenticatedOrToast(t('auth.operationCreateTasks', 'Tasks zu erstellen'))) return null;
             try {
@@ -2142,6 +2140,7 @@
         // --- GLOBAL STATE & CONFIGURATION ---
         let tasks = [];
         let selectedModalTags = [];
+        let selectedTaskChecklists = [];
         let selectedFilterOwners = loadFromStorage('kanban_selectedFilterOwners', []);
         let selectedFilterCustomers = loadFromStorage('kanban_selectedFilterCustomers', []);
         let selectedFilterTypes = loadFromStorage('kanban_selectedFilterTypes', []);
@@ -2169,15 +2168,12 @@
             const manageButton = document.getElementById('project-board-manage-button');
             const select = document.getElementById('project-board-select');
             const backlog = document.getElementById('backlog-panel');
-            const groupingOptions = document.getElementById('board-grouping-options');
             if (manageButton)
                 manageButton.classList.toggle('hidden', !activeProjectBoardId || !activeProjectBoard?.canManage);
             if (select)
                 select.value = activeProjectBoardId || '';
             if (backlog)
                 backlog.classList.toggle('hidden', !!activeProjectBoardId);
-            if (groupingOptions)
-                groupingOptions.classList.toggle('hidden', !!activeProjectBoardId);
         }
 
         async function loadProjectBoard(projectId) {
@@ -2906,6 +2902,11 @@
             renderBacklog(filteredTasks);
             const activeTasks = filteredTasks.filter(task => task.column !== "Backlog");
             const boardTasks = tasks.filter(task => task.column !== "Backlog");
+            const rows = buildSwimlaneRows(activeTasks, boardTasks);
+            container.appendChild(createBoardStructure(activeTasks, rows));
+        }
+
+        function buildSwimlaneRows(activeTasks, boardTasks) {
             const pGroup = groupPrimary.value;
             const sGroup = groupSecondary.value;
             const rows = [];
@@ -2936,13 +2937,21 @@
                     }
                 });
             }
-            container.appendChild(createBoardStructure(activeTasks, rows));
+            return rows;
         }
 
         function renderProjectBoard(projectTasks) {
             const container = document.getElementById('board-container');
             const grid = document.createElement('div');
             grid.className = 'project-board-grid p-3';
+            const boardTasks = tasks.filter(task => task.projectId === activeProjectBoardId);
+            const rows = buildSwimlaneRows(projectTasks, boardTasks);
+            const ungrouped = groupPrimary.value === 'NONE';
+            grid.style.gridTemplateRows = [
+                'max-content',
+                ...rows.map(row => row.type === 'lane' ? (ungrouped ? 'minmax(160px, 1fr)' : 'minmax(160px, max-content)') : 'max-content'),
+                ...(ungrouped ? [] : ['minmax(0, 1fr)'])
+            ].join(' ');
             const columns = [...activeProjectBoard.columns].sort((a, b) => a.sortOrder - b.sortOrder);
             grid.style.gridTemplateColumns = columns.map(column =>
                 collapsedProjectBoardColumns.has(column.id) ? '48px' : 'minmax(250px, 1fr)').join(' ');
@@ -2954,9 +2963,10 @@
                 return;
             }
 
-            columns.forEach(column => {
+            columns.forEach((column, columnIndex) => {
                 const columnPanel = document.createElement('section');
                 columnPanel.className = 'board-column-panel project-board-column';
+                columnPanel.style.gridColumn = String(columnIndex + 1);
                 columnPanel.dataset.projectBoardColumn = column.id;
                 const collapsed = collapsedProjectBoardColumns.has(column.id);
                 columnPanel.classList.toggle('is-collapsed', collapsed);
@@ -2975,6 +2985,7 @@
                 columnBody.hidden = collapsed;
                 const header = document.createElement('div');
                 header.className = 'board-column-header flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700';
+                header.style.gridRow = '1';
                 const title = document.createElement('div');
                 title.className = 'min-w-0';
                 const name = document.createElement('h2');
@@ -2987,8 +2998,6 @@
                     column: masterColumn?.label || column.masterColumnName
                 });
                 title.append(name, mapping);
-                const count = document.createElement('span');
-                count.className = 'shrink-0 rounded-full bg-slate-200 dark:bg-slate-800 px-2 py-1 text-[10px] text-slate-600 dark:text-slate-300';
                 const laneTasks = projectTasks
                     .filter(task => task.projectBoardColumnId === column.id)
                     .sort((a, b) => {
@@ -2996,6 +3005,8 @@
                         const bOrder = typeof b.projectBoardSortOrder === 'number' ? b.projectBoardSortOrder : Number.POSITIVE_INFINITY;
                         return aOrder - bOrder || sortTasksByPriority(a, b);
                     });
+                const count = document.createElement('span');
+                count.className = 'shrink-0 rounded-full bg-slate-200 dark:bg-slate-800 px-2 py-1 text-[10px] text-slate-600 dark:text-slate-300';
                 count.textContent = String(laneTasks.length);
                 toggle.querySelector('.board-column-toggle-count').textContent = String(laneTasks.length);
                 const add = document.createElement('button');
@@ -3009,49 +3020,61 @@
                 header.append(title, count, add);
                 columnBody.append(header);
 
-                if (column.showSubLanes) {
-                    const lanes = document.createElement('div');
-                    lanes.className = 'board-lane grid grid-cols-2 gap-2 p-2 flex-1 min-h-0';
-                    ['Doing', 'Done'].forEach(subColumn => {
-                        const subColumnTasks = laneTasks.filter(task => task.subColumn === subColumn);
+                rows.forEach((row, rowIndex) => {
+                    if (row.type === 'group') {
+                        const groupHeader = createSwimlaneHeader(row, column.id, true);
+                        groupHeader.style.gridRow = String(rowIndex + 2);
+                        columnBody.append(groupHeader);
+                        return;
+                    }
+                    const rowTaskIds = new Set(row.tasks.map(task => task.id));
+                    const rowLaneTasks = laneTasks.filter(task => rowTaskIds.has(task.id));
+                    if (column.showSubLanes) {
+                        const lanes = document.createElement('div');
+                        lanes.className = 'board-lane grid grid-cols-2 gap-2 p-2 flex-1 min-h-0';
+                        lanes.style.gridRow = String(rowIndex + 2);
+                        ['Doing', 'Done'].forEach(subColumn => {
+                            const subColumnTasks = rowLaneTasks.filter(task => task.subColumn === subColumn);
+                            const dropzone = document.createElement('div');
+                            dropzone.className = 'board-subcolumn border rounded-xl p-2 flex flex-col gap-2 min-h-[140px] transition-all';
+                            dropzone.dataset.main = column.masterColumnName;
+                            dropzone.dataset.sub = subColumn;
+                            dropzone.dataset.projectBoardColumnId = column.id;
+                            dropzone.dataset.subColumnName = subColumn;
+                            dropzone.addEventListener('dragover', handleDragOver);
+                            dropzone.addEventListener('dragleave', handleDragLeave);
+                            dropzone.addEventListener('drop', event => handleDrop(event, column.masterColumnName, subColumn));
+
+                            const subColumnHeader = document.createElement('div');
+                            subColumnHeader.className = 'flex items-center justify-between gap-2 text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800';
+                            const badge = document.createElement('span');
+                            badge.className = subColumn === 'Doing'
+                                ? 'px-1.5 py-0.5 rounded border font-semibold bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+                                : 'px-1.5 py-0.5 rounded border font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+                            badge.textContent = t(subColumn === 'Doing' ? 'board.doing' : 'board.done', subColumn);
+                            const laneCount = document.createElement('span');
+                            laneCount.className = 'text-slate-500 dark:text-slate-400';
+                            laneCount.textContent = String(subColumnTasks.length);
+                            subColumnHeader.append(badge, laneCount);
+                            dropzone.append(subColumnHeader);
+                            subColumnTasks.forEach(task => dropzone.appendChild(createCard(task)));
+                            lanes.appendChild(dropzone);
+                        });
+                        columnBody.append(lanes);
+                    } else {
                         const dropzone = document.createElement('div');
-                        dropzone.className = 'board-subcolumn border rounded-xl p-2 flex flex-col gap-2 min-h-[140px] transition-all';
+                        dropzone.className = 'board-subcolumn flex-1 p-3 flex flex-col gap-2 min-h-[140px]';
+                        dropzone.style.gridRow = String(rowIndex + 2);
                         dropzone.dataset.main = column.masterColumnName;
-                        dropzone.dataset.sub = subColumn;
+                        dropzone.dataset.sub = column.id;
                         dropzone.dataset.projectBoardColumnId = column.id;
-                        dropzone.dataset.subColumnName = subColumn;
                         dropzone.addEventListener('dragover', handleDragOver);
                         dropzone.addEventListener('dragleave', handleDragLeave);
-                        dropzone.addEventListener('drop', event => handleDrop(event, column.masterColumnName, subColumn));
-
-                        const subColumnHeader = document.createElement('div');
-                        subColumnHeader.className = 'flex items-center justify-between gap-2 text-[10px] pb-1 border-b border-slate-200 dark:border-slate-800';
-                        const badge = document.createElement('span');
-                        badge.className = subColumn === 'Doing'
-                            ? 'px-1.5 py-0.5 rounded border font-semibold bg-amber-500 text-white border-amber-600 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
-                            : 'px-1.5 py-0.5 rounded border font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
-                        badge.textContent = t(subColumn === 'Doing' ? 'board.doing' : 'board.done', subColumn);
-                        const laneCount = document.createElement('span');
-                        laneCount.className = 'text-slate-500 dark:text-slate-400';
-                        laneCount.textContent = String(subColumnTasks.length);
-                        subColumnHeader.append(badge, laneCount);
-                        dropzone.append(subColumnHeader);
-                        subColumnTasks.forEach(task => dropzone.appendChild(createCard(task)));
-                        lanes.appendChild(dropzone);
-                    });
-                    columnBody.append(lanes);
-                } else {
-                    const dropzone = document.createElement('div');
-                    dropzone.className = 'board-subcolumn flex-1 p-3 flex flex-col gap-2 min-h-[140px]';
-                    dropzone.dataset.main = column.masterColumnName;
-                    dropzone.dataset.sub = column.id;
-                    dropzone.dataset.projectBoardColumnId = column.id;
-                    dropzone.addEventListener('dragover', handleDragOver);
-                    dropzone.addEventListener('dragleave', handleDragLeave);
-                    dropzone.addEventListener('drop', event => handleDrop(event, column.masterColumnName, column.id));
-                    laneTasks.forEach(task => dropzone.appendChild(createCard(task)));
-                    columnBody.appendChild(dropzone);
-                }
+                        dropzone.addEventListener('drop', event => handleDrop(event, column.masterColumnName, column.id));
+                        rowLaneTasks.forEach(task => dropzone.appendChild(createCard(task)));
+                        columnBody.appendChild(dropzone);
+                    }
+                });
 
                 columnPanel.append(toggle, columnBody);
                 grid.appendChild(columnPanel);
@@ -3107,7 +3130,7 @@
             panel.querySelector('.board-column-body').hidden = collapsed;
         }
 
-        function createSwimlaneHeader(row, column) {
+        function createSwimlaneHeader(row, column, projectBoard = false) {
             const button = document.createElement('button');
             const collapsed = collapsedSwimlanes.has(row.id);
             button.type = 'button';
@@ -3116,10 +3139,11 @@
             button.setAttribute('aria-expanded', String(!collapsed));
             button.addEventListener('click', () => {
                 window.toggleSwimlane(row.id);
-                const panel = document.querySelector(`[data-board-column="${column}"]`);
-                const replacement = [...panel.querySelectorAll('.board-swimlane-header')]
+                const panel = [...document.querySelectorAll(projectBoard ? '[data-project-board-column]' : '[data-board-column]')]
+                    .find(item => (projectBoard ? item.dataset.projectBoardColumn : item.dataset.boardColumn) === column);
+                const replacement = [...(panel?.querySelectorAll('.board-swimlane-header') || [])]
                     .find(header => header.dataset.swimlaneId === row.id);
-                replacement.focus({ preventScroll: true });
+                replacement?.focus({ preventScroll: true });
             });
 
             const icon = document.createElement('i');
@@ -3132,7 +3156,9 @@
             label.textContent = `${groupLabel.toUpperCase()}: ${row.value}`;
             const count = document.createElement('span');
             count.className = 'text-[10px] text-slate-500';
-            count.textContent = t('board.taskCount', '({count} Tasks)', { count: row.tasks.filter(task => task.column === column).length });
+            count.textContent = t('board.taskCount', '({count} Tasks)', {
+                count: row.tasks.filter(task => (projectBoard ? task.projectBoardColumnId : task.column) === column).length
+            });
             button.append(icon, label, count);
             return button;
         }
@@ -3741,6 +3767,8 @@
             renderTaskAttachments();
             document.getElementById('modal-description').innerHTML = "";
             selectedModalTags = [];
+            selectedTaskChecklists = [];
+            resetTaskChecklistView();
             updateAllDropdowns();
             renderModalTagsSelection();
             openDetailsPanel();
@@ -3770,6 +3798,8 @@
             form.querySelector('#modal-description').innerHTML = task.description || "";
             
             selectedModalTags = task.tags ? [...task.tags] : [];
+            selectedTaskChecklists = normalizeTaskChecklists(task.checklists);
+            resetTaskChecklistView();
             updateAllDropdowns();
             renderModalTagsSelection();
             await loadTaskHierarchy(task.deliverableId);
@@ -3807,8 +3837,6 @@
                 await loadTaskHierarchy(updatedTask.deliverableId);
         }
 
-            selectedTaskChecklists = [];
-            resetTaskChecklistView();
         window.openHierarchyNewTask = async function(deliverableId) {
             await window.openAddTaskModal('Backlog', deliverableId);
         }
@@ -3838,8 +3866,6 @@
             panel.classList.remove('flex');
             document.getElementById('details-resizer').classList.add('hidden');
             if (window.viewTabs?.current() === 'projects') {
-            selectedTaskChecklists = normalizeTaskChecklists(task.checklists);
-            resetTaskChecklistView();
                 document.getElementById('hierarchy-task-panel-slot').classList.add('hidden');
                 document.getElementById('hierarchy-entity-editor').classList.remove('hidden');
                 window.hierarchyView.returnFromTaskEditor();
@@ -4755,6 +4781,11 @@
                 backlogContent.setAttribute('aria-hidden', String(!isOpen));
             }
             function setAllPanelsOpen(isOpen) {
+                if (activeProjectBoardId) {
+                    if (activeProjectBoard)
+                        activeProjectBoard.columns.forEach(column => setProjectBoardColumnCollapsed(column.id, !isOpen));
+                    return;
+                }
                 setBacklogOpen(isOpen);
                 boardColumns.forEach(column => setBoardColumnCollapsed(column, !isOpen));
             }
