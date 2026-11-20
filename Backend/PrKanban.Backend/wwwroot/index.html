@@ -904,6 +904,37 @@
                     <div id="task-attachments-section">
                         <div class="flex items-center justify-between gap-2">
                             <label data-i18n="task.attachments" class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Anhänge</label>
+                    <section id="task-checklists-section" class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <button id="task-checklists-toggle" type="button" aria-expanded="true" aria-controls="task-checklists-content" class="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                <i id="task-checklists-chevron" class="fa-solid fa-chevron-down text-xs text-slate-400" aria-hidden="true"></i>
+                                <span data-i18n="task.checklists">Checklists</span>
+                                <span id="task-checklist-open-count" class="text-xs font-normal text-slate-500 dark:text-slate-400"></span>
+                            </button>
+                            <div class="flex items-center gap-2">
+                                <div id="task-checklist-progressbar" class="h-1.5 w-12 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700" role="progressbar" aria-label="Checklist progress" data-i18n-aria-label="task.checklists" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                    <div id="task-checklist-progress" class="h-full w-0 bg-slate-800 transition-all dark:bg-slate-200"></div>
+                                </div>
+                                <button id="task-add-checklist-top" type="button" aria-label="Add checklist" data-i18n-aria-label="task.addChecklist" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                    <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="task-checklists-content" class="space-y-3">
+                            <div id="task-checklist-list" class="space-y-3"></div>
+                            <p id="task-checklist-empty" data-i18n="task.noChecklists" class="hidden text-xs text-slate-500 dark:text-slate-400">No checklists yet.</p>
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-2 dark:border-slate-700">
+                                <label class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <input id="task-hide-completed" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span data-i18n="task.hideCompleted">Hide completed</span>
+                                </label>
+                                <button id="task-add-checklist-bottom" type="button" class="inline-flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
+                                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    <span data-i18n="task.addChecklist">Add checklist</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
                             <button id="task-attachment-add" type="button" data-i18n="task.addAttachments" class="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Dateien anhängen</button>
                             <input id="task-attachment-input" type="file" multiple hidden>
                         </div>
@@ -1704,6 +1735,7 @@
                 }
                 return false;
             }
+                checklists: Array.isArray(apiTask.checklists) ? apiTask.checklists : [],
         }
 
         async function loadBoardConfigFromCloud() {
@@ -1840,6 +1872,7 @@
                 } while (apiTasks.length < total);
                 const cloudTasks = apiTasks.map(t => normalizeTaskFromAPI(t));
                 console.log("Extracted and normalized cloudTasks:", cloudTasks);
+        let selectedTaskChecklists = [];
 
 
                 updateDynamicListsFromTasks(cloudTasks);
@@ -1863,6 +1896,187 @@
                 showToast(t('board.offline', 'API momentan nicht erreichbar. Lokale Sicherung wird angezeigt.'));
                 updateAllDropdowns();
                 renderBoard();
+        function createChecklistEntryId() {
+            return globalThis.crypto?.randomUUID?.() || `checklist-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+
+        function normalizeTaskChecklists(checklists) {
+            if (!Array.isArray(checklists)) return [];
+            return checklists.map(checklist => ({
+                id: typeof checklist.id === 'string' && checklist.id ? checklist.id : createChecklistEntryId(),
+                title: typeof checklist.title === 'string' ? checklist.title : t('task.checklistTitle', 'Checklist'),
+                items: Array.isArray(checklist.items) ? checklist.items.map(item => ({
+                    id: typeof item.id === 'string' && item.id ? item.id : createChecklistEntryId(),
+                    text: typeof item.text === 'string' ? item.text : '',
+                    isCompleted: item.isCompleted === true
+                })) : []
+            }));
+        }
+
+        function serializeTaskChecklists() {
+            return selectedTaskChecklists.map(checklist => ({
+                id: checklist.id,
+                title: checklist.title.trim() || t('task.checklistTitle', 'Checklist'),
+                items: checklist.items
+                    .filter(item => item.text.trim())
+                    .map(item => ({ ...item, text: item.text.trim() }))
+            }));
+        }
+
+        function updateTaskChecklistProgress() {
+            const items = selectedTaskChecklists.flatMap(checklist => checklist.items);
+            const completed = items.filter(item => item.isCompleted).length;
+            const open = items.length - completed;
+            const percent = items.length ? Math.round((completed / items.length) * 100) : 0;
+            document.getElementById('task-checklist-open-count').textContent =
+                t('task.checklistOpen', '{count} open', { count: open });
+            document.getElementById('task-checklist-progress').style.width = `${percent}%`;
+            document.getElementById('task-checklist-progressbar').setAttribute('aria-valuenow', String(percent));
+        }
+
+        function addTaskChecklistItem(checklist, input) {
+            const text = input.value.trim();
+            if (!text) {
+                input.focus();
+                return;
+            }
+            const item = { id: createChecklistEntryId(), text, isCompleted: false };
+            checklist.items.push(item);
+            renderTaskChecklists();
+            const itemInput = [...document.querySelectorAll('[data-checklist-item-text]')]
+                .find(element => element.dataset.itemId === item.id);
+            itemInput?.focus();
+        }
+
+        function renderTaskChecklists() {
+            const list = document.getElementById('task-checklist-list');
+            const hideCompleted = document.getElementById('task-hide-completed').checked;
+            list.replaceChildren();
+            document.getElementById('task-checklist-empty')
+                .classList.toggle('hidden', selectedTaskChecklists.length > 0);
+
+            selectedTaskChecklists.forEach(checklist => {
+                const card = document.createElement('section');
+                card.className = 'rounded-xl border border-slate-200 bg-white p-3 space-y-3 dark:border-slate-700 dark:bg-slate-800/50';
+                card.dataset.checklistId = checklist.id;
+                const heading = document.createElement('div');
+                heading.className = 'flex items-center gap-2';
+                const title = document.createElement('input');
+                title.type = 'text';
+                title.value = checklist.title;
+                title.placeholder = t('task.checklistTitlePlaceholder', 'Checklist name');
+                title.setAttribute('aria-label', t('task.checklistTitle', 'Checklist'));
+                title.className = 'min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white';
+                title.addEventListener('input', () => { checklist.title = title.value; });
+                const removeChecklist = document.createElement('button');
+                removeChecklist.type = 'button';
+                removeChecklist.setAttribute('aria-label', t('task.removeChecklist', 'Remove checklist'));
+                removeChecklist.title = t('task.removeChecklist', 'Remove checklist');
+                removeChecklist.className = 'rounded-lg px-2 py-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10';
+                removeChecklist.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+                removeChecklist.addEventListener('click', () => {
+                    selectedTaskChecklists = selectedTaskChecklists.filter(item => item.id !== checklist.id);
+                    renderTaskChecklists();
+                });
+                heading.append(title, removeChecklist);
+
+                const items = document.createElement('div');
+                items.className = 'space-y-2';
+                checklist.items.filter(item => !hideCompleted || !item.isCompleted).forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center gap-2';
+                    const completed = document.createElement('input');
+                    completed.type = 'checkbox';
+                    completed.checked = item.isCompleted;
+                    completed.setAttribute('aria-label', item.text || t('task.checklistItemPlaceholder', 'Add item'));
+                    completed.className = 'h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500';
+                    const text = document.createElement('input');
+                    text.type = 'text';
+                    text.value = item.text;
+                    text.dataset.checklistItemText = 'true';
+                    text.dataset.checklistId = checklist.id;
+                    text.dataset.itemId = item.id;
+                    text.setAttribute('aria-label', t('task.checklistItemPlaceholder', 'Add item'));
+                    text.className = 'min-w-0 flex-1 border-0 bg-transparent px-1 py-1 text-sm text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-200';
+                    text.classList.toggle('line-through', item.isCompleted);
+                    text.classList.toggle('text-slate-400', item.isCompleted);
+                    text.addEventListener('input', () => { item.text = text.value; });
+                    completed.addEventListener('change', () => {
+                        item.isCompleted = completed.checked;
+                        text.classList.toggle('line-through', item.isCompleted);
+                        text.classList.toggle('text-slate-400', item.isCompleted);
+                        updateTaskChecklistProgress();
+                        if (hideCompleted && item.isCompleted) renderTaskChecklists();
+                    });
+                    const removeItem = document.createElement('button');
+                    removeItem.type = 'button';
+                    removeItem.setAttribute('aria-label', t('task.removeChecklistItem', 'Remove item'));
+                    removeItem.title = t('task.removeChecklistItem', 'Remove item');
+                    removeItem.className = 'rounded-lg px-2 py-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10';
+                    removeItem.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+                    removeItem.addEventListener('click', () => {
+                        checklist.items = checklist.items.filter(existing => existing.id !== item.id);
+                        renderTaskChecklists();
+                    });
+                    row.append(completed, text, removeItem);
+                    items.append(row);
+                });
+
+                const addRow = document.createElement('div');
+                addRow.className = 'flex items-center gap-2';
+                const addInput = document.createElement('input');
+                addInput.type = 'text';
+                addInput.placeholder = t('task.checklistItemPlaceholder', 'Add item');
+                addInput.className = 'min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200';
+                const addItem = () => addTaskChecklistItem(checklist, addInput);
+                addInput.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addItem();
+                    }
+                });
+                const addButton = document.createElement('button');
+                addButton.type = 'button';
+                addButton.textContent = t('task.addChecklistItem', 'Add item');
+                addButton.className = 'rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700';
+                addButton.addEventListener('click', addItem);
+                addRow.append(addInput, addButton);
+                card.append(heading, items, addRow);
+                list.append(card);
+            });
+            updateTaskChecklistProgress();
+        }
+
+        function resetTaskChecklistView() {
+            document.getElementById('task-hide-completed').checked = false;
+            document.getElementById('task-checklists-content').classList.remove('hidden');
+            document.getElementById('task-checklists-toggle').setAttribute('aria-expanded', 'true');
+            document.getElementById('task-checklists-chevron').classList.replace('fa-chevron-right', 'fa-chevron-down');
+            renderTaskChecklists();
+        }
+
+        function addTaskChecklist() {
+            selectedTaskChecklists.push({
+                id: createChecklistEntryId(),
+                title: t('task.checklistTitle', 'Checklist'),
+                items: []
+            });
+            resetTaskChecklistView();
+        }
+
+        document.getElementById('task-add-checklist-top').addEventListener('click', addTaskChecklist);
+        document.getElementById('task-add-checklist-bottom').addEventListener('click', addTaskChecklist);
+        document.getElementById('task-hide-completed').addEventListener('change', renderTaskChecklists);
+        document.getElementById('task-checklists-toggle').addEventListener('click', event => {
+            const button = event.currentTarget;
+            const expanded = button.getAttribute('aria-expanded') === 'true';
+            button.setAttribute('aria-expanded', String(!expanded));
+            document.getElementById('task-checklists-content').classList.toggle('hidden', expanded);
+            document.getElementById('task-checklists-chevron').classList.toggle('fa-chevron-down', !expanded);
+            document.getElementById('task-checklists-chevron').classList.toggle('fa-chevron-right', expanded);
+        });
+        window.addEventListener('languagechange', renderTaskChecklists);
+
             }
         }
 
@@ -3431,7 +3645,8 @@
                 d365Link: form.querySelector('#modal-d365-link').value,
                 timeLink: form.querySelector('#modal-time-link').value,
                 description: form.querySelector('#modal-description').innerHTML,
-                tags: [...selectedModalTags]
+                tags: [...selectedModalTags],
+                checklists: serializeTaskChecklists()
             };
 
             const isNewTask = !taskId;
@@ -3592,6 +3807,8 @@
                 await loadTaskHierarchy(updatedTask.deliverableId);
         }
 
+            selectedTaskChecklists = [];
+            resetTaskChecklistView();
         window.openHierarchyNewTask = async function(deliverableId) {
             await window.openAddTaskModal('Backlog', deliverableId);
         }
@@ -3621,6 +3838,8 @@
             panel.classList.remove('flex');
             document.getElementById('details-resizer').classList.add('hidden');
             if (window.viewTabs?.current() === 'projects') {
+            selectedTaskChecklists = normalizeTaskChecklists(task.checklists);
+            resetTaskChecklistView();
                 document.getElementById('hierarchy-task-panel-slot').classList.add('hidden');
                 document.getElementById('hierarchy-entity-editor').classList.remove('hidden');
                 window.hierarchyView.returnFromTaskEditor();

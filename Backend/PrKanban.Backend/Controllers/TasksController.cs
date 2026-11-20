@@ -183,6 +183,7 @@ namespace PrKanban.Controllers
                     : request.SubColumnName is "Doing" or "Done" ? request.SubColumnName : "Doing",
                 UserId = userId,
                 Tags = request.Tags ?? Array.Empty<string>(),
+                Checklists = request.Checklists ?? new List<TaskChecklist>(),
                 Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null,
                 DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable, SortOrder = hierarchyOrder + 1 },
                 ProjectBoardPosition = requestedProjectColumn is null
@@ -322,6 +323,8 @@ namespace PrKanban.Controllers
             }
             if (request.Tags != null)
                 task.Tags = request.Tags;
+            if (request.Checklists != null)
+                task.Checklists = request.Checklists;
             if (request.Order.HasValue)
             {
                 if (task.Ordering == null)
@@ -466,6 +469,7 @@ namespace PrKanban.Controllers
         public string? SubColumnName { get; set; }
         public string? ProjectBoardColumnId { get; set; }
         public string[]? Tags { get; set; }
+        public List<TaskChecklist>? Checklists { get; set; }
         public double? Order { get; set; }
     }
 
@@ -480,6 +484,7 @@ namespace PrKanban.Controllers
         public string? ColumnName { get; set; }
         public string? SubColumnName { get; set; }
         public string[]? Tags { get; set; }
+        public List<TaskChecklist>? Checklists { get; set; }
         public double? Order { get; set; }
     }
 }

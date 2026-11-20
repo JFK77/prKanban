@@ -212,6 +212,7 @@ const TaskAPI = {
    *   - customer: string
    *   - subColumnName: string
    *   - tags: string[]
+   *   - checklists: TaskChecklist[]
    */
   async createTask(taskData) {
     try {

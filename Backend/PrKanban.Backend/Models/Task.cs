@@ -79,6 +79,19 @@ namespace PrKanban.Models
         [JsonIgnore]
         public string? TagsJson { get; set; }
 
+        [JsonIgnore]
+        public string? ChecklistsJson { get; set; }
+
+        [NotMapped]
+        [JsonPropertyName("checklists")]
+        public List<TaskChecklist> Checklists
+        {
+            get => string.IsNullOrEmpty(ChecklistsJson)
+                ? new List<TaskChecklist>()
+                : System.Text.Json.JsonSerializer.Deserialize<List<TaskChecklist>>(ChecklistsJson) ?? new List<TaskChecklist>();
+            set => ChecklistsJson = System.Text.Json.JsonSerializer.Serialize(value ?? new List<TaskChecklist>());
+        }
+
         /// <summary>
         /// Column ID/name (e.g., "todo", "in-progress", "done")
         /// </summary>
@@ -149,5 +162,19 @@ namespace PrKanban.Models
                 TagsJson = System.Text.Json.JsonSerializer.Serialize(value ?? Array.Empty<string>());
             }
         }
+    }
+
+    public sealed class TaskChecklist
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Title { get; set; } = "Checklist";
+        public List<TaskChecklistItem> Items { get; set; } = new();
+    }
+
+    public sealed class TaskChecklistItem
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Text { get; set; } = string.Empty;
+        public bool IsCompleted { get; set; }
     }
 }
