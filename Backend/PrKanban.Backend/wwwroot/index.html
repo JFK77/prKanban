@@ -843,6 +843,7 @@
                     <i class="fa-solid fa-compress text-slate-500" aria-hidden="true"></i>
                 </button>
             </div>
+            <button id="task-table-export" type="button" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled data-i18n="table.exportExcel">Excel exportieren</button>
             </div>
         </div>
         </div>
@@ -850,9 +851,6 @@
 
     <section id="table-panel" role="tabpanel" aria-labelledby="tab-table" class="board-area hidden flex-1 overflow-hidden">
         <main id="task-table-container" class="flex-1 min-w-0 overflow-auto">
-            <div class="task-table-toolbar">
-                <button id="task-table-export" type="button" class="task-table-export" disabled data-i18n="table.exportExcel">Excel exportieren</button>
-            </div>
             <div id="task-table-bulk-result" class="task-table-bulk-result" role="status" aria-live="polite" hidden></div>
             <div id="task-table-content"></div>
             <div id="task-table-bulk-toolbar" class="task-table-bulk-toolbar" aria-label="Mehrfachbearbeitung" hidden></div>

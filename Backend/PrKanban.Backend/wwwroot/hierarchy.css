@@ -49,14 +49,6 @@ button.tree-name:hover { text-decoration: underline; }
 .dark .view-tab { color: #94a3b8; }
 .dark .view-tab[aria-selected="true"] { color: #f1f5f9; }
 @media (hover: none) { .tree-actions { opacity: 1; } }
-.task-table-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px; background: white; border-bottom: 1px solid #e2e8f0; }
-.task-table-export { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; color: #334155; font-size: 12px; font-weight: 600; }
-.task-table-export:hover:not(:disabled) { background: #f1f5f9; }
-.task-table-export:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
-.task-table-export:disabled { opacity: .5; cursor: not-allowed; }
-.dark .task-table-toolbar { background: #0f172a; border-color: #334155; }
-.dark .task-table-export { border-color: #475569; color: #e2e8f0; }
-.dark .task-table-export:hover:not(:disabled) { background: #334155; }
 .task-table { width: 100%; min-width: 900px; border-collapse: collapse; background: white; font-size: 13px; }
 .task-table th, .task-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
 .task-table thead th { color: #64748b; font-size: 11px; font-weight: 600; white-space: nowrap; }
