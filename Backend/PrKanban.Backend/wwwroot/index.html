@@ -297,9 +297,15 @@
             width: max(100%, 80px);
         }
 
+        body:has(> #kanban-panel:not(.hidden)) {
+            height: 100vh;
+            height: 100dvh;
+            min-height: 0;
+        }
         .board-area {
             --board-panel-gap: 12px;
             --board-grid-gaps: calc(var(--board-panel-gap) + var(--board-panel-gap) + var(--board-panel-gap));
+            min-height: 0;
         }
         #backlog-panel, #board-container {
             margin-top: var(--board-panel-gap);
@@ -1250,7 +1256,7 @@
     </script>
 
     <script type="module">
-        import { calculateKanbanKpis, renderEmptyFlowChart, renderFlowChart } from './kanban-kpis.js?v=4';
+        import { calculateKanbanKpis, renderTaskDistribution, renderFlowChart } from './kanban-kpis.js?v=5';
         const t = window.i18n.text;
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
@@ -3652,35 +3658,10 @@
             distributionNote.textContent = t('kpi.currentDistributionNote', 'Aktueller Stand nach Master-Board-Spalte; kein zeitlicher Verlauf.');
             distribution.append(distributionNote);
             if (!status) {
-                const counts = new Map();
-                filteredTasks.forEach(task => counts.set(task.column, (counts.get(task.column) || 0) + 1));
-                const columns = ['Backlog', 'ToDo', 'Analysis', 'InProgress', 'Done'];
-                const extraColumns = [...counts.keys()].filter(column => !columns.includes(column)).sort();
-                const maxCount = Math.max(1, ...counts.values());
-                const list = document.createElement('div');
-                list.className = 'space-y-2 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900';
-                if (!filteredTasks.length) list.append(renderEmptyFlowChart(t));
-                for (const column of filteredTasks.length ? [...columns, ...extraColumns] : []) {
-                    const count = counts.get(column) || 0;
-                    const row = document.createElement('div');
-                    row.className = 'grid grid-cols-[minmax(5rem,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm';
-                    const label = document.createElement('span');
-                    label.className = 'text-slate-700 dark:text-slate-200';
-                    label.textContent = getColLabel(column);
-                    const track = document.createElement('div');
-                    track.className = 'h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800';
-                    track.setAttribute('aria-hidden', 'true');
-                    const bar = document.createElement('div');
-                    bar.className = 'h-full rounded-full bg-blue-500';
-                    bar.style.width = `${count / maxCount * 100}%`;
-                    track.append(bar);
-                    const value = document.createElement('span');
-                    value.className = 'tabular-nums text-slate-700 dark:text-slate-200';
-                    value.textContent = String(count);
-                    row.append(label, track, value);
-                    list.append(row);
-                }
-                distribution.append(list);
+                const distributionGrid = document.createElement('div');
+                distributionGrid.className = 'grid gap-3 sm:grid-cols-2 xl:grid-cols-4';
+                distributionGrid.append(renderTaskDistribution(filteredTasks, t, getColLabel));
+                distribution.append(distributionGrid);
             }
 
             const charts = section(t('kpi.flowCharts', 'Verlaufsdiagramme'));

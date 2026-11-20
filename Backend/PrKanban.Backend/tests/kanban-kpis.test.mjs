@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const source = await readFile(new URL('../wwwroot/kanban-kpis.js', import.meta.url), 'utf8');
-const { calculateKanbanKpis, renderFlowChart } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const { calculateKanbanKpis, renderFlowChart, renderTaskDistribution } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const now = Date.parse('2026-11-20T12:00:00Z');
 const event = (id, columnName, occurredAt, isBaseline = false) => ({ id, columnName, occurredAt, isBaseline });
 const task = (id, history, createdAt = '2026-11-01T00:00:00Z') => ({ id, createdAt, statusHistory: history });
@@ -81,6 +81,33 @@ test('empty charts show the centered, translated no-data message', () => {
             assert.match(note.className, /\bjustify-center\b/);
             assert.match(note.className, /\btext-center\b/);
         }
+    } finally {
+        globalThis.document = previousDocument;
+    }
+});
+
+test('distribution plots filtered counts as vertical bars including zero and extra columns', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = {
+        createElement: tag => ({
+            tag, children: [], style: {}, attributes: {},
+            append(...children) { this.children.push(...children); },
+            setAttribute(name, value) { this.attributes[name] = value; }
+        })
+    };
+    try {
+        const translate = (_key, fallback) => fallback;
+        const panel = renderTaskDistribution([
+            { column: 'Backlog' }, { column: 'Backlog' },
+            { column: 'Done' }, { column: 'Custom' }
+        ], translate, column => column);
+        const items = panel.children[0].children;
+        assert.deepEqual(items.map(item => item.children[1].textContent),
+            ['Backlog', 'ToDo', 'Analysis', 'InProgress', 'Done', 'Custom']);
+        assert.deepEqual(items.map(item => item.children[0].children[0].textContent), ['2', '0', '0', '0', '1', '1']);
+        assert.deepEqual(items.map(item => item.children[0].children[1].style.height),
+            ['104px', '0px', '0px', '0px', '52px', '52px']);
+        assert.equal(renderTaskDistribution([], translate, column => column).children[0].tag, 'p');
     } finally {
         globalThis.document = previousDocument;
     }

@@ -108,6 +108,44 @@ export function renderEmptyFlowChart(t) {
     return note;
 }
 
+export function renderTaskDistribution(tasks, t, getColumnLabel) {
+    const panel = document.createElement('div');
+    panel.className = 'min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900';
+    if (!tasks.length) {
+        panel.append(renderEmptyFlowChart(t));
+        return panel;
+    }
+
+    const counts = new Map();
+    tasks.forEach(task => counts.set(task.column, (counts.get(task.column) || 0) + 1));
+    const columns = [...COLUMNS, ...[...counts.keys()].filter(column => !COLUMNS.includes(column)).sort()];
+    const max = Math.max(...counts.values());
+    const chart = document.createElement('div');
+    chart.className = 'flex min-w-full gap-2';
+    for (const column of columns) {
+        const count = counts.get(column) || 0;
+        const item = document.createElement('div');
+        item.className = 'flex min-w-[3rem] flex-1 flex-col items-center';
+        const plot = document.createElement('div');
+        plot.className = 'flex h-32 w-full flex-col items-center justify-end';
+        const value = document.createElement('span');
+        value.className = 'mb-1 text-xs tabular-nums text-slate-700 dark:text-slate-200';
+        value.textContent = String(count);
+        const bar = document.createElement('div');
+        bar.className = 'w-3/4 max-w-8 rounded-t bg-blue-500';
+        bar.style.height = `${count / max * 104}px`;
+        bar.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.className = 'mt-2 w-full break-words text-center text-xs text-slate-700 dark:text-slate-200';
+        label.textContent = getColumnLabel(column);
+        plot.append(value, bar);
+        item.append(plot, label);
+        chart.append(item);
+    }
+    panel.append(chart);
+    return panel;
+}
+
 export function renderFlowChart(kind, data, t, getColumnLabel, openTask) {
     const wrapper = document.createElement('div');
     const empty = () => {
