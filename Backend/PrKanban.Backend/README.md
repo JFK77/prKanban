@@ -157,6 +157,28 @@ Select an individual control-chart or scatterplot point, or an Aging WIP bar,
 to open its task on the Kanban board with the current filters preserved. When
 scatterplot points overlap exactly, select the desired task from the offered list.
 Budget KPIs is a placeholder for future metrics.
+The **Table** tab shows the same filtered tasks, grouped by status by default
+(or project-board column when a project is selected). The grouping selector
+also offers assignee, task type, project, deliverable and no grouping. A second
+selector adds subgroups; the shared expand and collapse controls affect all
+table groups. Column headers sort tasks within each group, and each column has a
+text filter; multiple column filters combine with the board filters. Selecting
+a task opens the existing editor. The table shows
+available task IDs, assignees, types, projects, deliverables and tags.
+**Export to Excel** downloads the filtered table as an `.xlsx` file in the
+displayed column and row order, including tasks in collapsed groups.
+Select two or more tasks to edit their title, status, assignee, task type,
+project, deliverable or tags in bulk. Group and header checkboxes select all filtered tasks in their scope,
+including collapsed groups; changing filters removes excluded tasks from the
+selection. Status options identify the project and its project-board status.
+Choosing one changes only selected tasks in that project; selected tasks from
+other projects or without a project remain unchanged. Tags are added or removed
+without replacing other tags. A project change requires selecting a destination
+deliverable; selecting a deliverable in another project moves the tasks there too.
+Existing task IDs remain unchanged, and the destination project-board position
+is derived from each task's master status. Changes
+run one task at a time, and the result lists any failures; they are not an
+atomic transaction. Close the task editor before starting bulk edits.
 Users can browse the hierarchy and, like Admins, reorder items and move them
 between valid parents. Only Admins can create items or edit their fields.
 The expandable tree shows tasks under their deliverables, including archived

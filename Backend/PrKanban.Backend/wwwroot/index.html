@@ -26,9 +26,9 @@
     <!-- API Client (must load before other scripts) -->
     <script src="api-client.js?v=hierarchy-1"></script>
     <script src="i18n.js?v=3" defer></script>
-    <link rel="stylesheet" href="hierarchy.css?v=project-board-navigation-8">
+    <link rel="stylesheet" href="hierarchy.css?v=task-table-13">
     <script src="hierarchy.js?v=project-board-navigation-16" defer></script>
-    <script src="view-tabs.js?v=project-board-navigation-12" defer></script>
+    <script src="view-tabs.js?v=task-table-2" defer></script>
     <script>
         // Initialization callback that module script will call
         window.moduleInitCallback = null;
@@ -603,7 +603,7 @@
             body.details-panel-open .board-area { min-height: 0; }
         }
         @media (max-width: 767px) {
-            #kanban-panel #task-details-panel {
+            #kanban-panel #task-details-panel, #table-panel #task-details-panel {
                 position: fixed;
                 top: 0;
                 right: 0;
@@ -612,7 +612,7 @@
                 z-index: 60;
                 box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
             }
-            #kanban-panel #details-resizer { display: none; }
+            #kanban-panel #details-resizer, #table-panel #details-resizer { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
             #backlog-panel, #backlog-content, #backlog-toggle { transition: none; }
@@ -728,6 +728,7 @@
         <nav id="view-tabs" role="tablist" aria-label="Ansichten" data-i18n-aria-label="views.label" class="flex items-center">
             <button id="tab-list" type="button" role="tab" aria-controls="hierarchy-panel" aria-selected="false" tabindex="-1" data-view="list" class="view-tab"><span data-i18n="views.list">Liste</span></button>
             <button id="tab-kanban" type="button" role="tab" aria-controls="kanban-panel" aria-selected="true" data-view="kanban" class="view-tab"><span data-i18n="views.kanban">Kanban</span></button>
+            <button id="tab-table" type="button" role="tab" aria-controls="table-panel" aria-selected="false" tabindex="-1" data-view="table" class="view-tab"><span data-i18n="views.table">Tabelle</span></button>
             <button id="tab-dashboard" type="button" role="tab" aria-controls="dashboard-panel" aria-selected="false" tabindex="-1" data-view="dashboard" class="view-tab"><span data-i18n="views.dashboard">Dashboard</span></button>
         </nav>
         <!-- Filters -->
@@ -770,6 +771,7 @@
         <div id="board-groupings" class="flex flex-wrap items-center gap-3">
             <div id="board-grouping-options" class="flex flex-wrap items-center gap-3">
             <i class="fa-solid fa-layer-group text-slate-400" aria-hidden="true"></i>
+            <div id="board-swimlane-controls" class="flex flex-wrap items-center gap-3">
             <div class="relative" id="group-primary-container">
                 <select id="group-primary" aria-label="Primäre Gruppe (Swimlane)" data-i18n-aria-label="board.primaryGroup" class="h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
                     <option value="NONE" data-i18n="board.noGrouping">Keine Gruppierung</option>
@@ -798,6 +800,41 @@
                 </button>
                 <div id="group-secondary-dropdown" role="listbox" aria-label="Sub-Gruppe (Innere Swimlane)" data-i18n-aria-label="board.secondaryGroup" class="tag-filter-dropdown hidden"></div>
             </div>
+            </div>
+            <div id="table-grouping-controls" class="hidden flex-wrap items-center gap-3">
+                <div id="table-grouping-container" class="relative">
+                    <select id="table-grouping" aria-label="Tabelle gruppieren nach" data-i18n-aria-label="table.groupBy">
+                        <option value="none" data-i18n="board.noGrouping">Keine Gruppierung</option>
+                        <option value="status" data-i18n="table.status">Status</option>
+                        <option value="owner" data-i18n="board.owner">Zugewiesen an</option>
+                        <option value="taskType" data-i18n="board.taskType">Task Typ</option>
+                        <option value="project" data-i18n="hierarchy.project">Projekt</option>
+                        <option value="deliverable" data-i18n="hierarchy.deliverable">Lieferobjekt</option>
+                    </select>
+                    <button id="table-grouping-trigger" type="button" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed" aria-labelledby="table-grouping-name table-grouping-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="table-grouping-dropdown">
+                        <span id="table-grouping-name" class="sr-only" data-i18n="table.groupBy">Tabelle gruppieren nach</span>
+                        <span id="table-grouping-label"></span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                    </button>
+                    <div id="table-grouping-dropdown" role="listbox" aria-label="Tabelle gruppieren nach" data-i18n-aria-label="table.groupBy" class="tag-filter-dropdown hidden"></div>
+                </div>
+                <div id="table-subgrouping-container" class="relative">
+                    <select id="table-subgrouping" aria-label="Untergruppierung" data-i18n-aria-label="board.secondaryGroup">
+                        <option value="none" data-i18n="board.noSubgrouping">Keine Untergruppierung</option>
+                        <option value="status" data-i18n="table.status">Status</option>
+                        <option value="owner" data-i18n="board.owner">Zugewiesen an</option>
+                        <option value="taskType" data-i18n="board.taskType">Task Typ</option>
+                        <option value="project" data-i18n="hierarchy.project">Projekt</option>
+                        <option value="deliverable" data-i18n="hierarchy.deliverable">Lieferobjekt</option>
+                    </select>
+                    <button id="table-subgrouping-trigger" type="button" class="hidden h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 text-xs text-left focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed" aria-labelledby="table-subgrouping-name table-subgrouping-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="table-subgrouping-dropdown">
+                        <span id="table-subgrouping-name" class="sr-only" data-i18n="board.secondaryGroup">Untergruppierung</span>
+                        <span id="table-subgrouping-label"></span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500" aria-hidden="true"></i>
+                    </button>
+                    <div id="table-subgrouping-dropdown" role="listbox" aria-label="Untergruppierung" data-i18n-aria-label="board.secondaryGroup" class="tag-filter-dropdown hidden"></div>
+                </div>
+            </div>
             <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <button id="expand-all-panels" type="button" aria-label="Alle Panels öffnen" data-i18n-aria-label="board.expandPanels" title="Alle Panels öffnen" data-i18n-title="board.expandPanels" class="h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-3 flex items-center transition-all">
                     <i class="fa-solid fa-expand text-slate-500" aria-hidden="true"></i>
@@ -809,6 +846,17 @@
             </div>
         </div>
         </div>
+    </section>
+
+    <section id="table-panel" role="tabpanel" aria-labelledby="tab-table" class="board-area hidden flex-1 overflow-hidden">
+        <main id="task-table-container" class="flex-1 min-w-0 overflow-auto">
+            <div class="task-table-toolbar">
+                <button id="task-table-export" type="button" class="task-table-export" disabled data-i18n="table.exportExcel">Excel exportieren</button>
+            </div>
+            <div id="task-table-bulk-result" class="task-table-bulk-result" role="status" aria-live="polite" hidden></div>
+            <div id="task-table-content"></div>
+            <div id="task-table-bulk-toolbar" class="task-table-bulk-toolbar" aria-label="Mehrfachbearbeitung" hidden></div>
+        </main>
     </section>
 
     <!-- Board Area -->
@@ -1257,6 +1305,7 @@
 
     <script type="module">
         import { calculateKanbanKpis, renderTaskDistribution, renderFlowChart } from './kanban-kpis.js?v=5';
+        import { groupTasksForTable, filterTasksForTable, compareTasksForTable, tableExportRows, executeTableBulk, projectStatusTargets, partitionTasksByProject, hierarchyBulkTargets } from './task-table.js?v=9';
         const t = window.i18n.text;
         // API Configuration
         const API_BASE_URL = "http://localhost:5000/api/v1";
@@ -1920,6 +1969,13 @@
         const collapsedSwimlanes = new Set();
         const collapsedBoardColumns = new Set();
         const collapsedProjectBoardColumns = new Set();
+        const collapsedTableGroups = new Set();
+        const selectedTableTasks = new Set();
+        let tableBulkBusy = false;
+        let tableSelectionUser = null;
+        let tableSelectionContext = null;
+        const tableFilters = {};
+        let tableSort = null;
         const boardColumns = ["ToDo", "Analysis", "InProgress", "Done"];
 
         let owners = [];
@@ -2485,6 +2541,13 @@
         const filterTagsDropdown = document.getElementById('filter-tags-dropdown');
         const groupPrimary = document.getElementById('group-primary');
         const groupSecondary = document.getElementById('group-secondary');
+        const tableGrouping = document.getElementById('table-grouping');
+        const tableSubgrouping = document.getElementById('table-subgrouping');
+        tableGrouping.value = loadFromStorage('kanban_tableGrouping', 'status');
+        if (!tableGrouping.value) tableGrouping.value = 'status';
+        tableSubgrouping.value = loadFromStorage('kanban_tableSubgrouping', 'none');
+        if (!tableSubgrouping.value || tableGrouping.value === 'none' || tableSubgrouping.value === tableGrouping.value)
+            tableSubgrouping.value = 'none';
 
         // --- UI HELPER FUNCTIONS ---
         function showToast(message) {
@@ -2578,7 +2641,7 @@
         }
 
         function closeSelectDropdowns() {
-            [groupPrimary, groupSecondary, document.getElementById('language-selector')].forEach(select => {
+            [groupPrimary, groupSecondary, tableGrouping, tableSubgrouping, document.getElementById('language-selector')].forEach(select => {
                 document.getElementById(`${select.id}-dropdown`).classList.add('hidden');
                 document.getElementById(`${select.id}-trigger`).setAttribute('aria-expanded', 'false');
             });
@@ -2988,6 +3051,10 @@
                 return;
             }
             const filteredTasks = getFilteredTasks();
+            if (window.viewTabs?.current() === 'table') {
+                renderTaskTable(filteredTasks);
+                return;
+            }
             if (window.viewTabs?.current() === 'dashboard') {
                 renderKanbanKpis(filteredTasks);
                 return;
@@ -3010,6 +3077,808 @@
             const boardTasks = getContextTasks().filter(task => task.column !== "Backlog");
             const rows = buildSwimlaneRows(activeTasks, boardTasks);
             container.appendChild(createBoardStructure(activeTasks, rows));
+        }
+
+        function tableUserId(user = window.currentUser) {
+            return user?.userId || user?.id || user?.email || null;
+        }
+
+        window.addEventListener('app-auth-changed', event => {
+            const userId = tableUserId(event.detail);
+            if (userId !== tableSelectionUser) {
+                selectedTableTasks.clear();
+                tableSelectionUser = userId;
+                document.getElementById('task-table-bulk-result').hidden = true;
+            }
+        });
+        window.addEventListener('board-view-changed', event => {
+            if (event.detail !== 'table') selectedTableTasks.clear();
+        });
+
+        function closeTableBulkFlyouts() {
+            document.querySelectorAll('.task-table-bulk-menu').forEach(menu => { menu.hidden = true; });
+            document.querySelectorAll('.task-table-bulk-trigger').forEach(button => button.setAttribute('aria-expanded', 'false'));
+        }
+
+        document.addEventListener('click', event => {
+            if (!event.composedPath().includes(document.getElementById('task-table-bulk-toolbar'))) closeTableBulkFlyouts();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            const open = document.querySelector('.task-table-bulk-trigger[aria-expanded="true"]');
+            if (open) {
+                closeTableBulkFlyouts();
+                open.focus();
+            }
+        });
+
+        function renderTableBulkToolbar() {
+            const toolbar = document.getElementById('task-table-bulk-toolbar');
+            toolbar.replaceChildren();
+            toolbar.hidden = selectedTableTasks.size < 2;
+            if (toolbar.hidden) return;
+            toolbar.setAttribute('aria-label', t('tableBulk.title', 'Mehrfachbearbeitung'));
+            toolbar.setAttribute('aria-busy', String(tableBulkBusy));
+            const count = document.createElement('span');
+            count.className = 'task-table-bulk-count';
+            count.textContent = tableBulkBusy
+                ? t('tableBulk.working', 'Bearbeitung läuft …')
+                : t('tableBulk.selected', '{count} ausgewählt', { count: selectedTableTasks.size });
+            toolbar.append(count);
+
+            const fields = [
+                { key: 'title', label: t('task.title', 'Titel der Aufgabe'), options: [] },
+                { key: 'status', label: t('table.status', 'Status'), options: [] },
+                { key: 'owner', label: t('board.owner', 'Zugewiesen an'), options: owners.map(value => ({ label: value, value })) },
+                { key: 'taskType', label: t('board.taskType', 'Task Typ'), options: Object.keys(workflowPaths).map(value => ({ label: value, value })) },
+                { key: 'project', label: t('hierarchy.project', 'Projekt'), options: [] },
+                { key: 'deliverable', label: t('hierarchy.deliverable', 'Lieferobjekt'), options: [] },
+                { key: 'tags', label: t('tableBulk.tags', 'Tags'), options: Object.keys(tagsConfig).map(value => ({ label: value, value })) }
+            ];
+            for (const field of fields) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'task-table-bulk-field';
+                const trigger = document.createElement('button');
+                trigger.type = 'button';
+                trigger.className = 'task-table-bulk-trigger';
+                trigger.disabled = tableBulkBusy || taskDataStatus !== 'ready';
+                trigger.textContent = `${field.label} ▾`;
+                trigger.setAttribute('aria-expanded', 'false');
+                trigger.setAttribute('aria-haspopup', 'dialog');
+                const menu = document.createElement('div');
+                menu.className = 'task-table-bulk-menu';
+                menu.hidden = true;
+                menu.setAttribute('role', 'dialog');
+                menu.setAttribute('aria-label', field.label);
+                if (['status', 'project', 'deliverable'].includes(field.key)) {
+                    menu.classList.add('task-table-bulk-menu--wide');
+                }
+                if (field.key === 'status' || field.key === 'project' || field.key === 'deliverable' || field.key === 'title') {
+                    const context = document.createElement('p');
+                    context.className = 'task-table-bulk-context';
+                    const english = document.documentElement.lang === 'en';
+                    context.textContent = field.key === 'status'
+                        ? t('tableBulk.projectStatusScope', english
+                            ? 'Only selected tasks from the chosen project will be changed.'
+                            : 'Nur ausgewählte Aufgaben des gewählten Projekts werden geändert.')
+                        : field.key === 'title'
+                            ? t('tableBulk.titleScope', english
+                                ? 'All selected tasks will receive the same title.'
+                                : 'Alle ausgewählten Aufgaben erhalten denselben Titel.')
+                            : t('tableBulk.destinationScope', english
+                                ? 'Choose a destination deliverable. All selected tasks will move to its project.'
+                                : 'Ziel-Lieferobjekt auswählen. Alle ausgewählten Aufgaben wechseln in dessen Projekt.');
+                    menu.append(context);
+                }
+                const search = document.createElement('input');
+                search.type = field.key === 'title' ? 'text' : 'search';
+                search.placeholder = field.key === 'title'
+                    ? t('tableBulk.newTitle', document.documentElement.lang === 'en' ? 'New title' : 'Neuer Titel')
+                    : t('table.filterPlaceholder', 'Suchen …');
+                search.setAttribute('aria-label', field.key === 'title' ? search.placeholder
+                    : t('tableBulk.searchField', '{field} suchen', { field: field.label }));
+                const options = document.createElement('div');
+                options.className = 'task-table-bulk-options';
+                let statusLoading = false;
+                let statusErrors = [];
+                let statusLoadRequest = 0;
+                let chosenProject = null;
+                function projectLabel(project) {
+                    const name = project.shortKey ? `${project.name} (${project.shortKey})` : project.name;
+                    return project.customerName ? `${name} — ${project.customerName}` : name;
+                }
+                function destinationOption(project, deliverable) {
+                    const projectName = projectLabel(project);
+                    return {
+                        label: t('tableBulk.destinationOption', document.documentElement.lang === 'en'
+                            ? 'Project: {project} | Deliverable: {deliverable}'
+                            : 'Projekt: {project} | Lieferobjekt: {deliverable}',
+                        { project: projectName, deliverable: deliverable.name }),
+                        value: { projectId: project.id, deliverableId: deliverable.id }
+                    };
+                }
+                function showOptions() {
+                    options.replaceChildren();
+                    if (statusLoading) {
+                        const loading = document.createElement('p');
+                        loading.textContent = t('common.loading', 'Lädt...');
+                        options.append(loading);
+                        return;
+                    }
+                    for (const message of statusErrors) {
+                        const error = document.createElement('p');
+                        error.setAttribute('role', 'alert');
+                        error.textContent = message;
+                        options.append(error);
+                    }
+                    if (field.key === 'title') {
+                        const row = document.createElement('div');
+                        row.className = 'task-table-bulk-option';
+                        const action = document.createElement('button');
+                        action.type = 'button';
+                        action.textContent = t('tableBulk.applyTitle', document.documentElement.lang === 'en' ? 'Apply title' : 'Titel übernehmen');
+                        action.disabled = !search.value.trim();
+                        action.addEventListener('click', () => applyTableBulk('title', search.value.trim()));
+                        row.append(action);
+                        options.append(row);
+                        return;
+                    }
+                    if (field.key === 'project' && chosenProject) {
+                        const back = document.createElement('button');
+                        back.type = 'button';
+                        back.className = 'task-table-bulk-back';
+                        back.textContent = t('tableBulk.backToProjects', document.documentElement.lang === 'en' ? '← Choose another project' : '← Anderes Projekt wählen');
+                        back.addEventListener('click', () => {
+                            chosenProject = null;
+                            search.value = '';
+                            search.setAttribute('aria-label', t('tableBulk.searchField', '{field} suchen', { field: field.label }));
+                            showOptions();
+                            search.focus();
+                        });
+                        options.append(back);
+                    }
+                    const query = search.value.trim().toLocaleLowerCase();
+                    const sourceOptions = field.key === 'project' && chosenProject
+                        ? chosenProject.deliverables.map(deliverable => destinationOption(chosenProject, deliverable))
+                        : field.options;
+                    const matches = sourceOptions.filter(option => option.label.toLocaleLowerCase().includes(query));
+                    if (field.key === 'owner' && search.value.trim() &&
+                        !field.options.some(option => option.value.toLocaleLowerCase() === query)) {
+                        const value = search.value.trim();
+                        matches.push({ label: t('tableBulk.useOwner', 'Verwenden: {owner}', { owner: value }), value });
+                    }
+                    for (const option of matches) {
+                        const row = document.createElement('div');
+                        row.className = 'task-table-bulk-option';
+                        if (field.key === 'tags') {
+                            const label = document.createElement('span');
+                            label.textContent = option.label;
+                            row.append(label);
+                            for (const operation of ['add', 'remove']) {
+                                const action = document.createElement('button');
+                                action.type = 'button';
+                                action.textContent = operation === 'add'
+                                    ? t('tableBulk.add', 'Hinzufügen') : t('tableBulk.remove', 'Entfernen');
+                                action.setAttribute('aria-label', `${action.textContent}: ${option.label}`);
+                                action.addEventListener('click', () => applyTableBulk(field.key, option.value, operation));
+                                row.append(action);
+                            }
+                        } else {
+                            const action = document.createElement('button');
+                            action.type = 'button';
+                            action.textContent = option.label;
+                            action.addEventListener('click', () => {
+                                if (field.key === 'project' && !chosenProject) {
+                                    chosenProject = option.value;
+                                    search.value = '';
+                                    search.setAttribute('aria-label', t('tableBulk.searchField', '{field} suchen',
+                                        { field: t('hierarchy.deliverable', 'Lieferobjekt') }));
+                                    showOptions();
+                                    search.focus();
+                                } else {
+                                    applyTableBulk(field.key, option.value);
+                                }
+                            });
+                            row.append(action);
+                        }
+                        options.append(row);
+                    }
+                    if (!matches.length) {
+                        const empty = document.createElement('p');
+                        empty.textContent = field.key === 'project' && chosenProject && !chosenProject.deliverables.length
+                            ? t('tableBulk.noDeliverables', document.documentElement.lang === 'en'
+                                ? 'This project has no deliverables.' : 'Dieses Projekt hat keine Lieferobjekte.')
+                            : t('tableBulk.noOptions', 'Keine Treffer');
+                        options.append(empty);
+                    }
+                }
+                search.addEventListener('input', showOptions);
+                search.addEventListener('keydown', event => {
+                    if (field.key === 'title' && event.key === 'Enter' && search.value.trim()) {
+                        event.preventDefault();
+                        applyTableBulk('title', search.value.trim());
+                    }
+                });
+                trigger.addEventListener('click', async () => {
+                    const opening = menu.hidden;
+                    closeTableBulkFlyouts();
+                    if (opening) {
+                        menu.hidden = false;
+                        trigger.setAttribute('aria-expanded', 'true');
+                        search.value = '';
+                        if (field.key === 'project')
+                            search.setAttribute('aria-label', t('tableBulk.searchField', '{field} suchen', { field: field.label }));
+                        if (field.key === 'project' || field.key === 'deliverable') {
+                            const request = ++statusLoadRequest;
+                            statusLoading = true;
+                            statusErrors = [];
+                            field.options = [];
+                            chosenProject = null;
+                            showOptions();
+                            search.focus();
+                            try {
+                                const hierarchy = await window.TaskAPI.getHierarchy();
+                                if (!menu.isConnected || menu.hidden || request !== statusLoadRequest) return;
+                                const destinationProjects = hierarchyBulkTargets(hierarchy);
+                                field.options = field.key === 'project'
+                                    ? destinationProjects.map(project => ({ label: projectLabel(project), value: project }))
+                                    : destinationProjects.flatMap(project => project.deliverables.map(deliverable => destinationOption(project, deliverable)));
+                            } catch (error) {
+                                if (!menu.isConnected || menu.hidden || request !== statusLoadRequest) return;
+                                console.error('Could not load bulk destinations:', error);
+                                statusErrors = [t('tableBulk.destinationsFailed', document.documentElement.lang === 'en'
+                                    ? 'Could not load destinations: {error}' : 'Ziele konnten nicht geladen werden: {error}',
+                                { error: error.message || t('common.unknownError', 'Unbekannter Fehler') })];
+                            }
+                            statusLoading = false;
+                        } else if (field.key === 'status') {
+                            const request = ++statusLoadRequest;
+                            statusLoading = true;
+                            statusErrors = [];
+                            field.options = [];
+                            showOptions();
+                            search.focus();
+                            const selected = tasks.filter(task => selectedTableTasks.has(task.id));
+                            const projectIds = [...new Set(selected.map(task => task.projectId).filter(Boolean))];
+                            const results = await Promise.all(projectIds.map(async id => {
+                                try {
+                                    const board = await window.ProjectBoardAPI.getBoard(id);
+                                    if (board.projectId !== id || !Array.isArray(board.columns))
+                                        throw new Error(t('tableBulk.invalidBoard', document.documentElement.lang === 'en'
+                                            ? 'Invalid project board response.' : 'Ungültige Projektboard-Antwort.'));
+                                    return { id, board };
+                                } catch (error) {
+                                    console.error('Could not load bulk status options for project:', id, error);
+                                    return { id, error };
+                                }
+                            }));
+                            if (!menu.isConnected || menu.hidden || request !== statusLoadRequest) return;
+                            const labels = new Map(projectIds.map(id => {
+                                const project = projectBoardOptions.find(item => item.id === id);
+                                const board = results.find(item => item.id === id)?.board;
+                                const name = board?.projectName || project?.name ||
+                                    selected.find(task => task.projectId === id)?.projectName || id;
+                                return [id, project?.shortKey ? `${name} (${project.shortKey})` : name];
+                            }));
+                            statusErrors = results.filter(result => result.error).map(result =>
+                                t('tableBulk.projectStatusesFailed', document.documentElement.lang === 'en'
+                                    ? 'Could not load statuses for {project}: {error}'
+                                    : 'Status für {project} konnten nicht geladen werden: {error}', {
+                                    project: labels.get(result.id),
+                                    error: result.error?.message || t('common.unknownError', 'Unbekannter Fehler')
+                                }));
+                            const withoutProject = selected.filter(task => !task.projectId).length;
+                            if (withoutProject) statusErrors.push(t('tableBulk.noProjectTasks', document.documentElement.lang === 'en'
+                                ? '{count} selected tasks have no project and cannot use a project status.'
+                                : '{count} ausgewählte Aufgaben haben kein Projekt und können keinen Projektstatus erhalten.', { count: withoutProject }));
+                            field.options = projectStatusTargets(results.filter(result => result.board).map(result => result.board))
+                                .map(target => {
+                                    const projectLabel = labels.get(target.projectId);
+                                    const status = target.subColumn
+                                        ? `${target.columnLabel} / ${target.subColumn === 'Doing' ? t('board.doing', 'Doing') : t('board.done', 'Done')}`
+                                        : target.columnLabel;
+                                    const count = selected.filter(task => task.projectId === target.projectId).length;
+                                    return {
+                                        label: t('tableBulk.projectStatusOption', document.documentElement.lang === 'en'
+                                            ? 'Project: {project} | Status: {status} ({count} selected)'
+                                            : 'Projekt: {project} | Status: {status} ({count} ausgewählt)',
+                                        { project: projectLabel, status, count }),
+                                        value: { ...target, projectLabel }
+                                    };
+                                });
+                            statusLoading = false;
+                        }
+                        showOptions();
+                        search.focus();
+                    }
+                });
+                menu.append(search, options);
+                wrapper.append(trigger, menu);
+                toolbar.append(wrapper);
+            }
+            const clear = document.createElement('button');
+            clear.type = 'button';
+            clear.className = 'task-table-bulk-clear';
+            clear.disabled = tableBulkBusy;
+            clear.textContent = '×';
+            clear.setAttribute('aria-label', t('tableBulk.clear', 'Auswahl aufheben'));
+            clear.addEventListener('click', () => {
+                selectedTableTasks.clear();
+                renderBoard();
+            });
+            toolbar.append(clear);
+        }
+
+        async function applyTableBulk(field, value, operation) {
+            if (tableBulkBusy || selectedTableTasks.size < 2 || taskDataStatus !== 'ready') return;
+            if (!ensureAuthenticatedOrToast(t('auth.operationSaveTasks', 'Tasks zu speichern'))) return;
+            if (!document.getElementById('task-details-panel').classList.contains('hidden')) {
+                showToast(t('tableBulk.closeEditor', 'Bitte zuerst den Task-Editor schließen, um ungespeicherte Änderungen zu schützen.'));
+                return;
+            }
+            const userId = tableUserId();
+            const viewProjectId = activeProjectBoardId;
+            const selection = [...selectedTableTasks].map(id => {
+                const task = tasks.find(item => item.id === id);
+                return { id, label: task?.taskNumber || id, projectId: task?.projectId };
+            });
+            const scope = field === 'status'
+                ? partitionTasksByProject(selection, value.projectId) : { included: selection, excluded: [] };
+            const items = scope.included;
+            if (!items.length) {
+                showToast(t('tableBulk.contextChanged', 'Auswahl oder Ansicht wurde geändert; nicht bearbeitet.'));
+                return;
+            }
+            const excluded = scope.excluded.length;
+            const resultNode = document.getElementById('task-table-bulk-result');
+            resultNode.hidden = true;
+            tableBulkBusy = true;
+            renderBoard();
+            const assertContext = item => {
+                if (tableUserId() !== userId || activeProjectBoardId !== viewProjectId ||
+                    window.viewTabs?.current() !== 'table' || !selectedTableTasks.has(item.id))
+                    throw new Error(t('tableBulk.contextChanged', 'Auswahl oder Ansicht wurde geändert; nicht bearbeitet.'));
+            };
+            const result = await executeTableBulk(items, async item => {
+                assertContext(item);
+                const current = normalizeTaskFromAPI(await window.TaskAPI.getTask(item.id));
+                assertContext(item);
+                const index = tasks.findIndex(task => task.id === item.id);
+                if (index < 0) throw new Error(t('hierarchy.taskNotFound', 'Task konnte im Kanban nicht gefunden werden.'));
+                tasks[index] = current;
+                if (field === 'project' || field === 'deliverable') {
+                    const hierarchy = await window.TaskAPI.getHierarchy();
+                    assertContext(item);
+                    if (!hierarchy.deliverables.some(deliverable =>
+                        deliverable.id === value.deliverableId && deliverable.projectId === value.projectId))
+                        throw new Error(t('tableBulk.destinationChanged', document.documentElement.lang === 'en'
+                            ? 'The destination changed or no longer exists. Choose it again.'
+                            : 'Das Ziel wurde geändert oder existiert nicht mehr. Bitte erneut auswählen.'));
+                    if (current.deliverableId === value.deliverableId) return false;
+                    const updated = await window.TaskAPI.updateTask(item.id, { deliverableId: value.deliverableId });
+                    tasks[index] = normalizeTaskFromAPI(updated);
+                    return true;
+                }
+                if (field === 'status') {
+                    if (current.projectId !== value.projectId)
+                        throw new Error(t('tableBulk.contextChanged', 'Auswahl oder Ansicht wurde geändert; nicht bearbeitet.'));
+                    const same = current.projectBoardColumnId === value.projectColumnId &&
+                        (!value.subColumn || current.subColumn === value.subColumn);
+                    if (same) return false;
+                    if (!validateWorkflowMove(item.id, value.column, value.subColumn, value.projectColumnId,
+                        value.subColumn, value.projectId, value.projectBoard))
+                        throw new Error(t('tableBulk.invalidStatus', 'Status ist für diesen Task-Typ nicht zulässig.'));
+                    await window.ProjectBoardAPI.moveTask(value.projectId, item.id, value.projectColumnId, null, value.subColumn);
+                    current.column = value.column;
+                    current.subColumn = value.column === 'Backlog' ? 'Backlog' : (value.subColumn || (current.subColumn === 'Backlog' ? 'Doing' : current.subColumn));
+                    current.projectBoardColumnId = value.projectColumnId || current.projectBoardColumnId;
+                    return true;
+                }
+                if (field === 'taskType' && current.column !== 'Backlog' &&
+                    !workflowPaths[value]?.path?.includes(current.column))
+                    throw new Error(t('tableBulk.invalidType', 'Der Task-Typ ist für den aktuellen Status nicht zulässig.'));
+                if (field === 'tags') {
+                    const hasTag = current.tags.includes(value);
+                    if (hasTag === (operation === 'add')) return false;
+                    const tags = operation === 'add' ? [...current.tags, value] : current.tags.filter(tag => tag !== value);
+                    await window.TaskAPI.updateTask(item.id, { tags });
+                    current.tags = tags;
+                    return true;
+                }
+                if (current[field] === value) return false;
+                await window.TaskAPI.updateTask(item.id, { [field]: value });
+                current[field] = value;
+                return true;
+            });
+            if (tableUserId() === userId) {
+                for (const completed of result.completed) selectedTableTasks.delete(completed.item.id);
+            }
+            await loadTasksFromCloud();
+            tableBulkBusy = false;
+            renderBoard();
+            if (tableUserId() !== userId) {
+                for (const failure of result.failed) console.error('Bulk edit failed for task:', failure.item.id, failure.error);
+                return;
+            }
+            const changed = result.completed.filter(item => item.changed).length;
+            const unchanged = result.completed.length - changed;
+            const summary = document.createElement('p');
+            summary.textContent = t('tableBulk.result', '{changed} geändert, {unchanged} unverändert, {failed} fehlgeschlagen.', {
+                changed, unchanged, failed: result.failed.length
+            });
+            const resultHeader = document.createElement('div');
+            resultHeader.className = 'task-table-bulk-result-header';
+            const dismiss = document.createElement('button');
+            dismiss.type = 'button';
+            dismiss.textContent = '×';
+            dismiss.setAttribute('aria-label', t('tableBulk.dismiss', 'Ergebnis schließen'));
+            dismiss.addEventListener('click', () => { resultNode.hidden = true; });
+            resultHeader.append(summary, dismiss);
+            resultNode.replaceChildren(resultHeader);
+            if (field === 'status') {
+                const scope = document.createElement('p');
+                scope.textContent = t('tableBulk.projectScopeResult', document.documentElement.lang === 'en'
+                    ? 'Project: {project}. {excluded} selected tasks from other projects or without a project were not changed.'
+                    : 'Projekt: {project}. {excluded} ausgewählte Aufgaben anderer Projekte oder ohne Projekt wurden nicht geändert.',
+                { project: value.projectLabel, excluded });
+                resultNode.append(scope);
+            }
+            if (result.failed.length) {
+                const list = document.createElement('ul');
+                for (const failure of result.failed) {
+                    console.error('Bulk edit failed for task:', failure.item.id, failure.error);
+                    const entry = document.createElement('li');
+                    entry.textContent = `${failure.item.label}: ${failure.error?.message || t('common.unknownError', 'Unbekannter Fehler')}`;
+                    list.append(entry);
+                }
+                resultNode.append(list);
+            }
+            resultNode.hidden = false;
+        }
+
+        let tableExportBusy = false;
+        let tableExportRowCount = 0;
+
+        async function exportTaskTable(headers, rows) {
+            if (tableExportBusy || tableBulkBusy || taskDataStatus !== 'ready' || !rows.length) return;
+            tableExportBusy = true;
+            const button = document.getElementById('task-table-export');
+            button.disabled = true;
+            try {
+                const response = await fetch('/api/v1/task-table/export', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ headers, rows })
+                });
+                if (!response.ok || response.redirected) throw new Error(`HTTP ${response.status}`);
+                if (!(response.headers.get('content-type') || '').includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))
+                    throw new Error('Invalid workbook response');
+                const url = URL.createObjectURL(await response.blob());
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'tasks.xlsx';
+                document.body.append(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            } catch (error) {
+                console.error('Excel export failed:', error);
+                showToast(t('table.exportFailed', document.documentElement.lang === 'en'
+                    ? 'Excel export failed: {error}' : 'Excel-Export fehlgeschlagen: {error}',
+                { error: error.message || t('common.unknownError', 'Unbekannter Fehler') }));
+            } finally {
+                tableExportBusy = false;
+                button.disabled = tableBulkBusy || taskDataStatus !== 'ready' || !tableExportRowCount;
+            }
+        }
+
+        function renderTaskTable(filteredTasks) {
+            const root = document.getElementById('task-table-content');
+            const exportButton = document.getElementById('task-table-export');
+            exportButton.disabled = true;
+            tableExportRowCount = 0;
+            exportButton.textContent = t('table.exportExcel', document.documentElement.lang === 'en'
+                ? 'Export to Excel' : 'Excel exportieren');
+            root.replaceChildren();
+            const context = JSON.stringify([tableUserId(), activeProjectBoardId]);
+            if (context !== tableSelectionContext) {
+                selectedTableTasks.clear();
+                tableSelectionContext = context;
+            }
+            if (!window.currentUser || taskDataStatus !== 'ready') selectedTableTasks.clear();
+            renderTableBulkToolbar();
+            const notice = document.createElement('p');
+            notice.className = 'p-6 text-sm text-slate-500 dark:text-slate-400';
+            notice.setAttribute('role', 'status');
+            if (!window.currentUser || taskDataStatus === 'signedOut')
+                notice.textContent = t('table.signIn', 'Bitte anmelden, um Aufgaben zu sehen.');
+            else if (taskDataStatus === 'loading' || (activeProjectBoardId && !activeProjectBoard))
+                notice.textContent = t('kpi.loading', 'Aufgaben werden geladen …');
+            else if (taskDataStatus === 'error')
+                notice.textContent = t('table.offline', 'Aufgaben konnten nicht geladen werden. Die lokale Sicherung wird angezeigt.');
+            if (notice.textContent) root.append(notice);
+            if (!window.currentUser || taskDataStatus === 'loading' || (activeProjectBoardId && !activeProjectBoard)) return;
+            const isProject = !!activeProjectBoardId;
+            const columns = isProject
+                ? [...activeProjectBoard.columns].sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map(column => ({ key: column.id, label: column.name }))
+                : ['Backlog', ...boardColumns].map(column => ({ key: column, label: getColLabel(column) }));
+            const statusLabels = new Map(columns.map(column => [column.key, column.label]));
+            const tableColumns = [
+                { key: 'taskNumber', label: t('table.taskId', 'Task-ID') },
+                { key: 'title', label: t('task.title', 'Titel der Aufgabe') },
+                { key: 'owner', label: t('board.owner', 'Zugewiesen an') },
+                { key: 'status', label: t('table.status', 'Status') },
+                { key: 'taskType', label: t('board.taskType', 'Task Typ') },
+                { key: 'project', label: t('hierarchy.project', 'Projekt') },
+                { key: 'deliverable', label: t('hierarchy.deliverable', 'Lieferobjekt') },
+                { key: 'tags', label: t('tableBulk.tags', 'Tags') }
+            ];
+            function getValues(task) {
+                const subColumn = task.subColumn === 'Doing' ? t('board.doing', 'Doing')
+                    : task.subColumn === 'Done' ? t('board.done', 'Done') : task.subColumn;
+                const statusKey = isProject ? task.projectBoardColumnId : task.column;
+                const statusLabel = statusLabels.get(statusKey) ??
+                    (isProject ? t('table.unassigned', 'Nicht zugeordnet') : getColLabel(statusKey));
+                return {
+                    taskNumber: task.taskNumber || '—',
+                    title: task.title || '—',
+                    owner: task.owner || '—',
+                    status: subColumn && subColumn !== 'Backlog' ? `${statusLabel} / ${subColumn}` : statusLabel,
+                    taskType: task.taskType || '—',
+                    project: task.projectName || '—',
+                    deliverable: task.deliverableName || '—',
+                    tags: Array.isArray(task.tags) && task.tags.length ? task.tags.join(', ') : '—'
+                };
+            }
+
+            const table = document.createElement('table');
+            table.className = 'task-table';
+            const thead = document.createElement('thead');
+            const headingRow = document.createElement('tr');
+            const headers = [];
+            const selectHeading = document.createElement('th');
+            selectHeading.className = 'task-table-select';
+            const selectAll = document.createElement('input');
+            selectAll.type = 'checkbox';
+            selectAll.setAttribute('aria-label', t('tableBulk.selectAll', 'Alle gefilterten Aufgaben auswählen'));
+            selectHeading.append(selectAll);
+            headingRow.append(selectHeading);
+            for (const column of tableColumns) {
+                const th = document.createElement('th');
+                th.scope = 'col';
+                const sortButton = document.createElement('button');
+                sortButton.type = 'button';
+                sortButton.className = 'task-table-sort';
+                sortButton.setAttribute('aria-label', t('table.sortBy', 'Sortieren nach {column}', { column: column.label }));
+                const title = document.createElement('span');
+                title.textContent = column.label;
+                const icon = document.createElement('i');
+                icon.setAttribute('aria-hidden', 'true');
+                sortButton.append(title, icon);
+                sortButton.addEventListener('click', () => {
+                    tableSort = {
+                        key: column.key,
+                        direction: tableSort?.key === column.key && tableSort.direction === 'asc' ? 'desc' : 'asc'
+                    };
+                    updateSortHeaders();
+                    renderRows();
+                });
+                const filter = document.createElement('input');
+                filter.type = 'search';
+                filter.className = 'task-table-filter';
+                filter.value = tableFilters[column.key] || '';
+                filter.placeholder = t('table.filterPlaceholder', 'Suchen …');
+                filter.setAttribute('aria-label', t('table.filterColumn', 'In {column} suchen', { column: column.label }));
+                function applyFilter() {
+                    tableFilters[column.key] = filter.value;
+                    renderRows();
+                }
+                filter.addEventListener('input', event => { if (!event.isComposing) applyFilter(); });
+                filter.addEventListener('compositionend', applyFilter);
+                th.append(sortButton, filter);
+                headingRow.append(th);
+                headers.push({ th, icon, key: column.key });
+            }
+            thead.append(headingRow);
+            table.append(thead);
+
+            function updateSortHeaders() {
+                for (const header of headers) {
+                    const active = tableSort?.key === header.key;
+                    header.th.setAttribute('aria-sort', active
+                        ? (tableSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+                    header.icon.className = active
+                        ? `fa-solid fa-sort-${tableSort.direction === 'asc' ? 'up' : 'down'}`
+                        : 'fa-solid fa-sort';
+                }
+            }
+            const empty = document.createElement('p');
+            empty.className = 'p-6 text-sm text-slate-500 dark:text-slate-400';
+            empty.setAttribute('role', 'status');
+            function renderRows(focusGroupKey = null) {
+                table.querySelectorAll('tbody').forEach(body => body.remove());
+                const visibleTasks = filterTasksForTable(filteredTasks, tableFilters, getValues);
+                const visibleIds = new Set(visibleTasks.map(task => task.id));
+                for (const id of selectedTableTasks) {
+                    if (!visibleIds.has(id)) selectedTableTasks.delete(id);
+                }
+                const groupChecks = [];
+                const rowChecks = [];
+                function updateSelectionChecks() {
+                    const count = visibleTasks.filter(task => selectedTableTasks.has(task.id)).length;
+                    selectAll.checked = count > 0 && count === visibleTasks.length;
+                    selectAll.indeterminate = count > 0 && count < visibleTasks.length;
+                    selectAll.disabled = !visibleTasks.length || tableBulkBusy || taskDataStatus !== 'ready';
+                    for (const { checkbox, tasks: groupTasks } of groupChecks) {
+                        const selected = groupTasks.filter(task => selectedTableTasks.has(task.id)).length;
+                        checkbox.checked = selected === groupTasks.length;
+                        checkbox.indeterminate = selected > 0 && selected < groupTasks.length;
+                    }
+                    for (const { checkbox, row, id } of rowChecks) {
+                        checkbox.checked = selectedTableTasks.has(id);
+                        row.classList.toggle('is-selected', checkbox.checked);
+                    }
+                    renderTableBulkToolbar();
+                }
+                selectAll.onchange = () => {
+                    for (const task of visibleTasks) {
+                        if (selectAll.checked) selectedTableTasks.add(task.id);
+                        else selectedTableTasks.delete(task.id);
+                    }
+                    updateSelectionChecks();
+                };
+                const groups = groupTasksForTable(visibleTasks, columns, isProject, getColLabel,
+                    t('table.unassigned', 'Nicht zugeordnet'), tableGrouping.value);
+                const exportGroups = [];
+                let focusToggle = null;
+                empty.hidden = visibleTasks.length > 0;
+                empty.textContent = filteredTasks.length
+                    ? t('table.noMatches', 'Keine Aufgaben entsprechen den Spaltenfiltern.')
+                    : t('board.noTasks', 'Keine Aufgaben');
+                for (const group of groups) {
+                    const body = document.createElement('tbody');
+                    const groupKey = JSON.stringify([activeProjectBoardId || 'master', tableGrouping.value, group.key]);
+                    const collapsed = tableGrouping.value !== 'none' && collapsedTableGroups.has(groupKey);
+                    function addGroupHeading(item, key, subgroup, hidden) {
+                        const groupRow = document.createElement('tr');
+                        groupRow.className = subgroup ? 'task-table-group task-table-subgroup' : 'task-table-group';
+                        groupRow.hidden = hidden;
+                        const groupHeading = document.createElement('th');
+                        groupHeading.colSpan = tableColumns.length + 1;
+                        groupHeading.scope = 'rowgroup';
+                        const groupSelect = document.createElement('input');
+                        groupSelect.type = 'checkbox';
+                        groupSelect.className = 'task-table-group-select';
+                        groupSelect.disabled = tableBulkBusy || taskDataStatus !== 'ready';
+                        if (subgroup) {
+                            groupSelect.style.marginLeft = '28px';
+                        }
+                        groupSelect.setAttribute('aria-label', t('tableBulk.selectGroup', 'Gruppe {group} auswählen', { group: item.label }));
+                        groupSelect.addEventListener('change', () => {
+                            for (const task of item.tasks) {
+                                if (groupSelect.checked) selectedTableTasks.add(task.id);
+                                else selectedTableTasks.delete(task.id);
+                            }
+                            updateSelectionChecks();
+                        });
+                        groupChecks.push({ checkbox: groupSelect, tasks: item.tasks });
+                        const toggle = document.createElement('button');
+                        toggle.type = 'button';
+                        toggle.dataset.tableGroupKey = key;
+                        const itemCollapsed = collapsedTableGroups.has(key);
+                        toggle.setAttribute('aria-expanded', String(!itemCollapsed));
+                        const icon = document.createElement('i');
+                        icon.className = `fa-solid fa-chevron-${itemCollapsed ? 'right' : 'down'}`;
+                        icon.setAttribute('aria-hidden', 'true');
+                        const label = document.createElement('span');
+                        label.className = 'task-table-status';
+                        label.textContent = item.label;
+                        const count = document.createElement('span');
+                        count.className = 'task-table-count';
+                        count.textContent = String(item.tasks.length);
+                        toggle.append(icon, label, count);
+                        toggle.addEventListener('click', () => {
+                            if (collapsedTableGroups.has(key)) collapsedTableGroups.delete(key);
+                            else collapsedTableGroups.add(key);
+                            renderRows(key);
+                        });
+                        if (key === focusGroupKey) focusToggle = toggle;
+                        groupHeading.append(groupSelect, toggle);
+                        groupRow.append(groupHeading);
+                        body.append(groupRow);
+                    }
+                    if (tableGrouping.value !== 'none') addGroupHeading(group, groupKey, false, false);
+                    const compareDefault = (a, b) => {
+                        if (isProject) {
+                            const aOrder = typeof a.projectBoardSortOrder === 'number' ? a.projectBoardSortOrder : Infinity;
+                            const bOrder = typeof b.projectBoardSortOrder === 'number' ? b.projectBoardSortOrder : Infinity;
+                            return aOrder - bOrder || sortTasksByPriority(a, b);
+                        }
+                        return sortTasksByPriority(a, b);
+                    };
+                    const hasSubgroups = tableGrouping.value !== 'none' && tableSubgrouping.value !== 'none';
+                    const subgroups = hasSubgroups
+                        ? groupTasksForTable(group.tasks, columns, isProject, getColLabel,
+                            t('table.unassigned', 'Nicht zugeordnet'), tableSubgrouping.value)
+                        : [group];
+                    for (const subgroup of subgroups) {
+                        const subgroupKey = JSON.stringify([activeProjectBoardId || 'master', tableGrouping.value,
+                            group.key, tableSubgrouping.value, subgroup.key]);
+                        if (hasSubgroups) addGroupHeading(subgroup, subgroupKey, true, collapsed);
+                        subgroup.tasks.sort((a, b) => compareTasksForTable(a, b, tableSort, getValues, compareDefault));
+                        exportGroups.push(subgroup);
+                        for (const task of subgroup.tasks) {
+                            const values = getValues(task);
+                            const row = document.createElement('tr');
+                            row.className = 'task-table-row';
+                            row.dataset.taskId = task.id;
+                            row.hidden = collapsed || (hasSubgroups && collapsedTableGroups.has(subgroupKey));
+                            const selectionCell = document.createElement('td');
+                            selectionCell.className = 'task-table-select';
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.disabled = tableBulkBusy || taskDataStatus !== 'ready';
+                            checkbox.setAttribute('aria-label', t('tableBulk.selectTask', 'Task {task} auswählen', { task: values.taskNumber === '—' ? values.title : values.taskNumber }));
+                            checkbox.addEventListener('change', () => {
+                                if (checkbox.checked) selectedTableTasks.add(task.id);
+                                else selectedTableTasks.delete(task.id);
+                                updateSelectionChecks();
+                            });
+                            rowChecks.push({ checkbox, row, id: task.id });
+                            selectionCell.append(checkbox);
+                            row.append(selectionCell);
+                            const taskNumber = document.createElement('td');
+                            taskNumber.textContent = values.taskNumber;
+                            row.append(taskNumber);
+                            const title = document.createElement('td');
+                            const open = document.createElement('button');
+                            open.type = 'button';
+                            open.className = 'task-table-title';
+                            open.textContent = values.title;
+                            open.addEventListener('click', () => window.selectTask(task.id));
+                            title.append(open);
+                            row.append(title);
+                            for (const value of [values.owner, values.status, values.taskType, values.project, values.deliverable]) {
+                                const cell = document.createElement('td');
+                                cell.textContent = value;
+                                row.append(cell);
+                            }
+                            const tagsCell = document.createElement('td');
+                            if (!Array.isArray(task.tags) || !task.tags.length) {
+                                tagsCell.textContent = values.tags;
+                            } else {
+                                const tags = document.createElement('div');
+                                tags.className = 'task-table-tags';
+                                for (const tag of task.tags) {
+                                    const badge = document.createElement('span');
+                                    const color = tagsConfig[tag] || '#475569';
+                                    badge.className = 'task-table-tag';
+                                    badge.textContent = tag;
+                                    badge.style.color = color;
+                                    badge.style.backgroundColor = `${color}20`;
+                                    badge.style.borderColor = `${color}40`;
+                                    tags.append(badge);
+                                }
+                                tagsCell.append(tags);
+                            }
+                            row.append(tagsCell);
+                            body.append(row);
+                        }
+                    }
+                    table.append(body);
+                }
+                const exportRows = tableExportRows(exportGroups, tableColumns, getValues);
+                tableExportRowCount = exportRows.length;
+                exportButton.disabled = tableExportBusy || tableBulkBusy || taskDataStatus !== 'ready' || !tableExportRowCount;
+                exportButton.onclick = () => exportTaskTable(tableColumns.map(column => column.label), exportRows);
+                updateSelectionChecks();
+                if (focusToggle) focusToggle.focus();
+            }
+            updateSortHeaders();
+            root.append(table, empty);
+            renderRows();
         }
 
         function primarySwimlaneId(group, value) {
@@ -3805,7 +4674,8 @@
             }
         });
 
-        function validateWorkflowMove(taskId, targetColumn, targetSubColumn, projectBoardColumnId = null, projectSubColumn = null) {
+        function validateWorkflowMove(taskId, targetColumn, targetSubColumn, projectBoardColumnId = null,
+            projectSubColumn = null, targetProjectId = activeProjectBoardId, targetProjectBoard = activeProjectBoard) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
 
@@ -3814,16 +4684,16 @@
                 showToast(t('task.invalidMove', 'Fehler: Der Typ "{type}" darf die Spalte "{column}" nicht nutzen!', { type: task.taskType, column: getColLabel(targetColumn) }));
                 return false;
             }
-            if (activeProjectBoardId) {
-                const projectColumn = activeProjectBoard?.columns.find(column => column.id === projectBoardColumnId);
+            if (targetProjectId) {
+                const projectColumn = targetProjectBoard?.columns.find(column => column.id === projectBoardColumnId);
                 if (projectColumn) {
                     const targetLane = projectColumn.showSubLanes ? projectSubColumn : null;
-                    const key = getProjectWipLimitKey(activeProjectBoardId, projectColumn.id, targetLane);
+                    const key = getProjectWipLimitKey(targetProjectId, projectColumn.id, targetLane);
                     const limit = wipLimits[key];
                     const isSameLane = task.projectBoardColumnId === projectColumn.id &&
                         (!projectColumn.showSubLanes || task.subColumn === targetLane);
                     if (limit != null && !isSameLane &&
-                        getProjectWipTaskCount(activeProjectBoardId, projectColumn.id, targetLane) >= limit) {
+                        getProjectWipTaskCount(targetProjectId, projectColumn.id, targetLane) >= limit) {
                         showToast(t('wip.exceeded', 'Achtung: WIP Limit für "{column} ({subcolumn})" ({limit}) wird überschritten!', {
                             column: projectColumn.name,
                             subcolumn: targetLane || (document.documentElement.lang === 'en' ? 'All' : 'Gesamt'),
@@ -4208,6 +5078,10 @@
 
         window.selectTask = function(taskId, event) {
             if (event && event.target.closest('button, a')) return;
+            if (tableBulkBusy) {
+                showToast(t('tableBulk.working', 'Bearbeitung läuft …'));
+                return;
+            }
             
             selectedTaskId = taskId;
             highlightSelectedCard();
@@ -4912,6 +5786,14 @@
                 backlogContent.setAttribute('aria-hidden', String(!isOpen));
             }
             function setAllPanelsOpen(isOpen) {
+                if (window.viewTabs?.current() === 'table') {
+                    document.querySelectorAll('#task-table-content [data-table-group-key]').forEach(toggle => {
+                        if (isOpen) collapsedTableGroups.delete(toggle.dataset.tableGroupKey);
+                        else collapsedTableGroups.add(toggle.dataset.tableGroupKey);
+                    });
+                    renderBoard();
+                    return;
+                }
                 if (window.viewTabs?.current() === 'list') {
                     collapsedSwimlanes.clear();
                     if (!isOpen) {
@@ -4955,11 +5837,36 @@
             const syncLanguageSelector = setupStyledSelect(languageSelector);
             const syncPrimarySwimlane = setupStyledSelect(groupPrimary);
             const syncSecondarySwimlane = setupStyledSelect(groupSecondary);
+            const syncTableGrouping = setupStyledSelect(tableGrouping);
+            const syncTableSubgrouping = setupStyledSelect(tableSubgrouping);
+            function updateTableSubgrouping() {
+                tableSubgrouping.disabled = tableGrouping.value === 'none';
+                for (const option of tableSubgrouping.options)
+                    option.disabled = option.value !== 'none' && option.value === tableGrouping.value;
+                if (tableSubgrouping.disabled || tableSubgrouping.value === tableGrouping.value)
+                    tableSubgrouping.value = 'none';
+                saveToStorage('kanban_tableSubgrouping', tableSubgrouping.value);
+                syncTableSubgrouping();
+            }
+            updateTableSubgrouping();
+            tableGrouping.addEventListener('change', () => {
+                saveToStorage('kanban_tableGrouping', tableGrouping.value);
+                syncTableGrouping();
+                updateTableSubgrouping();
+                renderBoard();
+            });
+            tableSubgrouping.addEventListener('change', () => {
+                saveToStorage('kanban_tableSubgrouping', tableSubgrouping.value);
+                syncTableSubgrouping();
+                renderBoard();
+            });
             languageSelector.addEventListener('language-selector-update', syncLanguageSelector);
             window.addEventListener('languagechange', () => {
                 syncLanguageSelector();
                 syncPrimarySwimlane();
                 syncSecondarySwimlane();
+                syncTableGrouping();
+                syncTableSubgrouping();
                 updateConnectionUI();
                 renderOwnerFilterDropdown();
                 renderTypeFilterDropdown();
@@ -5031,14 +5938,15 @@
             window.addEventListener('resize', () => {
                 [filterOwnerDropdown, filterTypeDropdown, filterTagsDropdown,
                     document.getElementById('group-primary-dropdown'), document.getElementById('group-secondary-dropdown'),
-                    document.getElementById('language-selector-dropdown')]
+                    document.getElementById('language-selector-dropdown'), document.getElementById('table-grouping-dropdown'),
+                    document.getElementById('table-subgrouping-dropdown')]
                     .forEach(fitFilterDropdown);
             });
             document.getElementById('filter-archived').addEventListener('change', renderBoard);
             window.addEventListener('board-view-changed', event => {
                 if (!document.getElementById('task-details-panel').classList.contains('hidden')) {
                     const inheritedFromTree = event.detail === 'list' && !!document.getElementById('modal-deliverable').value;
-                    const inheritedFromBoard = event.detail === 'kanban' &&
+                    const inheritedFromBoard = (event.detail === 'kanban' || event.detail === 'table') &&
                         !document.getElementById('modal-task-id').value && !!newTaskInheritedProjectId;
                     ['modal-customer', 'modal-project', 'modal-deliverable'].forEach((id, index) => {
                         document.getElementById(id).disabled = inheritedFromTree || (inheritedFromBoard && index < 2);

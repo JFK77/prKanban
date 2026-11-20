@@ -5,6 +5,7 @@
     const panels = {
         list: document.getElementById('hierarchy-panel'),
         kanban: document.getElementById('kanban-panel'),
+        table: document.getElementById('table-panel'),
         dashboard: document.getElementById('dashboard-panel')
     };
     const boardControls = ['board-header-actions', 'board-groupings'].map(id => document.getElementById(id));
@@ -29,8 +30,9 @@
             return;
         }
 
-        if (taskPanel.parentElement !== panels.kanban) {
-            panels.kanban.append(taskPanel);
+        const targetPanel = view === 'table' ? panels.table : panels.kanban;
+        if (taskPanel.parentElement !== targetPanel) {
+            targetPanel.append(detailsResizer, taskPanel);
             taskPanel.style.width = taskPanel.dataset.kanbanWidth || localStorage.getItem('kanban_panel_width') || '450px';
         }
         hierarchyTaskSlot.classList.add('hidden');
@@ -44,7 +46,7 @@
         if (active === 'list' && !window.hierarchyView.leave()) return false;
         placeTaskPanel(view);
         active = view;
-        const isBoardView = view === 'kanban' || view === 'list';
+        const isBoardView = view === 'kanban' || view === 'list' || view === 'table';
         for (const tab of tabs) {
             const selected = tab.dataset.view === view;
             tab.setAttribute('aria-selected', String(selected));
@@ -53,12 +55,17 @@
         for (const [name, panel] of Object.entries(panels)) {
             const selected = name === view;
             panel.classList.toggle('hidden', !selected);
-            if (name === 'kanban') panel.classList.toggle('flex', selected);
+            if (name === 'kanban' || name === 'table') panel.classList.toggle('flex', selected);
         }
         for (const control of boardControls) {
-            control.classList.toggle('hidden', !isBoardView);
-            control.classList.toggle('flex', isBoardView);
+            const visible = isBoardView;
+            control.classList.toggle('hidden', !visible);
+            control.classList.toggle('flex', visible);
         }
+        document.getElementById('board-swimlane-controls').classList.toggle('hidden', view === 'table');
+        document.getElementById('board-swimlane-controls').classList.toggle('flex', view !== 'table');
+        document.getElementById('table-grouping-controls').classList.toggle('hidden', view !== 'table');
+        document.getElementById('table-grouping-controls').classList.toggle('flex', view === 'table');
         document.body.classList.toggle('details-panel-open', isBoardView && !document.getElementById('task-details-panel').classList.contains('hidden'));
         if (view === 'list') window.hierarchyView.activate();
         window.dispatchEvent(new CustomEvent('board-view-changed', { detail: view }));

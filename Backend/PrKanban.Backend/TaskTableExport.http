@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:5000
+
+### Export filtered task rows (requires a signed-in Admin or User session)
+POST {{baseUrl}}/api/v1/task-table/export
+Content-Type: application/json
+
+{
+  "headers": ["Task ID", "Title", "Tags"],
+  "rows": [["PRJ-1", "Example task", "Urgent, Backend"]]
+}
+
+### Reject mismatched row lengths
+POST {{baseUrl}}/api/v1/task-table/export
+Content-Type: application/json
+
+{
+  "headers": ["Task ID", "Title"],
+  "rows": [["PRJ-1"]]
+}

@@ -14,6 +14,7 @@ builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
 builder.Services.AddScoped<ITaskMoveService, TaskMoveService>();
 builder.Services.AddScoped<IProjectBoardService, ProjectBoardService>();
 builder.Services.AddScoped<IProjectHierarchyService, ProjectHierarchyService>();
+builder.Services.AddScoped<ITableExportService, TableExportService>();
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>
