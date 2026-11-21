@@ -137,6 +137,33 @@ function treeNode(kind, item, depth, children, childLabel, childCount = children
         keyLabel.textContent = item.shortKey;
         row.append(keyLabel);
     }
+    if (kind === 'projects') {
+        const deliverables = data.deliverables.filter(d => d.projectId === item.id);
+        const totalEstimate = deliverables.reduce((sum, d) => sum + (d.initialEstimateHours ?? 0), 0);
+        const totalBudget = deliverables.reduce((sum, d) => sum + (d.budgetHours ?? 0), 0);
+        const display = [];
+        if (totalBudget > 0) {
+            display.push({ value: totalBudget, label: 'Budget: ' });
+        }
+        if (totalEstimate > 0) {
+            display.push({ value: totalEstimate, label: '∑' });
+        }
+        if (display.length > 0) {
+            const estimate = document.createElement('span');
+            estimate.className = 'text-xs text-slate-400 italic font-medium';
+            const labels = display.map(d => `${d.label}${d.value}h`).join(' ');
+            estimate.setAttribute('aria-label', `${t('hierarchy.project', 'Projekt')} Totale: ${labels}`);
+            estimate.textContent = labels;
+            row.append(estimate);
+        }
+    }
+    if (kind === 'deliverables' && item.initialEstimateHours > 0) {
+        const estimate = document.createElement('span');
+        estimate.className = 'text-xs text-slate-500 font-medium';
+        estimate.setAttribute('aria-label', `${t('hierarchy.estimate', 'Schätzung')}: ${item.initialEstimateHours}h`);
+        estimate.textContent = `${item.initialEstimateHours}h`;
+        row.append(estimate);
+    }
     if (childCount) {
         const count = document.createElement('span');
         count.className = 'tree-count';
