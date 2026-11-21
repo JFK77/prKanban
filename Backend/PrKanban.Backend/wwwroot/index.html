@@ -6160,10 +6160,6 @@
             startInput.value = nextStart;
             resetDurationToAuto();
             updateDurationDisplay();
-            
-            // Auto-focus the add button
-            const addBtn = document.querySelector('#task-time-form button[type="button"][onclick="addTimeEntry()"]');
-            if (addBtn) addBtn.focus();
         }
 
         // Quick subtract minutes from Von time, then auto-calculate Bis
@@ -6181,10 +6177,6 @@
             startInput.value = nextStart;
             resetDurationToAuto();
             updateDurationDisplay();
-            
-            // Auto-focus the add button
-            const addBtn = document.querySelector('#task-time-form button[type="button"][onclick="addTimeEntry()"]');
-            if (addBtn) addBtn.focus();
         }
 
         function resetDurationToAuto() {
