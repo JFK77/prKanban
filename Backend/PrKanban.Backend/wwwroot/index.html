@@ -6624,6 +6624,77 @@
             updateWeekSummary();
         }
 
+        // Helper: Get existing hours for a specific date
+        async function getExistingHoursForDate(taskId, date) {
+            try {
+                const resp = await fetch(`/api/tasks/${taskId}/time-entries`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const entries = data.entries || [];
+                    const dateStr = date.toISOString().split('T')[0];
+                    const dayEntries = entries.filter(e => e.startTime.startsWith(dateStr));
+                    const totalHours = dayEntries.reduce((sum, e) => sum + (e.durationHours || 0), 0);
+                    return totalHours;
+                }
+            } catch (err) {
+                console.error('Error fetching existing entries:', err);
+            }
+            return 0;
+        }
+
+        // Show conflict dialog when day already has >= 8 hours
+        function showDayConflictDialog(dayName, existingHours) {
+            return new Promise((resolve) => {
+                const dialogId = `conflict-dialog-${Date.now()}`;
+                const dialogHtml = `
+                    <div id="${dialogId}" class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg p-6 max-w-md">
+                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                                <i class="fa-solid fa-exclamation-triangle text-amber-600 mr-2"></i>Konflikt erkannt
+                            </h3>
+                            <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
+                                ${dayName} hat bereits <strong>${existingHours.toFixed(1)}h</strong> erfasst (≥ 8h).
+                            </p>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
+                                Was möchten Sie tun?
+                            </p>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="document.getElementById('${dialogId}').remove()" class="flex-1 px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white rounded-md text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600">
+                                    Abbrechen
+                                </button>
+                                <button type="button" onclick="document.getElementById('${dialogId}').remove(); window.conflictResult = 'append'" class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                    Ergänzen
+                                </button>
+                                <button type="button" onclick="document.getElementById('${dialogId}').remove(); window.conflictResult = 'replace'" class="flex-1 px-3 py-2 bg-orange-600 text-white rounded-md text-sm font-medium hover:bg-orange-700">
+                                    Ersetzen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', dialogHtml);
+                
+                // Wait for user choice
+                const checkResult = setInterval(() => {
+                    if (window.conflictResult) {
+                        clearInterval(checkResult);
+                        const result = window.conflictResult;
+                        window.conflictResult = null;
+                        resolve(result);
+                    }
+                }, 100);
+                
+                // Timeout after 60 seconds
+                setTimeout(() => {
+                    clearInterval(checkResult);
+                    const dialog = document.getElementById(dialogId);
+                    if (dialog) dialog.remove();
+                    if (window.conflictResult === null) resolve('cancel');
+                }, 60000);
+            });
+        }
+
         // Add week time entries to the list
         async function addWeekTimeEntries() {
             const taskId = document.getElementById('modal-task-id').value;
@@ -6631,7 +6702,64 @@
             
             const monday = getMonday(weekState.currentWeekStartDate);
             const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+            
+            // Check for conflicts first
+            const conflicts = {};
+            for (let i = 0; i < 5; i++) {
+                if (weekState.durations[i] <= 0) continue;
+                
+                const dayDate = new Date(monday);
+                dayDate.setDate(dayDate.getDate() + i);
+                
+                const existingHours = await getExistingHoursForDate(taskId, dayDate);
+                if (existingHours >= 8) {
+                    conflicts[i] = existingHours;
+                }
+            }
+            
+            // If conflicts exist, ask user what to do
+            let conflictAction = 'append'; // default
+            if (Object.keys(conflicts).length > 0) {
+                const conflictDays = Object.keys(conflicts)
+                    .map(i => `${dayNames[i]} (${conflicts[i].toFixed(1)}h)`)
+                    .join(', ');
+                
+                conflictAction = await showDayConflictDialog(conflictDays, Math.max(...Object.values(conflicts)));
+                
+                if (conflictAction === 'cancel') {
+                    return; // User cancelled
+                }
+            }
+            
             let addedCount = 0;
+            
+            // If replace: delete existing entries for conflicting days first
+            if (conflictAction === 'replace' && Object.keys(conflicts).length > 0) {
+                for (const dayIdx of Object.keys(conflicts)) {
+                    const idx = parseInt(dayIdx);
+                    const dayDate = new Date(monday);
+                    dayDate.setDate(dayDate.getDate() + idx);
+                    
+                    try {
+                        const resp = await fetch(`/api/tasks/${taskId}/time-entries`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            const entries = data.entries || [];
+                            const dateStr = dayDate.toISOString().split('T')[0];
+                            const dayEntries = entries.filter(e => e.startTime.startsWith(dateStr));
+                            
+                            // Delete each entry for this day
+                            for (const entry of dayEntries) {
+                                await fetch(`/api/tasks/${taskId}/time-entries/${entry.id}`, {
+                                    method: 'DELETE'
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`Fehler beim Löschen von ${dayNames[idx]}:`, err);
+                    }
+                }
+            }
             
             // Create an entry for each day that has a duration
             for (let i = 0; i < 5; i++) {
@@ -6683,7 +6811,8 @@
                 // Reload entries
                 await loadTimeEntries();
                 
-                alert(`${addedCount} Zeiteinträge hinzugefügt`);
+                const actionText = conflictAction === 'replace' ? 'ersetzt' : 'hinzugefügt';
+                alert(`${addedCount} Zeiteinträge ${actionText}`);
             } else {
                 alert('Keine Einträge zum Hinzufügen (alle Tage sind leer)');
             }
