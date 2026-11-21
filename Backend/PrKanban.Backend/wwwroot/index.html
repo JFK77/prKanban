@@ -3166,16 +3166,21 @@
             updateBoardContainerFlex();
             updateProjectBoardControls();
 
-            if (window.viewTabs?.current() === 'list') {
+            const currentView = window.viewTabs?.current() || 
+                (document.getElementById('table-panel')?.classList.contains('hidden') === false ? 'table' : 
+                 document.getElementById('dashboard-panel')?.classList.contains('hidden') === false ? 'dashboard' :
+                 'kanban');
+
+            if (currentView === 'list') {
                 window.hierarchyView.render();
                 return;
             }
             const filteredTasks = getFilteredTasks();
-            if (window.viewTabs?.current() === 'table') {
+            if (currentView === 'table') {
                 renderTaskTable(filteredTasks);
                 return;
             }
-            if (window.viewTabs?.current() === 'dashboard') {
+            if (currentView === 'dashboard') {
                 renderKanbanKpis(filteredTasks);
                 return;
             }
@@ -5957,26 +5962,29 @@
             document.getElementById('task-estimated-hours')?.addEventListener('change', updateEstimateDisplay);
 
             const descriptionEditorContainer = document.getElementById('description-editor-container');
+            const descriptionEditor = document.getElementById('modal-description');
             const imageResizer = document.getElementById('description-image-resizer');
             const attachmentInput = document.getElementById('task-attachment-input');
-            descriptionImageObserver = new ResizeObserver(() => {
-                if (selectedDescriptionImage) positionDescriptionImageResizer();
-            });
-            descriptionImageObserver.observe(descriptionEditor);
-            descriptionEditor.addEventListener('click', event => {
-                if (event.target instanceof HTMLImageElement) {
-                    event.preventDefault();
-                    selectDescriptionImage(event.target);
-                } else {
-                    selectDescriptionImage(null);
-                }
-            });
-            descriptionEditor.addEventListener('input', () => {
-                if (selectedDescriptionImage && !descriptionEditor.contains(selectedDescriptionImage))
-                    selectDescriptionImage(null);
-                else if (selectedDescriptionImage)
-                    positionDescriptionImageResizer();
-            });
+            if (descriptionEditor) {
+                descriptionImageObserver = new ResizeObserver(() => {
+                    if (selectedDescriptionImage) positionDescriptionImageResizer();
+                });
+                descriptionImageObserver.observe(descriptionEditor);
+                descriptionEditor.addEventListener('click', event => {
+                    if (event.target instanceof HTMLImageElement) {
+                        event.preventDefault();
+                        selectDescriptionImage(event.target);
+                    } else {
+                        selectDescriptionImage(null);
+                    }
+                });
+                descriptionEditor.addEventListener('input', () => {
+                    if (selectedDescriptionImage && !descriptionEditor.contains(selectedDescriptionImage))
+                        selectDescriptionImage(null);
+                    else if (selectedDescriptionImage)
+                        positionDescriptionImageResizer();
+                });
+            }
             document.addEventListener('pointerdown', event => {
                 if (!descriptionEditorContainer.contains(event.target))
                     selectDescriptionImage(null);
@@ -6001,26 +6009,28 @@
                         + (event.key === 'ArrowRight' ? 10 : -10));
                 });
             });
-            descriptionEditor.addEventListener('click', event => {
-                if (event.defaultPrevented) return;
-                const link = event.target.closest('a[href]');
-                if (!link || !descriptionEditor.contains(link)) return;
-                event.preventDefault();
-                if (!window.getSelection().isCollapsed) return;
+            if (descriptionEditor) {
+                descriptionEditor.addEventListener('click', event => {
+                    if (event.defaultPrevented) return;
+                    const link = event.target.closest('a[href]');
+                    if (!link || !descriptionEditor.contains(link)) return;
+                    event.preventDefault();
+                    if (!window.getSelection().isCollapsed) return;
 
-                let url;
-                try {
-                    url = new URL(link.href, window.location.href);
-                } catch {
-                    showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
-                    return;
-                }
+                    let url;
+                    try {
+                        url = new URL(link.href, window.location.href);
+                    } catch {
+                        showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
+                        return;
+                    }
                 if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
                     showToast(t('task.invalidLink', 'Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.'));
                     return;
                 }
                 window.open(url.href, '_blank', 'noopener,noreferrer');
-            });
+                });
+            }
             document.getElementById('task-attachment-add').addEventListener('click', () => attachmentInput.click());
             attachmentInput.addEventListener('change', () => {
                 for (const file of attachmentInput.files || []) {
@@ -6033,30 +6043,32 @@
                 attachmentInput.value = "";
                 renderTaskAttachments();
             });
-            descriptionEditor.addEventListener('paste', event => {
-                const imageItem = [...(event.clipboardData?.items || [])]
-                    .find(item => item.kind === 'file' && item.type.startsWith('image/'));
-                if (!imageItem) return;
-                event.preventDefault();
-                const file = imageItem.getAsFile();
-                if (!file) return;
-                if (!['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type)) {
-                    showToast(t('task.inlineImageInvalid', 'Dieses Bildformat kann nicht direkt eingefügt werden. Bitte PNG, JPEG, GIF oder WebP verwenden.'));
-                    return;
-                }
-                if (file.size > 20 * 1024 * 1024) {
-                    showToast(t('task.attachmentTooLarge', 'Dateien dürfen höchstens 20 MB groß sein.'));
-                    return;
-                }
-                const extension = file.type.split('/')[1].replace('jpeg', 'jpg');
-                const namedFile = new File([file], file.name || `pasted-image-${Date.now()}.${extension}`, { type: file.type });
-                const token = `pending-image-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                const objectUrl = URL.createObjectURL(namedFile);
-                pendingTaskUploads.push({ file: namedFile, token, objectUrl });
-                document.execCommand('insertHTML', false,
-                    `<img src="${objectUrl}" alt="${token}">`);
-                renderTaskAttachments();
-            });
+            if (descriptionEditor) {
+                descriptionEditor.addEventListener('paste', event => {
+                    const imageItem = [...(event.clipboardData?.items || [])]
+                        .find(item => item.kind === 'file' && item.type.startsWith('image/'));
+                    if (!imageItem) return;
+                    event.preventDefault();
+                    const file = imageItem.getAsFile();
+                    if (!file) return;
+                    if (!['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type)) {
+                        showToast(t('task.inlineImageInvalid', 'Dieses Bildformat kann nicht direkt eingefügt werden. Bitte PNG, JPEG, GIF oder WebP verwenden.'));
+                        return;
+                    }
+                    if (file.size > 20 * 1024 * 1024) {
+                        showToast(t('task.attachmentTooLarge', 'Dateien dürfen höchstens 20 MB groß sein.'));
+                        return;
+                    }
+                    const extension = file.type.split('/')[1].replace('jpeg', 'jpg');
+                    const namedFile = new File([file], file.name || `pasted-image-${Date.now()}.${extension}`, { type: file.type });
+                    const token = `pending-image-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    const objectUrl = URL.createObjectURL(namedFile);
+                    pendingTaskUploads.push({ file: namedFile, token, objectUrl });
+                    document.execCommand('insertHTML', false,
+                        `<img src="${objectUrl}" alt="${token}">`);
+                    renderTaskAttachments();
+                });
+            }
 
             const backlogPanel = document.getElementById('backlog-panel');
             const backlogToggle = document.getElementById('backlog-toggle');
