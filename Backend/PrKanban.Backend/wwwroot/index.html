@@ -1042,13 +1042,7 @@
                                 <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
                             </h4>
                             
-                            <!-- Current user info -->
-                            <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
-                                <p class="text-xs text-slate-600 dark:text-slate-400">
-                                    <span data-i18n="common.user">Benutzer</span>: <span id="current-user-email" class="font-medium text-slate-800 dark:text-slate-200">–</span>
-                                </p>
-                            </div>
-                            
+                            <!-- Zeit erfassen form -->
                             <form id="task-time-form" class="space-y-3">
                                 <!-- Date picker field -->
                                 <div class="flex flex-col gap-1">
@@ -1133,7 +1127,7 @@
                         <!-- Week Overview Section -->
                         <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-4">
-                                <i class="fa-solid fa-calendar-week text-blue-600 mr-2"></i><span>Wochenübersicht (Mo–Fr)</span>
+                                <i class="fa-solid fa-calendar-week text-blue-600 mr-2"></i><span>Wochenzeit erfassen</span>
                             </h4>
                             
                             <!-- Week header with navigation -->
@@ -6248,14 +6242,6 @@
             if (endBtn) endBtn.textContent = `jetzt ${roundedTime}`;
         }
 
-        // Update current user email display
-        function updateCurrentUserDisplay() {
-            const userEmailEl = document.getElementById('current-user-email');
-            if (userEmailEl && window.currentUser) {
-                userEmailEl.textContent = window.currentUser.email || window.currentUser.username || '–';
-            }
-        }
-
         // Quick add minutes to Von time, then auto-calculate Bis
         function quickAddMinutes(addMins) {
             const startInput = document.getElementById('time-entry-start');
@@ -6858,7 +6844,6 @@
         window.addWeekTimeEntries = addWeekTimeEntries;
         window.setTimeToNowAndAutoEnd = setTimeToNowAndAutoEnd;
         window.updateTimeNowButtons = updateTimeNowButtons;
-        window.updateCurrentUserDisplay = updateCurrentUserDisplay;
         window.quickAddMinutes = quickAddMinutes;
         window.quickSubtractMinutes = quickSubtractMinutes;
         window.addTimeEntry = addTimeEntry;
@@ -6884,9 +6869,6 @@
 
             // Initialize time now buttons with current rounded time
             updateTimeNowButtons();
-            
-            // Update current user email display
-            updateCurrentUserDisplay();
             
             // Set date input to today
             const dateInput = document.getElementById('time-entry-date');
