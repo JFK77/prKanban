@@ -1036,6 +1036,92 @@
                 <!-- Time Tracking Tab -->
                 <div id="task-panel-tab-time" class="task-panel-tab-content hidden">
                     <div class="space-y-4">
+                        <!-- Week Overview Section -->
+                        <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-4">
+                                <i class="fa-solid fa-calendar-week text-blue-600 mr-2"></i><span>Wochenübersicht (Mo–Fr)</span>
+                            </h4>
+                            
+                            <!-- Week header with navigation -->
+                            <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300" id="week-label">KW 47</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400" id="week-dates">16.11.2026 – 20.11.2026</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="previousWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">← Vorwoche</button>
+                                    <input type="date" id="week-date-picker" class="w-28 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button type="button" onclick="nextWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Folgewoche →</button>
+                                    <button type="button" onclick="goToCurrentWeek()" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Heute</button>
+                                </div>
+                            </div>
+                            
+                            <!-- 5 days grid -->
+                            <div class="grid grid-cols-5 gap-2 mb-4">
+                                <div id="week-mon" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
+                                    <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
+                                        <span class="week-day-short">Mo</span> <span class="week-day-date">16.11.</span>
+                                    </div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="0">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                </div>
+                                
+                                <div id="week-tue" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
+                                    <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
+                                        <span class="week-day-short">Di</span> <span class="week-day-date">17.11.</span>
+                                    </div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="1">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                </div>
+                                
+                                <div id="week-wed" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
+                                    <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
+                                        <span class="week-day-short">Mi</span> <span class="week-day-date">18.11.</span>
+                                    </div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="2">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                </div>
+                                
+                                <div id="week-thu" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
+                                    <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
+                                        <span class="week-day-short">Do</span> <span class="week-day-date">19.11.</span>
+                                    </div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="3">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                </div>
+                                
+                                <div id="week-fri" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
+                                    <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
+                                        <span class="week-day-short">Fr</span> <span class="week-day-date">20.11.</span>
+                                    </div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="4">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Week summary -->
+                            <div class="border-t border-slate-200 dark:border-slate-700 pt-3">
+                                <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-slate-600 dark:text-slate-300">Wochensumme (Mo–Fr):</span>
+                                        <select id="week-target-hours" class="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1 text-slate-800 dark:text-white text-xs">
+                                            <option value="20">20h</option>
+                                            <option value="30">30h</option>
+                                            <option value="32">32h</option>
+                                            <option value="35">35h</option>
+                                            <option value="37.5">37,5h</option>
+                                            <option value="40" selected>40h</option>
+                                        </select>
+                                        <button type="button" onclick="fillWeekWithTarget()" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Woche auffüllen</button>
+                                        <button type="button" onclick="clearWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Leeren</button>
+                                    </div>
+                                    <div class="text-slate-700 dark:text-slate-300">
+                                        <span id="week-total-display">0h</span> / <span id="week-target-display">40h</span> (<span id="week-diff-display">-40h</span>)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Add time entry form - Optimized UI -->
                         <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
@@ -5925,6 +6011,7 @@
                     // Load data for time tracking tab
                     if (tabName === 'time') {
                         loadTimeEntries();
+                        initWeekOverview();
                     }
                 });
             });
@@ -6373,6 +6460,173 @@
                 .catch(err => console.error(err));
         }
 
+        // --- WEEK OVERVIEW FUNCTIONS ---
+        const weekState = {
+            currentWeekStartDate: new Date(),
+            durations: [0, 0, 0, 0, 0] // Mo-Fr in minutes
+        };
+
+        function getMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function getWeekInfo(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const start = new Date(year, 0, 1);
+            const diff = d - start;
+            const oneDay = 86400000;
+            const day = Math.floor(diff / oneDay);
+            const week = Math.ceil((day + start.getDay() + 1) / 7);
+            return { week, year };
+        }
+
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+
+        function updateWeekDisplay() {
+            const monday = getMonday(weekState.currentWeekStartDate);
+            const friday = new Date(monday);
+            friday.setDate(friday.getDate() + 4);
+            
+            const { week } = getWeekInfo(monday);
+            const dateRange = `${formatDate(monday)} – ${formatDate(friday)}`;
+            
+            document.getElementById('week-label').textContent = `KW ${week}`;
+            document.getElementById('week-dates').textContent = dateRange;
+            
+            // Update day headers and dates
+            const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+            for (let i = 0; i < 5; i++) {
+                const dayDate = new Date(monday);
+                dayDate.setDate(dayDate.getDate() + i);
+                const dayEl = document.getElementById(`week-${['mon', 'tue', 'wed', 'thu', 'fri'][i]}`);
+                if (dayEl) {
+                    const shortDate = `${String(dayDate.getDate()).padStart(2, '0')}.${String(dayDate.getMonth() + 1).padStart(2, '0')}.`;
+                    dayEl.querySelector('.week-day-short').textContent = dayNames[i];
+                    dayEl.querySelector('.week-day-date').textContent = shortDate;
+                }
+            }
+            
+            updateWeekSummary();
+        }
+
+        function updateWeekSummary() {
+            const totalMins = weekState.durations.reduce((s, m) => s + m, 0);
+            const totalHours = totalMins / 60;
+            const targetHours = parseFloat(document.getElementById('week-target-hours').value) || 40;
+            const diffHours = totalHours - targetHours;
+            
+            document.getElementById('week-total-display').textContent = totalHours.toFixed(1) + 'h';
+            document.getElementById('week-target-display').textContent = targetHours.toFixed(1) + 'h';
+            document.getElementById('week-diff-display').textContent = (diffHours >= 0 ? '+' : '') + diffHours.toFixed(1) + 'h';
+            
+            // Update individual day displays
+            document.querySelectorAll('.week-duration-input').forEach((input, idx) => {
+                const minsDisplay = input.parentElement.querySelector('.week-minutes');
+                if (minsDisplay) {
+                    minsDisplay.textContent = weekState.durations[idx];
+                }
+            });
+        }
+
+        function parseWeekDuration(input) {
+            const text = String(input || '').trim().toLowerCase().replace(',', '.');
+            if (!text) return 0;
+
+            const hMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:h|std\.?|stunden?)/);
+            const mMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:m|min\.?|minuten?)/);
+
+            if (hMatch || mMatch) {
+                const h = hMatch ? parseFloat(hMatch[1]) : 0;
+                const m = mMatch ? parseFloat(mMatch[1]) : 0;
+                return Math.max(0, Math.min(600, Math.round(h * 60 + m)));
+            }
+
+            if (/^\d+(?:\.\d+)?$/.test(text)) {
+                return Math.max(0, Math.min(600, Math.round(parseFloat(text))));
+            }
+
+            return 0;
+        }
+
+        function handleWeekDurationChange(event) {
+            const input = event.target;
+            const dayIdx = parseInt(input.dataset.day);
+            const mins = parseWeekDuration(input.value);
+            weekState.durations[dayIdx] = mins;
+            updateWeekSummary();
+        }
+
+        function previousWeek() {
+            const d = new Date(weekState.currentWeekStartDate);
+            d.setDate(d.getDate() - 7);
+            weekState.currentWeekStartDate = d;
+            updateWeekDisplay();
+        }
+
+        function nextWeek() {
+            const d = new Date(weekState.currentWeekStartDate);
+            d.setDate(d.getDate() + 7);
+            weekState.currentWeekStartDate = d;
+            updateWeekDisplay();
+        }
+
+        function goToCurrentWeek() {
+            weekState.currentWeekStartDate = new Date();
+            updateWeekDisplay();
+        }
+
+        function fillWeekWithTarget() {
+            const targetHours = parseFloat(document.getElementById('week-target-hours').value) || 40;
+            const perDay = Math.round((targetHours * 60) / 5);
+            weekState.durations = [perDay, perDay, perDay, perDay, perDay];
+            
+            document.querySelectorAll('.week-duration-input').forEach((input, idx) => {
+                const hours = perDay / 60;
+                input.value = hours % 1 === 0 ? `${Math.floor(hours)}h` : `${hours.toFixed(1)}h`;
+            });
+            
+            updateWeekSummary();
+        }
+
+        function clearWeek() {
+            weekState.durations = [0, 0, 0, 0, 0];
+            document.querySelectorAll('.week-duration-input').forEach(input => {
+                input.value = '';
+            });
+            updateWeekSummary();
+        }
+
+        // Initialize week overview on page load
+        function initWeekOverview() {
+            updateWeekDisplay();
+            document.querySelectorAll('.week-duration-input').forEach(input => {
+                input.addEventListener('input', handleWeekDurationChange);
+                input.addEventListener('blur', handleWeekDurationChange);
+            });
+            
+            const weekDatePicker = document.getElementById('week-date-picker');
+            if (weekDatePicker) {
+                weekDatePicker.addEventListener('change', (e) => {
+                    weekState.currentWeekStartDate = new Date(e.target.value);
+                    updateWeekDisplay();
+                });
+            }
+            
+            const targetSelect = document.getElementById('week-target-hours');
+            if (targetSelect) {
+                targetSelect.addEventListener('change', updateWeekSummary);
+            }
+        }
+
         // --- EXPORT FUNCTIONS TO WINDOW (make globally accessible) ---
         window.toMinutes = toMinutes;
         window.fromMinutes = fromMinutes;
@@ -6382,6 +6636,12 @@
         window.handleTimeKeydown = handleTimeKeydown;
         window.getCurrentTimeRounded = getCurrentTimeRounded;
         window.setTimeToNow = setTimeToNow;
+        window.previousWeek = previousWeek;
+        window.nextWeek = nextWeek;
+        window.goToCurrentWeek = goToCurrentWeek;
+        window.fillWeekWithTarget = fillWeekWithTarget;
+        window.clearWeek = clearWeek;
+        window.initWeekOverview = initWeekOverview;
         window.setTimeToNowAndAutoEnd = setTimeToNowAndAutoEnd;
         window.updateTimeNowButtons = updateTimeNowButtons;
         window.updateCurrentUserDisplay = updateCurrentUserDisplay;
