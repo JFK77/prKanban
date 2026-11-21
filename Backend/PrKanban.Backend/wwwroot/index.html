@@ -5993,15 +5993,15 @@
             const durationInput = document.getElementById('time-entry-duration');
             const statusEl = document.getElementById('time-duration-status');
             
-            if (!startInput || !endInput) return;
+            if (!startInput || !endInput || !durationInput) return;
 
             // Check if duration was manually overridden
-            if (durationInput && durationInput.value.trim()) {
-                // Duration override is active
+            if (durationInput.value.trim()) {
+                // Duration override is active - user entered a custom duration
                 const overrideValue = durationInput.value.trim();
                 const durationMins = parseDurationToMinutes(overrideValue);
                 
-                // Recalculate endTime = startTime + duration
+                // Recalculate Bis (end time) = Von (start time) + duration
                 const startStr = parseSmartTime(startInput.value) || '08:00';
                 const startMin = toMinutes(startStr);
                 const newEndTime = fromMinutes(startMin + durationMins);
@@ -6009,7 +6009,29 @@
                 
                 if (statusEl) statusEl.textContent = 'manuell';
             } else {
-                // Duration is automatic (from Von and Bis)
+                // Duration is automatic - calculate from Von and Bis
+                const startStr = parseSmartTime(startInput.value) || '';
+                const endStr = parseSmartTime(endInput.value) || '';
+                
+                if (startStr && endStr) {
+                    const startMin = toMinutes(startStr);
+                    const endMin = toMinutes(endStr);
+                    
+                    // Calculate duration
+                    let diff = endMin - startMin;
+                    if (diff < 0) diff += 1440; // Handle wrap-around past midnight
+                    
+                    // Format and display duration
+                    const h = Math.floor(diff / 60);
+                    const m = diff % 60;
+                    let displayDuration = '';
+                    if (h === 0) displayDuration = `${m}m`;
+                    else if (m === 0) displayDuration = `${h}h`;
+                    else displayDuration = `${h}h ${m}m`;
+                    
+                    durationInput.placeholder = displayDuration;
+                }
+                
                 if (statusEl) statusEl.textContent = 'auto';
             }
         }
