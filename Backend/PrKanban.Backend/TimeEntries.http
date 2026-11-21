@@ -1,0 +1,62 @@
+@baseUrl = http://localhost:5000
+@taskId = task_123abc
+@timeEntryId = abc123def456
+
+### Get all time entries for a task
+GET {{baseUrl}}/api/tasks/{{taskId}}/time-entries
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get a specific time entry
+GET {{baseUrl}}/api/tasks/{{taskId}}/time-entries/{{timeEntryId}}
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Create a time entry with start and end time
+POST {{baseUrl}}/api/tasks/{{taskId}}/time-entries
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "startTime": "2024-01-15T09:00:00Z",
+  "endTime": "2024-01-15T10:30:00Z",
+  "comment": "Analyzed requirements and created specifications",
+  "isBillable": true
+}
+
+### Create a time entry with direct duration
+POST {{baseUrl}}/api/tasks/{{taskId}}/time-entries
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "startTime": "2024-01-15T14:00:00Z",
+  "durationHours": 1.5,
+  "comment": "Implementation and unit testing",
+  "isBillable": true
+}
+
+### Create a non-billable time entry
+POST {{baseUrl}}/api/tasks/{{taskId}}/time-entries
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "startTime": "2024-01-15T11:00:00Z",
+  "durationHours": 0.5,
+  "comment": "Team meeting discussion",
+  "isBillable": false
+}
+
+### Update a time entry
+PUT {{baseUrl}}/api/tasks/{{taskId}}/time-entries/{{timeEntryId}}
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "durationHours": 2,
+  "comment": "Updated comment after discussion",
+  "isBillable": false
+}
+
+### Delete a time entry
+DELETE {{baseUrl}}/api/tasks/{{taskId}}/time-entries/{{timeEntryId}}
+Authorization: Bearer YOUR_TOKEN_HERE

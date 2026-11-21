@@ -115,6 +115,11 @@ namespace PrKanban.Models
         public virtual TaskOrder? Ordering { get; set; }
 
         /// <summary>
+        /// Estimated hours for this task (optional)
+        /// </summary>
+        public double? EstimatedHours { get; set; }
+
+        /// <summary>
         /// Whether task is archived (soft delete)
         /// </summary>
         public bool IsArchived { get; set; } = false;
@@ -139,6 +144,11 @@ namespace PrKanban.Models
         /// Reference to the User who owns this task
         /// </summary>
         public virtual ApplicationUser? User { get; set; }
+
+        /// <summary>
+        /// Time entries logged against this task
+        /// </summary>
+        public virtual ICollection<TimeEntry> TimeEntries { get; set; } = new List<TimeEntry>();
 
         // Non-mapped property for tags array
         /// <summary>

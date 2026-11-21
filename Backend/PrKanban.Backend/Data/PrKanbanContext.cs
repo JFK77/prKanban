@@ -19,6 +19,7 @@ namespace PrKanban.Data
         public DbSet<TaskStatusEvent> TaskStatusEvents { get; set; }
 
         public DbSet<TaskAttachment> TaskAttachments { get; set; }
+        public DbSet<TimeEntry> TimeEntries { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Project> Projects { get; set; }
         public DbSet<Deliverable> Deliverables { get; set; }
@@ -219,6 +220,29 @@ namespace PrKanban.Data
                     .WithMany()
                     .HasForeignKey(e => e.TaskId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<TimeEntry>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(32);
+                entity.Property(e => e.TaskId).IsRequired();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.StartTime).IsRequired();
+                entity.Property(e => e.DurationHours).IsRequired();
+                entity.Property(e => e.IsBillable).IsRequired().HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.UpdatedAt).IsRequired();
+                entity.HasIndex(e => e.TaskId);
+                entity.HasIndex(e => e.UserId);
+                entity.HasOne(e => e.Task)
+                    .WithMany(t => t.TimeEntries)
+                    .HasForeignKey(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Configure BoardConfig

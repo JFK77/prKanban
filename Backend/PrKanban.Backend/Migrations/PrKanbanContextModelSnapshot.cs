@@ -15,7 +15,7 @@ namespace PrKanban.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -524,6 +524,9 @@ namespace PrKanban.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("EstimatedHours")
+                        .HasColumnType("REAL");
+
                     b.Property<bool>("IsArchived")
                         .HasColumnType("INTEGER");
 
@@ -535,10 +538,10 @@ namespace PrKanban.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Tags")
+                    b.PrimitiveCollection<string>("Tags")
                         .IsRequired()
                         .HasColumnType("TEXT")
-                        .HasAnnotation("Relational:JsonPropertyName", "tags");
+                        .HasJsonPropertyName("tags");
 
                     b.Property<string>("TagsJson")
                         .HasColumnType("TEXT");
@@ -682,6 +685,52 @@ namespace PrKanban.Migrations
                     b.HasIndex("TaskId", "Id");
 
                     b.ToTable("TaskStatusEvents");
+                });
+
+            modelBuilder.Entity("PrKanban.Models.TimeEntry", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("DurationHours")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsBillable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TimeEntries");
                 });
 
             modelBuilder.Entity("PrKanban.Models.TranslationEntry", b =>
@@ -917,6 +966,25 @@ namespace PrKanban.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PrKanban.Models.TimeEntry", b =>
+                {
+                    b.HasOne("PrKanban.Models.Task", "Task")
+                        .WithMany("TimeEntries")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrKanban.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PrKanban.Models.ApplicationUser", b =>
                 {
                     b.Navigation("BoardConfig");
@@ -948,6 +1016,8 @@ namespace PrKanban.Migrations
                     b.Navigation("ProjectBoardPosition");
 
                     b.Navigation("StatusHistory");
+
+                    b.Navigation("TimeEntries");
                 });
 #pragma warning restore 612, 618
         }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PrKanban.Data;
 using PrKanban.Models;
 using PrKanban.Services;
+using PrKanban.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IDatabaseInformationService, DatabaseInformationService>();
@@ -15,6 +16,7 @@ builder.Services.AddScoped<ITaskMoveService, TaskMoveService>();
 builder.Services.AddScoped<IProjectBoardService, ProjectBoardService>();
 builder.Services.AddScoped<IProjectHierarchyService, ProjectHierarchyService>();
 builder.Services.AddScoped<ITableExportService, TableExportService>();
+builder.Services.AddScoped<ITimeEntryService, TimeEntryService>();
 
 // 1. Add DbContext
 builder.Services.AddDbContext<PrKanbanContext>(options =>
@@ -195,6 +197,9 @@ app.UseAuthorization();
 
 // Map controllers
 app.MapControllers();
+
+// Map time entry endpoints
+app.MapTimeEntryEndpoints();
 
 // Swagger UI
 if (app.Environment.IsDevelopment())

@@ -1,0 +1,136 @@
+using Microsoft.EntityFrameworkCore;
+using PrKanban.Data;
+using PrKanban.Models;
+using PrKanban.Controllers;
+
+namespace PrKanban.Services;
+
+/// <summary>
+/// Service for managing time entries
+/// </summary>
+public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryService
+{
+    public async System.Threading.Tasks.Task<TimeEntryResponse?> GetByIdAsync(string taskId, string timeEntryId, CancellationToken cancellationToken = default)
+    {
+        var entry = await context.TimeEntries
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.TaskId == taskId && e.Id == timeEntryId, cancellationToken);
+
+        return entry is null ? null : MapToResponse(entry);
+    }
+
+    public async System.Threading.Tasks.Task<IReadOnlyList<TimeEntryResponse>> GetByTaskIdAsync(string taskId, CancellationToken cancellationToken = default)
+    {
+        var entries = await context.TimeEntries
+            .AsNoTracking()
+            .Where(e => e.TaskId == taskId)
+            .OrderByDescending(e => e.StartTime)
+            .ToListAsync(cancellationToken);
+
+        return entries.Select(MapToResponse).ToList().AsReadOnly();
+    }
+
+    public async System.Threading.Tasks.Task<TimeEntryResponse> CreateAsync(string taskId, string userId, CreateTimeEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        // Verify task exists
+        var taskExists = await context.Tasks.AnyAsync(t => t.Id == taskId, cancellationToken);
+        if (!taskExists)
+            throw new KeyNotFoundException($"Task {taskId} not found");
+
+        // Verify user exists
+        var userExists = await context.Users.AnyAsync(u => u.Id == userId, cancellationToken);
+        if (!userExists)
+            throw new KeyNotFoundException($"User {userId} not found");
+
+        // Calculate duration if not provided
+        double durationHours = request.DurationHours ?? 0;
+        if (request.EndTime.HasValue && !request.DurationHours.HasValue)
+        {
+            var duration = request.EndTime.Value - request.StartTime;
+            durationHours = duration.TotalHours;
+        }
+
+        if (durationHours <= 0)
+            throw new ArgumentException("Duration must be greater than 0 hours");
+
+        var entry = new TimeEntry
+        {
+            TaskId = taskId,
+            UserId = userId,
+            StartTime = request.StartTime.UtcDateTime,
+            EndTime = request.EndTime?.UtcDateTime,
+            DurationHours = durationHours,
+            Comment = request.Comment,
+            IsBillable = request.IsBillable,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        context.TimeEntries.Add(entry);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return MapToResponse(entry);
+    }
+
+    public async System.Threading.Tasks.Task<TimeEntryResponse> UpdateAsync(string taskId, string timeEntryId, UpdateTimeEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var entry = await context.TimeEntries
+            .FirstOrDefaultAsync(e => e.TaskId == taskId && e.Id == timeEntryId, cancellationToken);
+
+        if (entry is null)
+            throw new KeyNotFoundException($"Time entry {timeEntryId} not found for task {taskId}");
+
+        if (request.StartTime.HasValue)
+            entry.StartTime = request.StartTime.Value.UtcDateTime;
+
+        if (request.EndTime.HasValue)
+            entry.EndTime = request.EndTime.Value.UtcDateTime;
+
+        if (request.DurationHours.HasValue)
+        {
+            if (request.DurationHours <= 0)
+                throw new ArgumentException("Duration must be greater than 0 hours");
+            entry.DurationHours = request.DurationHours.Value;
+        }
+
+        if (request.Comment is not null)
+            entry.Comment = request.Comment;
+
+        if (request.IsBillable.HasValue)
+            entry.IsBillable = request.IsBillable.Value;
+
+        entry.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        return MapToResponse(entry);
+    }
+
+    public async System.Threading.Tasks.Task DeleteAsync(string taskId, string timeEntryId, CancellationToken cancellationToken = default)
+    {
+        var entry = await context.TimeEntries
+            .FirstOrDefaultAsync(e => e.TaskId == taskId && e.Id == timeEntryId, cancellationToken);
+
+        if (entry is null)
+            throw new KeyNotFoundException($"Time entry {timeEntryId} not found for task {taskId}");
+
+        context.TimeEntries.Remove(entry);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static TimeEntryResponse MapToResponse(TimeEntry entry)
+    {
+        return new TimeEntryResponse(
+            entry.Id,
+            entry.TaskId,
+            entry.UserId,
+            new DateTimeOffset(entry.StartTime, TimeSpan.Zero),
+            entry.EndTime.HasValue ? new DateTimeOffset(entry.EndTime.Value, TimeSpan.Zero) : null,
+            entry.DurationHours,
+            entry.Comment,
+            entry.IsBillable,
+            new DateTimeOffset(entry.CreatedAt, TimeSpan.Zero),
+            new DateTimeOffset(entry.UpdatedAt, TimeSpan.Zero)
+        );
+    }
+}
