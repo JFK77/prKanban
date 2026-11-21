@@ -1041,13 +1041,21 @@
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
                                 <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
                             </h4>
+                            
+                            <!-- Current user info -->
+                            <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                                <p class="text-xs text-slate-600 dark:text-slate-400">
+                                    <span data-i18n="common.user">Benutzer</span>: <span id="current-user-email" class="font-medium text-slate-800 dark:text-slate-200">–</span>
+                                </p>
+                            </div>
+                            
                             <form id="task-time-form" class="space-y-3">
                                 <!-- Date picker field -->
                                 <div class="flex flex-col gap-1">
                                     <label class="text-xs font-medium text-slate-600 dark:text-slate-300">
                                         <i class="fa-solid fa-calendar mr-1 text-slate-500"></i><span data-i18n="task.date">Datum</span>
                                     </label>
-                                    <input type="date" id="time-entry-date" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <input type="date" id="time-entry-date" class="w-32 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                                 
                                 <!-- Time range input with smart parsing and quick add -->
@@ -6084,6 +6092,14 @@
             if (endBtn) endBtn.textContent = `jetzt ${roundedTime}`;
         }
 
+        // Update current user email display
+        function updateCurrentUserDisplay() {
+            const userEmailEl = document.getElementById('current-user-email');
+            if (userEmailEl && window.currentUser) {
+                userEmailEl.textContent = window.currentUser.email || window.currentUser.username || '–';
+            }
+        }
+
         // Quick add minutes to end time
         function quickAddMinutes(addMins) {
             const startInput = document.getElementById('time-entry-start');
@@ -6282,6 +6298,9 @@
 
             // Initialize time now buttons with current rounded time
             updateTimeNowButtons();
+            
+            // Update current user email display
+            updateCurrentUserDisplay();
             
             // Set date input to today
             const dateInput = document.getElementById('time-entry-date');
