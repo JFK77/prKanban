@@ -461,12 +461,37 @@ function select(kind, item = null, parentId = '') {
     document.getElementById('form-title').textContent = kind === 'customers' ? t('hierarchy.customer', 'Kunde') : kind === 'projects' ? t('hierarchy.project', 'Projekt') : t('hierarchy.deliverable', 'Lieferobjekt');
     document.getElementById('name-label').textContent = kind === 'customers' ? t('hierarchy.companyName', 'Firmenname') : kind === 'projects' ? t('hierarchy.projectName', 'Projektname') : t('hierarchy.deliverableTitle', 'Titel');
     document.getElementById('item-id').textContent = item ? `ID: ${item.id}` : '';
-    form.querySelectorAll('[data-for]').forEach(label => {
+    
+    // Setup tabs for deliverables
+    setupHierarchyTabs(kind);
+    
+    // Setup Details panel
+    const detailsFieldset = document.getElementById('fields');
+    detailsFieldset.querySelectorAll('[data-for]').forEach(label => {
         const active = label.dataset.for.split(' ').includes(kind);
         label.classList.toggle('hidden', !active);
         label.querySelectorAll('input,select').forEach(input => { input.disabled = !active; input.required = false; });
     });
-    fields.disabled = !admin;
+    detailsFieldset.disabled = !admin;
+    
+    // Setup Estimate panel (for deliverables)
+    if (kind === 'deliverables') {
+        const estimateFieldset = document.getElementById('estimate-fields');
+        estimateFieldset.disabled = !admin;
+        const saveEstimateBtn = document.getElementById('save-estimate');
+        saveEstimateBtn.classList.toggle('hidden', !admin);
+        
+        // Remove old listener by cloning
+        const saveEstimateBtnClone = saveEstimateBtn.cloneNode(true);
+        saveEstimateBtn.replaceWith(saveEstimateBtnClone);
+        
+        const newSaveEstimateBtn = document.getElementById('save-estimate');
+        newSaveEstimateBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        });
+    }
+    
     document.getElementById('save').classList.toggle('hidden', !admin);
     form.elements.name.value = item?.name || '';
     const parent = form.elements.parent;
@@ -486,12 +511,87 @@ function select(kind, item = null, parentId = '') {
         form.elements[name].value = item?.[name] ?? 0;
         form.elements[name].required = kind === 'deliverables';
     }
+    updateEstimateOverview();
     if (admin) form.elements.name.focus();
 }
 
-form.addEventListener('input', () => { dirty = true; });
+form.addEventListener('input', () => { 
+    dirty = true; 
+    updateEstimateOverview();
+});
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 document.getElementById('new-customer').addEventListener('click', () => select('customers'));
+
+// Tab management for hierarchy editor
+function setupHierarchyTabs(kind) {
+    const tabsNav = document.getElementById('hierarchy-tabs');
+    const detailsTab = document.getElementById('hierarchy-tab-details');
+    const estimateTab = document.getElementById('hierarchy-tab-estimate');
+    const detailsPanel = document.getElementById('hierarchy-panel-details');
+    const estimatePanel = document.getElementById('hierarchy-panel-estimate');
+    
+    if (kind === 'deliverables') {
+        tabsNav.classList.remove('hidden');
+        detailsPanel.classList.remove('hidden');
+        estimatePanel.classList.add('hidden');
+        
+        // Remove old listeners first to avoid duplicates
+        const detailsTabClone = detailsTab.cloneNode(true);
+        const estimateTabClone = estimateTab.cloneNode(true);
+        
+        detailsTab.replaceWith(detailsTabClone);
+        estimateTab.replaceWith(estimateTabClone);
+        
+        const newDetailsTab = document.getElementById('hierarchy-tab-details');
+        const newEstimateTab = document.getElementById('hierarchy-tab-estimate');
+        
+        newDetailsTab.addEventListener('click', () => switchTab('details'));
+        newEstimateTab.addEventListener('click', () => switchTab('estimate'));
+    } else {
+        tabsNav.classList.add('hidden');
+        detailsPanel.classList.remove('hidden');
+        estimatePanel.classList.add('hidden');
+    }
+}
+
+function switchTab(tabName) {
+    const detailsTab = document.getElementById('hierarchy-tab-details');
+    const estimateTab = document.getElementById('hierarchy-tab-estimate');
+    const detailsPanel = document.getElementById('hierarchy-panel-details');
+    const estimatePanel = document.getElementById('hierarchy-panel-estimate');
+    
+    if (tabName === 'details') {
+        detailsTab.setAttribute('aria-selected', 'true');
+        detailsTab.tabIndex = 0;
+        estimateTab.setAttribute('aria-selected', 'false');
+        estimateTab.tabIndex = -1;
+        detailsPanel.classList.remove('hidden');
+        estimatePanel.classList.add('hidden');
+    } else if (tabName === 'estimate') {
+        detailsTab.setAttribute('aria-selected', 'false');
+        detailsTab.tabIndex = -1;
+        estimateTab.setAttribute('aria-selected', 'true');
+        estimateTab.tabIndex = 0;
+        detailsPanel.classList.add('hidden');
+        estimatePanel.classList.remove('hidden');
+        updateEstimateOverview();
+    }
+}
+
+function updateEstimateOverview() {
+    const budgetHours = Number(form.elements.budgetHours?.value || 0);
+    const estimateHours = Number(form.elements.initialEstimateHours?.value || 0);
+    const actualHours = Number(form.elements.actualHours?.value || 0);
+    
+    const remaining = Math.max(0, budgetHours - actualHours);
+    const utilization = budgetHours > 0 ? Math.round((actualHours / budgetHours) * 100) : 0;
+    
+    document.getElementById('overview-budget').textContent = `${budgetHours}h`;
+    document.getElementById('overview-estimated').textContent = `${estimateHours}h`;
+    document.getElementById('overview-actual').textContent = `${actualHours}h`;
+    document.getElementById('overview-remaining').textContent = `${remaining}h`;
+    document.getElementById('overview-utilization').textContent = `${utilization}%`;
+}
 
 form.addEventListener('submit', async event => {
     event.preventDefault();
