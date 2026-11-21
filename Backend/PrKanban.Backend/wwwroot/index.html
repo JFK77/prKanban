@@ -6169,12 +6169,14 @@
         // Quick subtract minutes from Von time, then auto-calculate Bis
         function quickSubtractMinutes(subtractMins) {
             const startInput = document.getElementById('time-entry-start');
+            const endInput = document.getElementById('time-entry-end');
             
-            if (!startInput) return;
+            if (!startInput || !endInput) return;
 
-            const baseStartStr = parseSmartTime(startInput.value) || '08:00';
-            const startMin = toMinutes(baseStartStr) || 480;
-            const nextStart = fromMinutes(startMin - subtractMins);
+            // Calculate Von as: Bis - subtractMins
+            const baseEndStr = parseSmartTime(endInput.value) || '16:30';
+            const endMin = toMinutes(baseEndStr) || 990;
+            const nextStart = fromMinutes(endMin - subtractMins);
             
             startInput.value = nextStart;
             resetDurationToAuto();
