@@ -1208,6 +1208,7 @@
                                         </select>
                                         <button type="button" onclick="fillWeekWithTarget()" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Woche auffüllen</button>
                                         <button type="button" onclick="clearWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Leeren</button>
+                                        <button type="button" onclick="addWeekTimeEntries()" class="rounded-md border border-emerald-300 dark:border-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800">Hinzufügen</button>
                                     </div>
                                     <div class="text-slate-700 dark:text-slate-300">
                                         <span id="week-total-display">0h</span> / <span id="week-target-display">40h</span> (<span id="week-diff-display">-40h</span>)
@@ -6605,6 +6606,71 @@
             updateWeekSummary();
         }
 
+        // Add week time entries to the list
+        async function addWeekTimeEntries() {
+            const taskId = document.getElementById('modal-task-id').value;
+            if (!taskId) return alert('Erst Task auswählen');
+            
+            const monday = getMonday(weekState.currentWeekStartDate);
+            const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+            let addedCount = 0;
+            
+            // Create an entry for each day that has a duration
+            for (let i = 0; i < 5; i++) {
+                const durationMins = weekState.durations[i];
+                if (durationMins <= 0) continue; // Skip days with no entry
+                
+                const dayDate = new Date(monday);
+                dayDate.setDate(dayDate.getDate() + i);
+                
+                // Create start time (default: 08:00)
+                const startTime = new Date(dayDate);
+                startTime.setHours(8, 0, 0, 0);
+                
+                // Create end time (08:00 + duration)
+                const endTime = new Date(startTime);
+                endTime.setMinutes(endTime.getMinutes() + durationMins);
+                
+                const durationHours = durationMins / 60;
+                
+                const payload = {
+                    startTime: startTime.toISOString(),
+                    endTime: endTime.toISOString(),
+                    durationHours: durationHours,
+                    comment: `Woche KW ${getWeekInfo(dayDate).week} - ${dayNames[i]}`,
+                    isBillable: true
+                };
+                
+                try {
+                    const resp = await fetch(`/api/tasks/${taskId}/time-entries`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (resp.ok) {
+                        addedCount++;
+                    } else {
+                        console.error(`Fehler beim Hinzufügen von ${dayNames[i]}`);
+                    }
+                } catch (err) {
+                    console.error(`Fehler für ${dayNames[i]}:`, err);
+                }
+            }
+            
+            if (addedCount > 0) {
+                // Clear week overview
+                clearWeek();
+                
+                // Reload entries
+                await loadTimeEntries();
+                
+                alert(`${addedCount} Zeiteinträge hinzugefügt`);
+            } else {
+                alert('Keine Einträge zum Hinzufügen (alle Tage sind leer)');
+            }
+        }
+
         // Initialize week overview on page load
         function initWeekOverview() {
             updateWeekDisplay();
@@ -6642,6 +6708,7 @@
         window.fillWeekWithTarget = fillWeekWithTarget;
         window.clearWeek = clearWeek;
         window.initWeekOverview = initWeekOverview;
+        window.addWeekTimeEntries = addWeekTimeEntries;
         window.setTimeToNowAndAutoEnd = setTimeToNowAndAutoEnd;
         window.updateTimeNowButtons = updateTimeNowButtons;
         window.updateCurrentUserDisplay = updateCurrentUserDisplay;
