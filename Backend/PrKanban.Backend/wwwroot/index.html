@@ -1036,6 +1036,100 @@
                 <!-- Time Tracking Tab -->
                 <div id="task-panel-tab-time" class="task-panel-tab-content hidden">
                     <div class="space-y-4">
+                        <!-- Add time entry form - Optimized UI -->
+                        <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                                <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
+                            </h4>
+                            
+                            <!-- Current user info -->
+                            <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                                <p class="text-xs text-slate-600 dark:text-slate-400">
+                                    <span data-i18n="common.user">Benutzer</span>: <span id="current-user-email" class="font-medium text-slate-800 dark:text-slate-200">–</span>
+                                </p>
+                            </div>
+                            
+                            <form id="task-time-form" class="space-y-3">
+                                <!-- Date picker field -->
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        <i class="fa-solid fa-calendar mr-1 text-slate-500"></i><span data-i18n="task.date">Datum</span>
+                                    </label>
+                                    <input type="date" id="time-entry-date" class="w-32 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <!-- Time range input with smart parsing and quick add - VERTICAL LAYOUT -->
+                                <div class="flex flex-col gap-4 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-900 dark:text-slate-100">
+                                    
+                                    <!-- Row 1: Von (Start time) and Dauer (Duration) -->
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <!-- Von (Start time) -->
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Von</span>
+                                                <button type="button" onclick="setTimeToNow('start'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
+                                            </div>
+                                            <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                        </div>
+
+                                        <!-- Dauer (Duration) with auto indicator and override -->
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Dauer</span>
+                                                <span class="text-xs text-slate-500 dark:text-slate-400" id="time-duration-status">auto</span>
+                                            </div>
+                                            <input type="text" id="time-entry-duration" placeholder="auto" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick add buttons (Ab Von:) for Von time calculation -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">Ab Von:</span>
+                                        <button type="button" onclick="quickAddMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+15m</button>
+                                        <button type="button" onclick="quickAddMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+30m</button>
+                                        <button type="button" onclick="quickAddMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+1h</button>
+                                        <button type="button" onclick="quickAddMinutes(120)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+2h</button>
+                                        <button type="button" onclick="quickAddMinutes(240)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+4h</button>
+                                        <button type="button" onclick="quickAddMinutes(480)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+8h</button>
+                                    </div>
+
+                                    <!-- Quick subtract buttons (Abzug:) - for Von time -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">Abzug:</span>
+                                        <button type="button" onclick="quickSubtractMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-15m</button>
+                                        <button type="button" onclick="quickSubtractMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-30m</button>
+                                        <button type="button" onclick="quickSubtractMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-1h</button>
+                                        <button type="button" onclick="quickSubtractMinutes(120)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-2h</button>
+                                        <button type="button" onclick="quickSubtractMinutes(240)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-4h</button>
+                                        <button type="button" onclick="quickSubtractMinutes(480)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-8h</button>
+                                    </div>
+
+                                    <!-- Bis (End time) -->
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Bis</span>
+                                            <button type="button" onclick="setTimeToNow('end'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-end">jetzt 16:30</button>
+                                        </div>
+                                        <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.comment" data-i18n-fallback="Kommentar (optional)">Kommentar (optional)</label>
+                                    <input type="text" id="time-entry-comment" placeholder="z.B. Anforderungen analysiert" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                    <input type="checkbox" id="time-entry-billable" checked="" class="rounded border-slate-300 dark:border-slate-600">
+                                    <span data-i18n="task.billable" data-i18n-fallback="Abrechenbar">Abrechenbar</span>
+                                </label>
+                                
+                                <button type="button" onclick="addTimeEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-xs transition-colors">
+                                    <i class="fa-solid fa-check mr-1"></i><span data-i18n="common.add" data-i18n-fallback="Hinzufügen">Hinzufügen</span>
+                                </button>
+                            </form>
+                        </div>
+                        
                         <!-- Week Overview Section -->
                         <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-4">
@@ -1120,100 +1214,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Add time entry form - Optimized UI -->
-                        <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-                                <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
-                            </h4>
-                            
-                            <!-- Current user info -->
-                            <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
-                                <p class="text-xs text-slate-600 dark:text-slate-400">
-                                    <span data-i18n="common.user">Benutzer</span>: <span id="current-user-email" class="font-medium text-slate-800 dark:text-slate-200">–</span>
-                                </p>
-                            </div>
-                            
-                            <form id="task-time-form" class="space-y-3">
-                                <!-- Date picker field -->
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                        <i class="fa-solid fa-calendar mr-1 text-slate-500"></i><span data-i18n="task.date">Datum</span>
-                                    </label>
-                                    <input type="date" id="time-entry-date" class="w-32 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                
-                                <!-- Time range input with smart parsing and quick add - VERTICAL LAYOUT -->
-                                <div class="flex flex-col gap-4 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-900 dark:text-slate-100">
-                                    
-                                    <!-- Row 1: Von (Start time) and Dauer (Duration) -->
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <!-- Von (Start time) -->
-                                        <div class="flex flex-col gap-2">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Von</span>
-                                                <button type="button" onclick="setTimeToNow('start'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
-                                            </div>
-                                            <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                        </div>
-
-                                        <!-- Dauer (Duration) with auto indicator and override -->
-                                        <div class="flex flex-col gap-2">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Dauer</span>
-                                                <span class="text-xs text-slate-500 dark:text-slate-400" id="time-duration-status">auto</span>
-                                            </div>
-                                            <input type="text" id="time-entry-duration" placeholder="auto" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                        </div>
-                                    </div>
-
-                                    <!-- Quick add buttons (Ab Von:) for Von time calculation -->
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Ab Von:</span>
-                                        <button type="button" onclick="quickAddMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+15m</button>
-                                        <button type="button" onclick="quickAddMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+30m</button>
-                                        <button type="button" onclick="quickAddMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+1h</button>
-                                        <button type="button" onclick="quickAddMinutes(120)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+2h</button>
-                                        <button type="button" onclick="quickAddMinutes(240)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+4h</button>
-                                        <button type="button" onclick="quickAddMinutes(480)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+8h</button>
-                                    </div>
-
-                                    <!-- Quick subtract buttons (Abzug:) - for Von time -->
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Abzug:</span>
-                                        <button type="button" onclick="quickSubtractMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-15m</button>
-                                        <button type="button" onclick="quickSubtractMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-30m</button>
-                                        <button type="button" onclick="quickSubtractMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-1h</button>
-                                        <button type="button" onclick="quickSubtractMinutes(120)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-2h</button>
-                                        <button type="button" onclick="quickSubtractMinutes(240)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-4h</button>
-                                        <button type="button" onclick="quickSubtractMinutes(480)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-8h</button>
-                                    </div>
-
-                                    <!-- Bis (End time) -->
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Bis</span>
-                                            <button type="button" onclick="setTimeToNow('end'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-end">jetzt 16:30</button>
-                                        </div>
-                                        <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.comment">Kommentar (optional)</label>
-                                    <input type="text" id="time-entry-comment" placeholder="z.B. Anforderungen analysiert" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                
-                                <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-                                    <input type="checkbox" id="time-entry-billable" checked class="rounded border-slate-300 dark:border-slate-600">
-                                    <span data-i18n="task.billable">Abrechenbar</span>
-                                </label>
-                                
-                                <button type="button" onclick="addTimeEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-xs transition-colors">
-                                    <i class="fa-solid fa-check mr-1"></i><span data-i18n="common.add">Hinzufügen</span>
-                                </button>
-                            </form>
                         </div>
                         
                         <!-- Time entries list -->
