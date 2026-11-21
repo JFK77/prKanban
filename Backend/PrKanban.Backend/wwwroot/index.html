@@ -1081,7 +1081,6 @@
                                             <input type="text" id="time-entry-duration" placeholder="auto" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                                         </div>
                                     </div>
-                                    <span id="time-duration-display" class="text-xs text-slate-600 dark:text-slate-400">–</span>
 
                                     <!-- Quick add buttons (Ab Von:) for Von time calculation -->
                                     <div class="flex flex-wrap items-center gap-1.5">
@@ -5382,7 +5381,6 @@
         window.toMinutes = toMinutes;
         window.fromMinutes = fromMinutes;
         window.parseSmartTime = parseSmartTime;
-        window.formatDuration = formatDuration;
         window.updateDurationDisplay = updateDurationDisplay;
         window.handleTimeBlur = handleTimeBlur;
         window.handleTimeKeydown = handleTimeKeydown;
@@ -5989,23 +5987,13 @@
         }
 
         // Format duration from start and end minutes
-        function formatDuration(startMin, endMin) {
-            if (startMin === null || endMin === null) return '–';
-            const diff = endMin >= startMin ? endMin - startMin : 1440 - startMin + endMin;
-            const h = Math.floor(diff / 60);
-            const m = diff % 60;
-            if (h === 0) return `${m}m`;
-            return m === 0 ? `${h}h` : `${h}h ${m}m`;
-        }
-
         function updateDurationDisplay() {
             const startInput = document.getElementById('time-entry-start');
             const endInput = document.getElementById('time-entry-end');
             const durationInput = document.getElementById('time-entry-duration');
-            const displayEl = document.getElementById('time-duration-display');
             const statusEl = document.getElementById('time-duration-status');
             
-            if (!startInput || !endInput || !displayEl) return;
+            if (!startInput || !endInput) return;
 
             // Check if duration was manually overridden
             if (durationInput && durationInput.value.trim()) {
@@ -6019,19 +6007,9 @@
                 const newEndTime = fromMinutes(startMin + durationMins);
                 endInput.value = newEndTime;
                 
-                // Update display
-                const formatted = formatDurationText(durationMins);
-                displayEl.textContent = formatted;
                 if (statusEl) statusEl.textContent = 'manuell';
             } else {
                 // Duration is automatic (from Von and Bis)
-                const startStr = parseSmartTime(startInput.value) || '';
-                const endStr = parseSmartTime(endInput.value) || '';
-                
-                const startMin = toMinutes(startStr);
-                const endMin = toMinutes(endStr);
-                
-                displayEl.textContent = formatDuration(startMin, endMin);
                 if (statusEl) statusEl.textContent = 'auto';
             }
         }
@@ -6054,14 +6032,6 @@
             }
 
             return 0;
-        }
-
-        function formatDurationText(minutes) {
-            const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            if (h === 0) return `${m} Min.`;
-            if (m === 0) return `${h} Std.`;
-            return `${h} Std. ${m} Min.`;
         }
 
         // Handle time input blur - parse smart time
