@@ -892,8 +892,26 @@
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
+            
+            <!-- Tab Navigation -->
+            <div class="flex-none border-b border-slate-200 dark:border-slate-800">
+                <div id="task-panel-tabs" class="flex gap-0 overflow-x-auto">
+                    <button type="button" class="task-panel-tab active px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 border-b-2 border-blue-600 hover:text-slate-900 dark:hover:text-white transition-colors" data-tab="details">
+                        <i class="fa-solid fa-list-check mr-2"></i><span data-i18n="task.details">Details</span>
+                    </button>
+                    <button type="button" class="task-panel-tab px-4 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:text-slate-700 dark:hover:text-slate-300 transition-colors" data-tab="time">
+                        <i class="fa-solid fa-clock mr-2"></i><span data-i18n="task.timeTracking">Zeiterfassung</span>
+                    </button>
+                    <button type="button" class="task-panel-tab px-4 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:text-slate-700 dark:hover:text-slate-300 transition-colors" data-tab="estimate">
+                        <i class="fa-solid fa-hourglass-end mr-2"></i><span data-i18n="task.estimate">Aufwand</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="flex-1 min-h-0 p-6 overflow-y-auto">
-                <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <!-- Details Tab -->
+                <div id="task-panel-tab-details" class="task-panel-tab-content">
+                    <form id="task-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
                     <input type="hidden" id="modal-task-id">
                     <div>
                         <label data-i18n="task.title" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Titel der Aufgabe</label>
@@ -1013,13 +1031,117 @@
                         </div>
                     </div>
                 </form>
+                </div><!-- end task-panel-tab-details -->
+                
+                <!-- Time Tracking Tab -->
+                <div id="task-panel-tab-time" class="task-panel-tab-content hidden">
+                    <div class="space-y-4">
+                        <!-- Add time entry form -->
+                        <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                                <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
+                            </h4>
+                            <form id="task-time-form" class="space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.startTime">Anfang</label>
+                                        <input type="datetime-local" id="time-entry-start" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.endTime">Ende</label>
+                                        <input type="datetime-local" id="time-entry-end" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.duration">Dauer (Stunden)</label>
+                                    <input type="number" id="time-entry-duration" min="0.25" step="0.25" placeholder="1.5" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.comment">Kommentar</label>
+                                    <input type="text" id="time-entry-comment" placeholder="z.B. Anforderungen analysiert" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                    <input type="checkbox" id="time-entry-billable" checked class="rounded border-slate-300 dark:border-slate-600">
+                                    <span data-i18n="task.billable">Abrechenbar</span>
+                                </label>
+                                <button type="button" onclick="addTimeEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-xs transition-colors">
+                                    <i class="fa-solid fa-check mr-1"></i><span data-i18n="common.add">Hinzufügen</span>
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Time entries list -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                                <i class="fa-solid fa-list text-blue-600 mr-2"></i><span data-i18n="task.timeEntries">Zeiteinträge</span>
+                            </h4>
+                            <div id="task-time-entries-list" class="space-y-2 max-h-96 overflow-y-auto">
+                                <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="task.noTimeEntries">Noch keine Zeiteinträge</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Time Summary -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.totalHours">Summe</span>
+                                    <p class="text-lg font-bold text-slate-900 dark:text-white"><span id="task-total-hours">0</span>h</p>
+                                </div>
+                                <div>
+                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.billableHours">Abrechenbar</span>
+                                    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400"><span id="task-billable-hours">0</span>h</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- end task-panel-tab-time -->
+                
+                <!-- Estimate Tab -->
+                <div id="task-panel-tab-estimate" class="task-panel-tab-content hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                                <i class="fa-solid fa-hourglass-end text-amber-600 mr-2"></i><span data-i18n="task.estimatedHours">Geschätzter Aufwand (Stunden)</span>
+                            </label>
+                            <input type="number" id="task-estimated-hours" min="0" step="0.5" placeholder="4.0" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="task.estimateHint">Realistischer Aufwand für die Fertigstellung dieser Task</p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3" data-i18n="task.overview">Übersicht</h4>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.estimated">Geschätzt</span>
+                                    <span class="font-semibold text-slate-900 dark:text-white"><span id="estimate-display">0</span>h</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.logged">Erfasst</span>
+                                    <span class="font-semibold text-slate-900 dark:text-white"><span id="logged-display">0</span>h</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.remaining">Verbleibend</span>
+                                    <span class="font-semibold text-slate-900 dark:text-white"><span id="remaining-display">0</span>h</span>
+                                </div>
+                                <div class="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-600 dark:text-slate-400" data-i18n="task.burndown">Auslastung</span>
+                                        <span class="font-semibold text-slate-900 dark:text-white"><span id="burndown-percent">0</span>%</span>
+                                    </div>
+                                    <div class="mt-2 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div id="burndown-bar" class="h-full w-0 bg-blue-600 transition-all"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- end task-panel-tab-estimate -->
             </div>
             <div class="flex-none p-4 border-t border-slate-200 dark:border-slate-800">
                 <div class="grid grid-cols-2 gap-3">
                     <button type="button" onclick="closeDetailsPanel()" class="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-2.5 rounded-lg text-sm transition-colors">
                         <span data-i18n="common.close">Schließen</span>
                     </button>
-                    <button type="submit" form="task-form" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
+                    <button type="submit" form="task-form" id="task-panel-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/10">
                         <span data-i18n="common.save">Speichern</span>
                     </button>
                 </div>
@@ -5655,6 +5777,167 @@
             setupCombobox('#modal-owner-container', 'modal-owner', 'owner-custom-dropdown', 'owner-dropdown-arrow', () => owners);
         }
 
+        // --- TAB SWITCHING ---
+        function setupTaskPanelTabs() {
+            const tabButtons = document.querySelectorAll('.task-panel-tab');
+            const tabContents = document.querySelectorAll('.task-panel-tab-content');
+            
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    
+                    // Remove active state from all
+                    tabButtons.forEach(b => {
+                        b.classList.remove('active', 'border-blue-600', 'text-slate-700', 'dark:text-slate-300');
+                        b.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+                    });
+                    tabContents.forEach(c => c.classList.add('hidden'));
+                    
+                    // Add active state to clicked tab
+                    btn.classList.add('active', 'border-blue-600', 'text-slate-700', 'dark:text-slate-300');
+                    btn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+                    document.getElementById(`task-panel-tab-${tabName}`).classList.remove('hidden');
+                    
+                    // Load data for time tracking tab
+                    if (tabName === 'time') {
+                        loadTimeEntries();
+                    }
+                });
+            });
+        }
+
+        async function addTimeEntry() {
+            const taskId = document.getElementById('modal-task-id').value;
+            if (!taskId) return alert('Erst Task auswählen');
+            
+            const startInput = document.getElementById('time-entry-start');
+            const endInput = document.getElementById('time-entry-end');
+            const durationInput = document.getElementById('time-entry-duration');
+            const commentInput = document.getElementById('time-entry-comment');
+            const billableCheckbox = document.getElementById('time-entry-billable');
+            
+            if (!startInput.value) return alert('Anfangszeit erforderlich');
+            if (!durationInput.value && !endInput.value) return alert('Dauer oder Endzeit erforderlich');
+            
+            const payload = {
+                startTime: new Date(startInput.value).toISOString(),
+                durationHours: parseFloat(durationInput.value) || undefined,
+                comment: commentInput.value || undefined,
+                isBillable: billableCheckbox.checked
+            };
+            
+            if (endInput.value) {
+                payload.endTime = new Date(endInput.value).toISOString();
+            }
+            
+            try {
+                const resp = await fetch(`/api/tasks/${taskId}/time-entries`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (resp.ok) {
+                    // Clear form
+                    startInput.value = '';
+                    endInput.value = '';
+                    durationInput.value = '';
+                    commentInput.value = '';
+                    billableCheckbox.checked = true;
+                    
+                    // Reload entries
+                    await loadTimeEntries();
+                } else {
+                    alert('Fehler beim Speichern der Zeiterfassung');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Fehler: ' + err.message);
+            }
+        }
+
+        async function loadTimeEntries() {
+            const taskId = document.getElementById('modal-task-id').value;
+            if (!taskId) return;
+            
+            try {
+                const resp = await fetch(`/api/tasks/${taskId}/time-entries`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const entries = data.entries || [];
+                    
+                    const listContainer = document.getElementById('task-time-entries-list');
+                    if (entries.length === 0) {
+                        listContainer.innerHTML = '<p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="task.noTimeEntries">Noch keine Zeiteinträge</p>';
+                    } else {
+                        listContainer.innerHTML = entries.map(entry => `
+                            <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-2 text-xs">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="font-medium text-slate-900 dark:text-white">${entry.durationHours}h</p>
+                                        <p class="text-slate-500 dark:text-slate-400">${new Date(entry.startTime).toLocaleString('de-DE')}</p>
+                                        ${entry.comment ? `<p class="text-slate-600 dark:text-slate-300 mt-1">${entry.comment}</p>` : ''}
+                                        <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${entry.isBillable ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}">
+                                            ${entry.isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}
+                                        </span>
+                                    </div>
+                                    <button type="button" onclick="deleteTimeEntry('${entry.id}')" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200">
+                                        <i class="fa-solid fa-trash-alt text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Update summary
+                    const totalHours = entries.reduce((s, e) => s + (e.durationHours || 0), 0);
+                    const billableHours = entries.filter(e => e.isBillable).reduce((s, e) => s + (e.durationHours || 0), 0);
+                    document.getElementById('task-total-hours').textContent = totalHours.toFixed(1);
+                    document.getElementById('task-billable-hours').textContent = billableHours.toFixed(1);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteTimeEntry(entryId) {
+            if (!confirm('Zeiteintrag wirklich löschen?')) return;
+            const taskId = document.getElementById('modal-task-id').value;
+            
+            try {
+                const resp = await fetch(`/api/tasks/${taskId}/time-entries/${entryId}`, {
+                    method: 'DELETE'
+                });
+                if (resp.ok) {
+                    await loadTimeEntries();
+                } else {
+                    alert('Fehler beim Löschen');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateEstimateDisplay() {
+            const estimated = parseFloat(document.getElementById('task-estimated-hours').value) || 0;
+            const taskId = document.getElementById('modal-task-id').value;
+            
+            fetch(`/api/tasks/${taskId}/time-entries`)
+                .then(r => r.json())
+                .then(data => {
+                    const logged = (data.entries || []).reduce((s, e) => s + (e.durationHours || 0), 0);
+                    const remaining = Math.max(0, estimated - logged);
+                    const percent = estimated > 0 ? Math.round((logged / estimated) * 100) : 0;
+                    
+                    document.getElementById('estimate-display').textContent = estimated.toFixed(1);
+                    document.getElementById('logged-display').textContent = logged.toFixed(1);
+                    document.getElementById('remaining-display').textContent = remaining.toFixed(1);
+                    document.getElementById('burndown-percent').textContent = percent;
+                    document.getElementById('burndown-bar').style.width = Math.min(100, percent) + '%';
+                })
+                .catch(err => console.error(err));
+        }
+
         // --- INITIALIZATION ---
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
@@ -5667,8 +5950,12 @@
         }
 
         async function initDOMAndAuth() {
-            // Add event listeners for controls
-            const descriptionEditor = document.getElementById('modal-description');
+            // Setup task panel tabs
+            setupTaskPanelTabs();
+            
+            // Add event listener for estimated hours input
+            document.getElementById('task-estimated-hours')?.addEventListener('change', updateEstimateDisplay);
+
             const descriptionEditorContainer = document.getElementById('description-editor-container');
             const imageResizer = document.getElementById('description-image-resizer');
             const attachmentInput = document.getElementById('task-attachment-input');
