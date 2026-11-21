@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="de" class="">
-<!-- CACHE-BUST: 20261121020100 --> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
+<!-- CACHE-BUST: 20261121020200 --> <!-- Die 'dark' Klasse wird hier per JS hinzugefügt -->
     
 <head>
     <meta charset="UTF-8">
@@ -1047,14 +1047,20 @@
                                     <!-- Main row: Von -> Bis + Duration -->
                                     <div class="flex items-center gap-2">
                                         <label class="flex flex-col gap-1">
-                                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Von</span>
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Von</span>
+                                                <button type="button" onclick="setTimeToNow('start')" class="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
+                                            </div>
                                             <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                                         </label>
 
                                         <span class="mt-5 text-slate-400 dark:text-slate-500">→</span>
 
                                         <label class="flex flex-col gap-1">
-                                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Bis</span>
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Bis</span>
+                                                <button type="button" onclick="setTimeToNow('end')" class="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-end">jetzt 16:30</button>
+                                            </div>
                                             <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                                         </label>
 
@@ -6007,6 +6013,46 @@
             }
         }
 
+        // Get current time rounded to nearest 15 minutes
+        function getCurrentTimeRounded() {
+            const now = new Date();
+            let minutes = now.getHours() * 60 + now.getMinutes();
+            
+            // Round to nearest 15 minutes
+            const remainder = minutes % 15;
+            if (remainder < 7.5) {
+                minutes -= remainder; // round down
+            } else {
+                minutes += (15 - remainder); // round up
+            }
+            
+            return fromMinutes(minutes);
+        }
+
+        // Set time input to current time (rounded)
+        function setTimeToNow(fieldType) {
+            const roundedTime = getCurrentTimeRounded();
+            const input = document.getElementById(fieldType === 'start' ? 'time-entry-start' : 'time-entry-end');
+            const btn = document.getElementById(fieldType === 'start' ? 'time-now-start' : 'time-now-end');
+            
+            input.value = roundedTime;
+            if (btn) {
+                btn.textContent = `jetzt ${roundedTime}`;
+            }
+            
+            updateDurationDisplay();
+        }
+
+        // Update "jetzt" button with current rounded time
+        function updateTimeNowButtons() {
+            const roundedTime = getCurrentTimeRounded();
+            const startBtn = document.getElementById('time-now-start');
+            const endBtn = document.getElementById('time-now-end');
+            
+            if (startBtn) startBtn.textContent = `jetzt ${roundedTime}`;
+            if (endBtn) endBtn.textContent = `jetzt ${roundedTime}`;
+        }
+
         // Quick add minutes to end time
         function quickAddMinutes(addMins) {
             const startInput = document.getElementById('time-entry-start');
@@ -6197,6 +6243,9 @@
             
             // Add event listener for estimated hours input
             document.getElementById('task-estimated-hours')?.addEventListener('change', updateEstimateDisplay);
+
+            // Initialize time now buttons with current rounded time
+            updateTimeNowButtons();
 
             // Setup time entry inputs
             const timeStartInput = document.getElementById('time-entry-start');
