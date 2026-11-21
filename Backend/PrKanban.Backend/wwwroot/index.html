@@ -1036,34 +1036,55 @@
                 <!-- Time Tracking Tab -->
                 <div id="task-panel-tab-time" class="task-panel-tab-content hidden">
                     <div class="space-y-4">
-                        <!-- Add time entry form -->
+                        <!-- Add time entry form - Optimized UI -->
                         <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
                                 <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
                             </h4>
                             <form id="task-time-form" class="space-y-3">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.startTime">Anfang</label>
-                                        <input type="datetime-local" id="time-entry-start" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- Time range input with smart parsing and quick add -->
+                                <div class="inline-flex flex-col gap-2 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-slate-900 dark:text-slate-100">
+                                    <!-- Main row: Von -> Bis + Duration -->
+                                    <div class="flex items-center gap-2">
+                                        <label class="flex flex-col gap-1">
+                                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Von</span>
+                                            <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                        </label>
+
+                                        <span class="mt-5 text-slate-400 dark:text-slate-500">→</span>
+
+                                        <label class="flex flex-col gap-1">
+                                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Bis</span>
+                                            <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                        </label>
+
+                                        <div class="mt-5 ml-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 font-mono text-xs font-medium text-slate-700 dark:text-slate-300 tabular-nums">
+                                            <span id="time-duration-display">–</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.endTime">Ende</label>
-                                        <input type="datetime-local" id="time-entry-end" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                                    <!-- Quick add buttons -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-[11px] text-slate-400 dark:text-slate-500">Ab Von:</span>
+                                        <button type="button" onclick="quickAddMinutes(15)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+15m</button>
+                                        <button type="button" onclick="quickAddMinutes(30)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+30m</button>
+                                        <button type="button" onclick="quickAddMinutes(60)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+1h</button>
+                                        <button type="button" onclick="quickAddMinutes(120)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+2h</button>
+                                        <button type="button" onclick="quickAddMinutes(240)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+4h</button>
+                                        <button type="button" onclick="quickAddMinutes(480)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+8h</button>
                                     </div>
                                 </div>
+
                                 <div>
-                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.duration">Dauer (Stunden)</label>
-                                    <input type="number" id="time-entry-duration" min="0.25" step="0.25" placeholder="1.5" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.comment">Kommentar</label>
+                                    <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.comment">Kommentar (optional)</label>
                                     <input type="text" id="time-entry-comment" placeholder="z.B. Anforderungen analysiert" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
+                                
                                 <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                                     <input type="checkbox" id="time-entry-billable" checked class="rounded border-slate-300 dark:border-slate-600">
                                     <span data-i18n="task.billable">Abrechenbar</span>
                                 </label>
+                                
                                 <button type="button" onclick="addTimeEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-xs transition-colors">
                                     <i class="fa-solid fa-check mr-1"></i><span data-i18n="common.add">Hinzufügen</span>
                                 </button>
@@ -5271,6 +5292,20 @@
             highlightSelectedCard();
         }
 
+        // Expose time-tracking functions to window for inline onclick handlers
+        window.toMinutes = toMinutes;
+        window.fromMinutes = fromMinutes;
+        window.parseSmartTime = parseSmartTime;
+        window.formatDuration = formatDuration;
+        window.updateDurationDisplay = updateDurationDisplay;
+        window.handleTimeBlur = handleTimeBlur;
+        window.handleTimeKeydown = handleTimeKeydown;
+        window.quickAddMinutes = quickAddMinutes;
+        window.addTimeEntry = addTimeEntry;
+        window.loadTimeEntries = loadTimeEntries;
+        window.deleteTimeEntry = deleteTimeEntry;
+        window.updateEstimateDisplay = updateEstimateDisplay;
+
         window.closeAddTaskModal = function() {
             // This function now closes the panel
             closeDetailsPanel();
@@ -5811,29 +5846,185 @@
             });
         }
 
+        // Helper: Convert time string "HH:mm" to minutes
+        function toMinutes(hhmm) {
+            const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec((hhmm || '').trim());
+            if (!match) return null;
+            return Number(match[1]) * 60 + Number(match[2]);
+        }
+
+        // Helper: Convert minutes to "HH:mm" format
+        function fromMinutes(total) {
+            const wrapped = ((total % 1440) + 1440) % 1440;
+            const h = Math.floor(wrapped / 60);
+            const m = wrapped % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        // Smart time parser: handles "8", "830", "1415", "8:30", "jetzt", "now"
+        function parseSmartTime(raw) {
+            const cleaned = (raw || '').trim().toLowerCase();
+            if (!cleaned) return null;
+
+            if (cleaned === 'jetzt' || cleaned === 'now') {
+                const now = new Date();
+                const mins = now.getHours() * 60 + Math.round(now.getMinutes() / 5) * 5;
+                return fromMinutes(mins);
+            }
+
+            // Already HH:mm or H:mm format
+            const colonMatch = /^(\d{1,2}):(\d{1,2})$/.exec(cleaned);
+            if (colonMatch) {
+                const h = Number(colonMatch[1]);
+                const m = Number(colonMatch[2]);
+                if (h <= 23 && m <= 59) {
+                    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                }
+                return null;
+            }
+
+            // Digits only: "8", "08", "830", "0830", "1645"
+            if (/^\d{1,4}$/.test(cleaned)) {
+                let h = 0, m = 0;
+                if (cleaned.length <= 2) {
+                    h = Number(cleaned);
+                } else if (cleaned.length === 3) {
+                    h = Number(cleaned[0]);
+                    m = Number(cleaned.slice(1));
+                } else {
+                    h = Number(cleaned.slice(0, 2));
+                    m = Number(cleaned.slice(2));
+                }
+                if (h <= 23 && m <= 59) {
+                    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                }
+            }
+            return null;
+        }
+
+        // Format duration from start and end minutes
+        function formatDuration(startMin, endMin) {
+            if (startMin === null || endMin === null) return '–';
+            const diff = endMin >= startMin ? endMin - startMin : 1440 - startMin + endMin;
+            const h = Math.floor(diff / 60);
+            const m = diff % 60;
+            if (h === 0) return `${m}m`;
+            return m === 0 ? `${h}h` : `${h}h ${m}m`;
+        }
+
+        // Update duration display in real time
+        function updateDurationDisplay() {
+            const startInput = document.getElementById('time-entry-start');
+            const endInput = document.getElementById('time-entry-end');
+            const displayEl = document.getElementById('time-duration-display');
+            
+            if (!startInput || !endInput || !displayEl) return;
+
+            const startStr = parseSmartTime(startInput.value) || '';
+            const endStr = parseSmartTime(endInput.value) || '';
+            
+            const startMin = toMinutes(startStr);
+            const endMin = toMinutes(endStr);
+            
+            displayEl.textContent = formatDuration(startMin, endMin);
+        }
+
+        // Handle time input blur - parse smart time
+        function handleTimeBlur(fieldId, fallbackValue) {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            
+            const raw = input.value;
+            const fallback = fallbackValue || (fieldId === 'time-entry-start' ? '08:00' : '16:30');
+            const parsed = parseSmartTime(raw) || fallback;
+            
+            input.value = parsed;
+            updateDurationDisplay();
+        }
+
+        // Handle time input keyboard navigation
+        function handleTimeKeydown(e, fieldId) {
+            if (e.key === 'Enter') {
+                e.currentTarget.blur();
+                return;
+            }
+
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const input = document.getElementById(fieldId);
+                const currentStr = parseSmartTime(input.value) || (fieldId === 'time-entry-start' ? '08:00' : '16:30');
+                const baseMin = toMinutes(currentStr) || 480;
+                const step = e.shiftKey ? 1 : 15; // Shift for 1-min, default 15-min
+                const delta = e.key === 'ArrowUp' ? step : -step;
+                input.value = fromMinutes(baseMin + delta);
+                updateDurationDisplay();
+            }
+        }
+
+        // Quick add minutes to end time
+        function quickAddMinutes(addMins) {
+            const startInput = document.getElementById('time-entry-start');
+            const endInput = document.getElementById('time-entry-end');
+            
+            if (!startInput || !endInput) return;
+
+            const baseStartStr = parseSmartTime(startInput.value) || '08:00';
+            const startMin = toMinutes(baseStartStr) || 480;
+            const nextEnd = fromMinutes(startMin + addMins);
+            
+            endInput.value = nextEnd;
+            updateDurationDisplay();
+            
+            // Auto-focus the add button
+            const addBtn = document.querySelector('#task-time-form button[type="button"][onclick="addTimeEntry()"]');
+            if (addBtn) addBtn.focus();
+        }
+
         async function addTimeEntry() {
             const taskId = document.getElementById('modal-task-id').value;
             if (!taskId) return alert('Erst Task auswählen');
             
             const startInput = document.getElementById('time-entry-start');
             const endInput = document.getElementById('time-entry-end');
-            const durationInput = document.getElementById('time-entry-duration');
             const commentInput = document.getElementById('time-entry-comment');
             const billableCheckbox = document.getElementById('time-entry-billable');
             
-            if (!startInput.value) return alert('Anfangszeit erforderlich');
-            if (!durationInput.value && !endInput.value) return alert('Dauer oder Endzeit erforderlich');
+            const startStr = parseSmartTime(startInput.value) || '';
+            const endStr = parseSmartTime(endInput.value) || '';
+            
+            if (!startStr) return alert('Gültige Anfangszeit erforderlich (z.B. 08:00 oder 8)');
+            if (!endStr) return alert('Gültige Endzeit erforderlich (z.B. 16:30 oder 1630)');
+            
+            const startMin = toMinutes(startStr);
+            const endMin = toMinutes(endStr);
+            if (startMin === null || endMin === null) return alert('Ungültige Zeiten');
+            
+            const durationMins = endMin >= startMin ? endMin - startMin : 1440 - startMin + endMin;
+            const durationHours = durationMins / 60;
+            
+            if (durationHours <= 0) return alert('Dauer muss größer als 0 sein');
+            
+            // For now, use current date with the parsed times
+            // In production, this should allow date selection
+            const today = new Date();
+            const [startH, startMin_part] = startStr.split(':').map(Number);
+            const startDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startH, startMin_part);
+            
+            const [endH, endMin_part] = endStr.split(':').map(Number);
+            const endDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endH, endMin_part);
+            
+            // Handle day-crossing (if end is earlier than start, it's next day)
+            if (endDateTime <= startDateTime) {
+                endDateTime.setDate(endDateTime.getDate() + 1);
+            }
             
             const payload = {
-                startTime: new Date(startInput.value).toISOString(),
-                durationHours: parseFloat(durationInput.value) || undefined,
+                startTime: startDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                durationHours: durationHours,
                 comment: commentInput.value || undefined,
                 isBillable: billableCheckbox.checked
             };
-            
-            if (endInput.value) {
-                payload.endTime = new Date(endInput.value).toISOString();
-            }
             
             try {
                 const resp = await fetch(`/api/tasks/${taskId}/time-entries`, {
@@ -5846,9 +6037,9 @@
                     // Clear form
                     startInput.value = '';
                     endInput.value = '';
-                    durationInput.value = '';
                     commentInput.value = '';
                     billableCheckbox.checked = true;
+                    updateDurationDisplay();
                     
                     // Reload entries
                     await loadTimeEntries();
@@ -5960,6 +6151,22 @@
             
             // Add event listener for estimated hours input
             document.getElementById('task-estimated-hours')?.addEventListener('change', updateEstimateDisplay);
+
+            // Setup time entry inputs
+            const timeStartInput = document.getElementById('time-entry-start');
+            const timeEndInput = document.getElementById('time-entry-end');
+            
+            if (timeStartInput) {
+                timeStartInput.addEventListener('blur', () => handleTimeBlur('time-entry-start'));
+                timeStartInput.addEventListener('keydown', (e) => handleTimeKeydown(e, 'time-entry-start'));
+                timeStartInput.addEventListener('input', updateDurationDisplay);
+            }
+            
+            if (timeEndInput) {
+                timeEndInput.addEventListener('blur', () => handleTimeBlur('time-entry-end'));
+                timeEndInput.addEventListener('keydown', (e) => handleTimeKeydown(e, 'time-entry-end'));
+                timeEndInput.addEventListener('input', updateDurationDisplay);
+            }
 
             const descriptionEditorContainer = document.getElementById('description-editor-container');
             const descriptionEditor = document.getElementById('modal-description');
