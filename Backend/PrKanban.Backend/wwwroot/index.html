@@ -1042,6 +1042,14 @@
                                 <i class="fa-solid fa-plus text-emerald-600 mr-2"></i><span data-i18n="task.addTimeEntry">Zeit erfassen</span>
                             </h4>
                             <form id="task-time-form" class="space-y-3">
+                                <!-- Date picker field -->
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        <i class="fa-solid fa-calendar mr-1 text-slate-500"></i><span data-i18n="task.date">Datum</span>
+                                    </label>
+                                    <input type="date" id="time-entry-date" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
                                 <!-- Time range input with smart parsing and quick add -->
                                 <div class="inline-flex flex-col gap-2 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-slate-900 dark:text-slate-100">
                                     <!-- Main row: Von -> Bis + Duration -->
@@ -1049,7 +1057,7 @@
                                         <label class="flex flex-col gap-1">
                                             <div class="flex items-center justify-between gap-1">
                                                 <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Von</span>
-                                                <button type="button" onclick="setTimeToNow('start')" class="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
+                                                <button type="button" onclick="setTimeToNowAndAutoEnd('start')" class="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
                                             </div>
                                             <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                                         </label>
@@ -6043,6 +6051,29 @@
             updateDurationDisplay();
         }
 
+        // Set Von time and auto-populate Bis with current time (rounded)
+        function setTimeToNowAndAutoEnd(fieldType) {
+            const roundedTime = getCurrentTimeRounded();
+            const startInput = document.getElementById('time-entry-start');
+            const endInput = document.getElementById('time-entry-end');
+            const startBtn = document.getElementById('time-now-start');
+            
+            // Always set Von to current rounded time
+            startInput.value = roundedTime;
+            if (startBtn) {
+                startBtn.textContent = `jetzt ${roundedTime}`;
+            }
+            
+            // Auto-populate Bis with current time as well
+            endInput.value = roundedTime;
+            const endBtn = document.getElementById('time-now-end');
+            if (endBtn) {
+                endBtn.textContent = `jetzt ${roundedTime}`;
+            }
+            
+            updateDurationDisplay();
+        }
+
         // Update "jetzt" button with current rounded time
         function updateTimeNowButtons() {
             const roundedTime = getCurrentTimeRounded();
@@ -6076,6 +6107,7 @@
             const taskId = document.getElementById('modal-task-id').value;
             if (!taskId) return alert('Erst Task auswählen');
             
+            const dateInput = document.getElementById('time-entry-date');
             const startInput = document.getElementById('time-entry-start');
             const endInput = document.getElementById('time-entry-end');
             const commentInput = document.getElementById('time-entry-comment');
@@ -6086,6 +6118,7 @@
             
             if (!startStr) return alert('Gültige Anfangszeit erforderlich (z.B. 08:00 oder 8)');
             if (!endStr) return alert('Gültige Endzeit erforderlich (z.B. 16:30 oder 1630)');
+            if (!dateInput.value) return alert('Datum erforderlich');
             
             const startMin = toMinutes(startStr);
             const endMin = toMinutes(endStr);
@@ -6096,14 +6129,17 @@
             
             if (durationHours <= 0) return alert('Dauer muss größer als 0 sein');
             
-            // For now, use current date with the parsed times
-            // In production, this should allow date selection
-            const today = new Date();
+            // Parse date and create DateTime objects
+            const dateParts = dateInput.value.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+            const day = parseInt(dateParts[2]);
+            
             const [startH, startMin_part] = startStr.split(':').map(Number);
-            const startDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startH, startMin_part);
+            const startDateTime = new Date(year, month, day, startH, startMin_part);
             
             const [endH, endMin_part] = endStr.split(':').map(Number);
-            const endDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endH, endMin_part);
+            const endDateTime = new Date(year, month, day, endH, endMin_part);
             
             // Handle day-crossing (if end is earlier than start, it's next day)
             if (endDateTime <= startDateTime) {
@@ -6246,6 +6282,16 @@
 
             // Initialize time now buttons with current rounded time
             updateTimeNowButtons();
+            
+            // Set date input to today
+            const dateInput = document.getElementById('time-entry-date');
+            if (dateInput) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+            }
 
             // Setup time entry inputs
             const timeStartInput = document.getElementById('time-entry-start');
