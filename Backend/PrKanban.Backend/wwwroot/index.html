@@ -6151,13 +6151,14 @@
             const startInput = document.getElementById('time-entry-start');
             const endInput = document.getElementById('time-entry-end');
             
-            if (!startInput) return;
+            if (!startInput || !endInput) return;
 
+            // Calculate Bis as: Von + addMins
             const baseStartStr = parseSmartTime(startInput.value) || '08:00';
             const startMin = toMinutes(baseStartStr) || 480;
-            const nextStart = fromMinutes(startMin + addMins);
+            const nextEnd = fromMinutes(startMin + addMins);
             
-            startInput.value = nextStart;
+            endInput.value = nextEnd;
             resetDurationToAuto();
             updateDurationDisplay();
         }
