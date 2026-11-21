@@ -186,6 +186,8 @@ namespace PrKanban.Controllers
                 UserId = userId,
                 Tags = request.Tags ?? Array.Empty<string>(),
                 Checklists = request.Checklists ?? new List<TaskChecklist>(),
+                EstimatedHours = NormalizeHours(request.EstimatedHours),
+                BudgetHours = NormalizeHours(request.BudgetHours),
                 Ordering = request.Order.HasValue ? new TaskOrder { Value = request.Order.Value } : null,
                 DeliverableAssignment = new TaskDeliverable { DeliverableId = deliverable.Id, Deliverable = deliverable, SortOrder = hierarchyOrder + 1 },
                 ProjectBoardPosition = requestedProjectColumn is null
@@ -327,6 +329,10 @@ namespace PrKanban.Controllers
                 task.Tags = request.Tags;
             if (request.Checklists != null)
                 task.Checklists = request.Checklists;
+            if (request.EstimatedHours.HasValue)
+                task.EstimatedHours = NormalizeHours(request.EstimatedHours);
+            if (request.BudgetHours.HasValue)
+                task.BudgetHours = NormalizeHours(request.BudgetHours);
             if (request.Order.HasValue)
             {
                 if (task.Ordering == null)
@@ -350,6 +356,10 @@ namespace PrKanban.Controllers
 
             return Ok(new { success = true, data = task });
         }
+
+        /// <summary>Rounds an hour value to two decimals; non-positive values clear to null.</summary>
+        private static double? NormalizeHours(double? hours) =>
+            hours.HasValue && hours.Value > 0 ? Math.Round(hours.Value, 2) : null;
 
         private async System.Threading.Tasks.Task PopulateHierarchyOrdersAsync(IReadOnlyCollection<Task> tasks)
         {
@@ -474,6 +484,12 @@ namespace PrKanban.Controllers
         public string[]? Tags { get; set; }
         public List<TaskChecklist>? Checklists { get; set; }
         public double? Order { get; set; }
+
+        /// <summary>Estimated effort in hours; 0 clears the value.</summary>
+        public double? EstimatedHours { get; set; }
+
+        /// <summary>Time budget in hours according to the order/contract; 0 clears the value.</summary>
+        public double? BudgetHours { get; set; }
     }
 
     public class UpdateTaskRequest
@@ -489,5 +505,11 @@ namespace PrKanban.Controllers
         public string[]? Tags { get; set; }
         public List<TaskChecklist>? Checklists { get; set; }
         public double? Order { get; set; }
+
+        /// <summary>Estimated effort in hours; 0 clears the value.</summary>
+        public double? EstimatedHours { get; set; }
+
+        /// <summary>Time budget in hours according to the order/contract; 0 clears the value.</summary>
+        public double? BudgetHours { get; set; }
     }
 }

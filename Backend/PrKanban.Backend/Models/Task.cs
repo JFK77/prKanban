@@ -120,6 +120,11 @@ namespace PrKanban.Models
         public double? EstimatedHours { get; set; }
 
         /// <summary>
+        /// Time budget in hours according to the order/contract (optional)
+        /// </summary>
+        public double? BudgetHours { get; set; }
+
+        /// <summary>
         /// Whether task is archived (soft delete)
         /// </summary>
         public bool IsArchived { get; set; } = false;

@@ -506,6 +506,9 @@ namespace PrKanban.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("BudgetHours")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("ChecklistsJson")
                         .HasColumnType("TEXT");
 
