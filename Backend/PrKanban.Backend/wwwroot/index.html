@@ -1058,42 +1058,57 @@
                                     <input type="date" id="time-entry-date" class="w-32 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                                 
-                                <!-- Time range input with smart parsing and quick add -->
-                                <div class="inline-flex flex-col gap-2 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-slate-900 dark:text-slate-100">
-                                    <!-- Main row: Von -> Bis + Duration -->
-                                    <div class="flex items-center gap-2">
-                                        <label class="flex flex-col gap-1">
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Von</span>
-                                                <button type="button" onclick="setTimeToNowAndAutoEnd('start'); return false;" class="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
-                                            </div>
-                                            <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                        </label>
-
-                                        <span class="mt-5 text-slate-400 dark:text-slate-500">→</span>
-
-                                        <label class="flex flex-col gap-1">
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Bis</span>
-                                                <button type="button" onclick="setTimeToNow('end'); return false;" class="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-end">jetzt 16:30</button>
-                                            </div>
-                                            <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-20 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                        </label>
-
-                                        <div class="mt-5 ml-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 font-mono text-xs font-medium text-slate-700 dark:text-slate-300 tabular-nums">
-                                            <span id="time-duration-display">–</span>
+                                <!-- Time range input with smart parsing and quick add - VERTICAL LAYOUT -->
+                                <div class="flex flex-col gap-4 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-900 dark:text-slate-100">
+                                    
+                                    <!-- Von (Start time) -->
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">Von</span>
+                                            <button type="button" onclick="setTimeToNowAndAutoEnd('start'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
                                         </div>
+                                        <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                                     </div>
 
-                                    <!-- Quick add buttons -->
+                                    <!-- Quick add buttons (Ab Von:) -->
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="text-[11px] text-slate-400 dark:text-slate-500">Ab Von:</span>
-                                        <button type="button" onclick="quickAddMinutes(15)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+15m</button>
-                                        <button type="button" onclick="quickAddMinutes(30)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+30m</button>
-                                        <button type="button" onclick="quickAddMinutes(60)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+1h</button>
-                                        <button type="button" onclick="quickAddMinutes(120)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+2h</button>
-                                        <button type="button" onclick="quickAddMinutes(240)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+4h</button>
-                                        <button type="button" onclick="quickAddMinutes(480)" class="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95">+8h</button>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">Ab Von:</span>
+                                        <button type="button" onclick="quickAddMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+15m</button>
+                                        <button type="button" onclick="quickAddMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+30m</button>
+                                        <button type="button" onclick="quickAddMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+1h</button>
+                                        <button type="button" onclick="quickAddMinutes(120)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+2h</button>
+                                        <button type="button" onclick="quickAddMinutes(240)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+4h</button>
+                                        <button type="button" onclick="quickAddMinutes(480)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+8h</button>
+                                    </div>
+
+                                    <!-- Bis (End time) -->
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">Bis</span>
+                                            <button type="button" onclick="setTimeToNow('end'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-end">jetzt 16:30</button>
+                                        </div>
+                                        <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                    </div>
+
+                                    <!-- Quick subtract buttons (Abzug:) -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">Abzug:</span>
+                                        <button type="button" onclick="quickSubtractMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-15m</button>
+                                        <button type="button" onclick="quickSubtractMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-30m</button>
+                                        <button type="button" onclick="quickSubtractMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-1h</button>
+                                        <button type="button" onclick="quickSubtractMinutes(120)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-2h</button>
+                                        <button type="button" onclick="quickSubtractMinutes(240)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-4h</button>
+                                        <button type="button" onclick="quickSubtractMinutes(480)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-8h</button>
+                                    </div>
+
+                                    <!-- Dauer (Duration) with auto indicator and override -->
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">Dauer</span>
+                                            <span class="text-xs text-slate-500 dark:text-slate-400" id="time-duration-status">auto</span>
+                                        </div>
+                                        <input type="text" id="time-entry-duration" placeholder="auto" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                        <span id="time-duration-display" class="text-xs text-slate-600 dark:text-slate-400">–</span>
                                     </div>
                                 </div>
 
@@ -5980,21 +5995,70 @@
             return m === 0 ? `${h}h` : `${h}h ${m}m`;
         }
 
-        // Update duration display in real time
         function updateDurationDisplay() {
             const startInput = document.getElementById('time-entry-start');
             const endInput = document.getElementById('time-entry-end');
+            const durationInput = document.getElementById('time-entry-duration');
             const displayEl = document.getElementById('time-duration-display');
+            const statusEl = document.getElementById('time-duration-status');
             
             if (!startInput || !endInput || !displayEl) return;
 
-            const startStr = parseSmartTime(startInput.value) || '';
-            const endStr = parseSmartTime(endInput.value) || '';
-            
-            const startMin = toMinutes(startStr);
-            const endMin = toMinutes(endStr);
-            
-            displayEl.textContent = formatDuration(startMin, endMin);
+            // Check if duration was manually overridden
+            if (durationInput && durationInput.value.trim()) {
+                // Duration override is active
+                const overrideValue = durationInput.value.trim();
+                const durationMins = parseDurationToMinutes(overrideValue);
+                
+                // Recalculate endTime = startTime + duration
+                const startStr = parseSmartTime(startInput.value) || '08:00';
+                const startMin = toMinutes(startStr);
+                const newEndTime = fromMinutes(startMin + durationMins);
+                endInput.value = newEndTime;
+                
+                // Update display
+                const formatted = formatDurationText(durationMins);
+                displayEl.textContent = formatted;
+                if (statusEl) statusEl.textContent = 'manuell';
+            } else {
+                // Duration is automatic (from Von and Bis)
+                const startStr = parseSmartTime(startInput.value) || '';
+                const endStr = parseSmartTime(endInput.value) || '';
+                
+                const startMin = toMinutes(startStr);
+                const endMin = toMinutes(endStr);
+                
+                displayEl.textContent = formatDuration(startMin, endMin);
+                if (statusEl) statusEl.textContent = 'auto';
+            }
+        }
+
+        function parseDurationToMinutes(input) {
+            const text = String(input || '').trim().toLowerCase().replace(',', '.');
+            if (!text) return 0;
+
+            const hMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:h|std\.?|stunden?)/);
+            const mMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:m|min\.?|minuten?)/);
+
+            if (hMatch || mMatch) {
+                const h = hMatch ? parseFloat(hMatch[1]) : 0;
+                const m = mMatch ? parseFloat(mMatch[1]) : 0;
+                return Math.max(0, Math.min(1440, Math.round(h * 60 + m)));
+            }
+
+            if (/^\d+(?:\.\d+)?$/.test(text)) {
+                return Math.max(0, Math.min(1440, Math.round(parseFloat(text))));
+            }
+
+            return 0;
+        }
+
+        function formatDurationText(minutes) {
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            if (h === 0) return `${m} Min.`;
+            if (m === 0) return `${h} Std.`;
+            return `${h} Std. ${m} Min.`;
         }
 
         // Handle time input blur - parse smart time
@@ -6112,11 +6176,41 @@
             const nextEnd = fromMinutes(startMin + addMins);
             
             endInput.value = nextEnd;
+            resetDurationToAuto();
             updateDurationDisplay();
             
             // Auto-focus the add button
             const addBtn = document.querySelector('#task-time-form button[type="button"][onclick="addTimeEntry()"]');
             if (addBtn) addBtn.focus();
+        }
+
+        function quickSubtractMinutes(subtractMins) {
+            const startInput = document.getElementById('time-entry-start');
+            
+            if (!startInput) return;
+
+            const baseStartStr = parseSmartTime(startInput.value) || '08:00';
+            const startMin = toMinutes(baseStartStr) || 480;
+            const nextStart = fromMinutes(startMin - subtractMins);
+            
+            startInput.value = nextStart;
+            resetDurationToAuto();
+            updateDurationDisplay();
+            
+            // Auto-focus the add button
+            const addBtn = document.querySelector('#task-time-form button[type="button"][onclick="addTimeEntry()"]');
+            if (addBtn) addBtn.focus();
+        }
+
+        function resetDurationToAuto() {
+            const durationInput = document.getElementById('time-entry-duration');
+            const statusEl = document.getElementById('time-duration-status');
+            if (durationInput) {
+                durationInput.value = '';
+            }
+            if (statusEl) {
+                statusEl.textContent = 'auto';
+            }
         }
 
         async function addTimeEntry() {
@@ -6216,6 +6310,7 @@
                                     <div>
                                         <p class="font-medium text-slate-900 dark:text-white">${entry.durationHours}h</p>
                                         <p class="text-slate-500 dark:text-slate-400">${new Date(entry.startTime).toLocaleString('de-DE')}</p>
+                                        ${entry.userEmail ? `<p class="text-slate-600 dark:text-slate-300 text-[11px] mt-1">Benutzer: ${entry.userEmail}</p>` : ''}
                                         ${entry.comment ? `<p class="text-slate-600 dark:text-slate-300 mt-1">${entry.comment}</p>` : ''}
                                         <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${entry.isBillable ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}">
                                             ${entry.isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}
@@ -6278,6 +6373,22 @@
                 .catch(err => console.error(err));
         }
 
+        // --- EXPORT FUNCTIONS TO WINDOW (make globally accessible) ---
+        window.toMinutes = toMinutes;
+        window.fromMinutes = fromMinutes;
+        window.parseSmartTime = parseSmartTime;
+        window.updateDurationDisplay = updateDurationDisplay;
+        window.handleTimeBlur = handleTimeBlur;
+        window.handleTimeKeydown = handleTimeKeydown;
+        window.getCurrentTimeRounded = getCurrentTimeRounded;
+        window.setTimeToNow = setTimeToNow;
+        window.setTimeToNowAndAutoEnd = setTimeToNowAndAutoEnd;
+        window.updateTimeNowButtons = updateTimeNowButtons;
+        window.updateCurrentUserDisplay = updateCurrentUserDisplay;
+        window.quickAddMinutes = quickAddMinutes;
+        window.addTimeEntry = addTimeEntry;
+        window.parseDurationToMinutes = parseDurationToMinutes;
+
         // --- INITIALIZATION ---
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
@@ -6315,6 +6426,7 @@
             // Setup time entry inputs
             const timeStartInput = document.getElementById('time-entry-start');
             const timeEndInput = document.getElementById('time-entry-end');
+            const timeDurationInput = document.getElementById('time-entry-duration');
             
             if (timeStartInput) {
                 timeStartInput.addEventListener('blur', () => handleTimeBlur('time-entry-start'));
@@ -6326,6 +6438,11 @@
                 timeEndInput.addEventListener('blur', () => handleTimeBlur('time-entry-end'));
                 timeEndInput.addEventListener('keydown', (e) => handleTimeKeydown(e, 'time-entry-end'));
                 timeEndInput.addEventListener('input', updateDurationDisplay);
+            }
+
+            if (timeDurationInput) {
+                timeDurationInput.addEventListener('input', updateDurationDisplay);
+                timeDurationInput.addEventListener('blur', updateDurationDisplay);
             }
 
             const descriptionEditorContainer = document.getElementById('description-editor-container');

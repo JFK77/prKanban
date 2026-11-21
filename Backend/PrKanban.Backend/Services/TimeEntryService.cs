@@ -16,7 +16,14 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.TaskId == taskId && e.Id == timeEntryId, cancellationToken);
 
-        return entry is null ? null : MapToResponse(entry);
+        if (entry is null)
+            return null;
+
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == entry.UserId, cancellationToken);
+
+        return MapToResponse(entry, user?.Email);
     }
 
     public async System.Threading.Tasks.Task<IReadOnlyList<TimeEntryResponse>> GetByTaskIdAsync(string taskId, CancellationToken cancellationToken = default)
@@ -27,7 +34,14 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
             .OrderByDescending(e => e.StartTime)
             .ToListAsync(cancellationToken);
 
-        return entries.Select(MapToResponse).ToList().AsReadOnly();
+        // Load all users for this batch of entries
+        var userIds = entries.Select(e => e.UserId).Distinct().ToList();
+        var users = await context.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Email, cancellationToken);
+
+        return entries.Select(e => MapToResponse(e, users.TryGetValue(e.UserId, out var email) ? email : null)).ToList().AsReadOnly();
     }
 
     public async System.Threading.Tasks.Task<TimeEntryResponse> CreateAsync(string taskId, string userId, CreateTimeEntryRequest request, CancellationToken cancellationToken = default)
@@ -37,9 +51,11 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
         if (!taskExists)
             throw new KeyNotFoundException($"Task {taskId} not found");
 
-        // Verify user exists
-        var userExists = await context.Users.AnyAsync(u => u.Id == userId, cancellationToken);
-        if (!userExists)
+        // Get user and verify exists
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
             throw new KeyNotFoundException($"User {userId} not found");
 
         // Calculate duration if not provided
@@ -69,7 +85,7 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
         context.TimeEntries.Add(entry);
         await context.SaveChangesAsync(cancellationToken);
 
-        return MapToResponse(entry);
+        return MapToResponse(entry, user.Email);
     }
 
     public async System.Threading.Tasks.Task<TimeEntryResponse> UpdateAsync(string taskId, string timeEntryId, UpdateTimeEntryRequest request, CancellationToken cancellationToken = default)
@@ -103,7 +119,12 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return MapToResponse(entry);
+        // Load user email
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == entry.UserId, cancellationToken);
+
+        return MapToResponse(entry, user?.Email);
     }
 
     public async System.Threading.Tasks.Task DeleteAsync(string taskId, string timeEntryId, CancellationToken cancellationToken = default)
@@ -118,12 +139,13 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    private static TimeEntryResponse MapToResponse(TimeEntry entry)
+    private static TimeEntryResponse MapToResponse(TimeEntry entry, string? userEmail = null)
     {
         return new TimeEntryResponse(
             entry.Id,
             entry.TaskId,
             entry.UserId,
+            userEmail,
             new DateTimeOffset(entry.StartTime, TimeSpan.Zero),
             entry.EndTime.HasValue ? new DateTimeOffset(entry.EndTime.Value, TimeSpan.Zero) : null,
             entry.DurationHours,

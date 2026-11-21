@@ -69,6 +69,7 @@ public sealed record TimeEntryResponse(
     string Id,
     string TaskId,
     string UserId,
+    string? UserEmail,
     DateTimeOffset StartTime,
     DateTimeOffset? EndTime,
     double DurationHours,
