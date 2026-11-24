@@ -507,10 +507,13 @@ function select(kind, item = null, parentId = '') {
         form.elements[name].value = item?.[name] || '';
     form.elements.shortKey.required = kind === 'projects';
     form.elements.shortKey.readOnly = !!item?.shortKey;
-    for (const name of ['initialEstimateHours','budgetHours','actualHours']) {
-        form.elements[name].value = item?.[name] ?? 0;
-        form.elements[name].required = kind === 'deliverables';
+    for (const name of ['initialEstimateHours','budgetHours']) {
+        form.elements[name].value = window.formatHoursValue?.(item?.[name]) ?? (item?.[name] || '');
+        form.elements[name].required = false;
     }
+    deliverableStoredActualHours = item?.actualHours ?? 0;
+    deliverableActualHours = 0;
+    if (kind === 'deliverables' && item?.id) loadDeliverableActualHours(item.id);
     updateEstimateOverview();
     if (admin) form.elements.name.focus();
 }
@@ -519,6 +522,14 @@ form.addEventListener('input', () => {
     dirty = true; 
     updateEstimateOverview();
 });
+// Normalize flexible hour entries (e.g. "2d", "1d 2h") to hours when leaving the field
+for (const name of ['initialEstimateHours','budgetHours']) {
+    form.elements[name].addEventListener('change', () => {
+        const hours = window.parseHoursInput?.(form.elements[name].value);
+        form.elements[name].value = window.formatHoursValue?.(hours) ?? '';
+        updateEstimateOverview();
+    });
+}
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 document.getElementById('new-customer').addEventListener('click', () => select('customers'));
 
@@ -547,6 +558,7 @@ function setupHierarchyTabs(kind) {
         
         newDetailsTab.addEventListener('click', () => switchTab('details'));
         newEstimateTab.addEventListener('click', () => switchTab('estimate'));
+        switchTab('details');
     } else {
         tabsNav.classList.add('hidden');
         detailsPanel.classList.remove('hidden');
@@ -578,19 +590,75 @@ function switchTab(tabName) {
     }
 }
 
+// Logged time aggregated from the deliverable's tasks (display only)
+let deliverableActualHours = 0;
+// Persisted ActualHours value, passed through unchanged on save
+let deliverableStoredActualHours = 0;
+
+// Sum the time entries of all tasks that belong to the deliverable
+async function loadDeliverableActualHours(deliverableId) {
+    const key = selectedItemKey;
+    try {
+        const tasks = treeTasks.filter(task => task.deliverableId === deliverableId);
+        const totals = await Promise.all(tasks.map(async task => {
+            const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}/time-entries`, { credentials: 'same-origin' });
+            if (!response.ok) return 0;
+            const data = await response.json();
+            return (data.entries || []).reduce((sum, entry) => sum + (entry.durationHours || 0), 0);
+        }));
+        if (selectedItemKey !== key) return;
+        deliverableActualHours = totals.reduce((sum, value) => sum + value, 0);
+        updateEstimateOverview();
+    } catch (error) {
+        console.error('Loading task time entries failed:', error);
+    }
+}
+
 function updateEstimateOverview() {
-    const budgetHours = Number(form.elements.budgetHours?.value || 0);
-    const estimateHours = Number(form.elements.initialEstimateHours?.value || 0);
-    const actualHours = Number(form.elements.actualHours?.value || 0);
-    
+    const parse = value => window.parseHoursInput?.(value) || 0;
+    const fmt = value => window.formatHoursValue?.(value) || '0h';
+    const budgetHours = parse(form.elements.budgetHours?.value);
+    const estimateHours = parse(form.elements.initialEstimateHours?.value);
+    const actualHours = deliverableActualHours;
+
     const remaining = Math.max(0, budgetHours - actualHours);
-    const utilization = budgetHours > 0 ? Math.round((actualHours / budgetHours) * 100) : 0;
-    
-    document.getElementById('overview-budget').textContent = `${budgetHours}h`;
-    document.getElementById('overview-estimated').textContent = `${estimateHours}h`;
-    document.getElementById('overview-actual').textContent = `${actualHours}h`;
-    document.getElementById('overview-remaining').textContent = `${remaining}h`;
-    document.getElementById('overview-utilization').textContent = `${utilization}%`;
+
+    document.getElementById('overview-budget').textContent = fmt(budgetHours);
+    document.getElementById('overview-estimated').textContent = fmt(estimateHours);
+    document.getElementById('overview-actual').textContent = fmt(actualHours);
+    document.getElementById('overview-remaining').textContent = fmt(remaining);
+    updateHierarchyEstimateChart(estimateHours, budgetHours, actualHours);
+}
+
+// Render the estimate/budget/actual comparison chart on a shared scale (mirrors the task panel chart)
+function updateHierarchyEstimateChart(estimated, budget, actual) {
+    const max = Math.max(estimated, budget, actual);
+    const pct = value => max > 0 ? (value / max) * 100 : 0;
+    const fmt = value => window.formatHoursValue?.(value) || '0h';
+
+    document.getElementById('hierarchy-chart-estimate-bar').style.width = pct(estimated) + '%';
+    document.getElementById('hierarchy-chart-estimate-label').textContent = fmt(estimated);
+
+    document.getElementById('hierarchy-chart-budget-bar').style.width = pct(budget) + '%';
+    document.getElementById('hierarchy-chart-budget-label').textContent = fmt(budget);
+
+    const marker = document.getElementById('hierarchy-chart-budget-marker');
+    if (budget > 0 && max > 0) {
+        marker.style.left = pct(budget) + '%';
+        marker.classList.remove('hidden');
+    } else {
+        marker.classList.add('hidden');
+    }
+
+    // Actual bar: green up to the budget (or estimate as fallback), red overrun beyond
+    const reference = budget > 0 ? budget : estimated;
+    const within = reference > 0 ? Math.min(actual, reference) : actual;
+    const overrun = reference > 0 ? Math.max(0, actual - reference) : 0;
+
+    document.getElementById('hierarchy-chart-actual-bar').style.width = pct(within) + '%';
+    document.getElementById('hierarchy-chart-overrun-bar').style.width = pct(overrun) + '%';
+    document.getElementById('hierarchy-chart-overrun-label').textContent = overrun > 0 ? '+' + fmt(overrun) : '';
+    document.getElementById('hierarchy-chart-actual-label').textContent = fmt(actual);
 }
 
 form.addEventListener('submit', async event => {
@@ -606,7 +674,9 @@ form.addEventListener('submit', async event => {
     }
     if (kind === 'deliverables') {
         body.projectId = form.elements.parent.value;
-        for (const name of ['initialEstimateHours','budgetHours','actualHours']) body[name] = Number(form.elements[name].value);
+        for (const name of ['initialEstimateHours','budgetHours'])
+            body[name] = window.parseHoursInput?.(form.elements[name].value) || 0;
+        body.actualHours = deliverableStoredActualHours;
     }
     const submit = document.getElementById('save');
     submit.disabled = true;

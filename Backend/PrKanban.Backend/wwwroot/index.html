@@ -26,8 +26,8 @@
     <!-- API Client (must load before other scripts) -->
     <script src="api-client.js?v=hierarchy-1"></script>
     <script src="i18n.js?v=3" defer></script>
-    <link rel="stylesheet" href="hierarchy.css?v=task-table-13">
-    <script src="hierarchy.js?v=deliverable-estimates-tabs-03" defer></script>
+    <link rel="stylesheet" href="hierarchy.css?v=task-table-14">
+    <script src="hierarchy.js?v=deliverable-estimates-tabs-05" defer></script>
     <script src="view-tabs.js?v=task-table-2" defer></script>
     <script>
         // Initialization callback that module script will call
@@ -1060,7 +1060,7 @@
                                         <!-- Von (Start time) -->
                                         <div class="flex flex-col gap-2">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Von</span>
+                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit" data-i18n="task.timeFrom">Von</span>
                                                 <button type="button" onclick="setTimeToNow('start'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-start">jetzt 08:00</button>
                                             </div>
                                             <input type="text" id="time-entry-start" inputMode="numeric" placeholder="08:00" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
@@ -1069,7 +1069,7 @@
                                         <!-- Dauer (Duration) with auto indicator and override -->
                                         <div class="flex flex-col gap-2">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Dauer</span>
+                                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit" data-i18n="task.timeDuration">Dauer</span>
                                             </div>
                                             <input type="text" id="time-entry-duration" placeholder="auto" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                                         </div>
@@ -1077,7 +1077,7 @@
 
                                     <!-- Quick add buttons (Ab Von:) for Von time calculation -->
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Ab Von:</span>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400" data-i18n="task.timeAddFrom">Ab Von:</span>
                                         <button type="button" onclick="quickAddMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+15m</button>
                                         <button type="button" onclick="quickAddMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+30m</button>
                                         <button type="button" onclick="quickAddMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">+1h</button>
@@ -1088,7 +1088,7 @@
 
                                     <!-- Quick subtract buttons (Abzug:) - for Von time -->
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Abzug:</span>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400" data-i18n="task.timeSubtract">Abzug:</span>
                                         <button type="button" onclick="quickSubtractMinutes(15)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-15m</button>
                                         <button type="button" onclick="quickSubtractMinutes(30)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-30m</button>
                                         <button type="button" onclick="quickSubtractMinutes(60)" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95">-1h</button>
@@ -1100,7 +1100,7 @@
                                     <!-- Bis (End time) -->
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit">Bis</span>
+                                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300 min-w-fit" data-i18n="task.timeTo">Bis</span>
                                             <button type="button" onclick="setTimeToNow('end'); return false;" class="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium" id="time-now-end">jetzt 16:30</button>
                                         </div>
                                         <input type="text" id="time-entry-end" inputMode="numeric" placeholder="16:30" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 font-mono text-sm tabular-nums text-slate-800 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
@@ -1109,7 +1109,7 @@
 
                                 <div>
                                     <label class="block text-xs text-slate-600 dark:text-slate-300 mb-1" data-i18n="task.comment" data-i18n-fallback="Kommentar (optional)">Kommentar (optional)</label>
-                                    <input type="text" id="time-entry-comment" placeholder="z.B. Anforderungen analysiert" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <input type="text" id="time-entry-comment" placeholder="z.B. Anforderungen analysiert" data-i18n-placeholder="task.commentPlaceholder" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                                 
                                 <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
@@ -1126,7 +1126,7 @@
                         <!-- Week Overview Section -->
                         <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white mb-4">
-                                <i class="fa-solid fa-calendar-week text-blue-600 mr-2"></i><span>Wochenzeit erfassen</span>
+                                <i class="fa-solid fa-calendar-week text-blue-600 mr-2"></i><span data-i18n="task.weekLogTime">Wochenzeit erfassen</span>
                             </h4>
                             
                             <!-- Week header with navigation -->
@@ -1136,10 +1136,10 @@
                                     <span class="text-xs text-slate-500 dark:text-slate-400" id="week-dates">16.11.2026 – 20.11.2026</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <button type="button" onclick="previousWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">← Vorwoche</button>
+                                    <button type="button" onclick="previousWeek()" data-i18n="task.weekPrev" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">← Vorwoche</button>
                                     <input type="date" id="week-date-picker" class="w-28 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <button type="button" onclick="nextWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Folgewoche →</button>
-                                    <button type="button" onclick="goToCurrentWeek()" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Heute</button>
+                                    <button type="button" onclick="nextWeek()" data-i18n="task.weekNext" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Folgewoche →</button>
+                                    <button type="button" onclick="goToCurrentWeek()" data-i18n="task.weekToday" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Heute</button>
                                 </div>
                             </div>
                             
@@ -1149,40 +1149,40 @@
                                     <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
                                         <span class="week-day-short">Mo</span> <span class="week-day-date">16.11.</span>
                                     </div>
-                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="0">
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-i18n-placeholder="task.weekHoursPlaceholder" data-day="0">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> <span data-i18n="task.weekMinutes">Min.</span></div>
                                 </div>
                                 
                                 <div id="week-tue" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
                                     <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
                                         <span class="week-day-short">Di</span> <span class="week-day-date">17.11.</span>
                                     </div>
-                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="1">
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-i18n-placeholder="task.weekHoursPlaceholder" data-day="1">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> <span data-i18n="task.weekMinutes">Min.</span></div>
                                 </div>
                                 
                                 <div id="week-wed" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
                                     <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
                                         <span class="week-day-short">Mi</span> <span class="week-day-date">18.11.</span>
                                     </div>
-                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="2">
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-i18n-placeholder="task.weekHoursPlaceholder" data-day="2">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> <span data-i18n="task.weekMinutes">Min.</span></div>
                                 </div>
                                 
                                 <div id="week-thu" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
                                     <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
                                         <span class="week-day-short">Do</span> <span class="week-day-date">19.11.</span>
                                     </div>
-                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="3">
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-i18n-placeholder="task.weekHoursPlaceholder" data-day="3">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> <span data-i18n="task.weekMinutes">Min.</span></div>
                                 </div>
                                 
                                 <div id="week-fri" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3">
                                     <div class="text-xs font-semibold text-slate-900 dark:text-white mb-2">
                                         <span class="week-day-short">Fr</span> <span class="week-day-date">20.11.</span>
                                     </div>
-                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-day="4">
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> Min.</div>
+                                    <input type="text" class="week-duration-input w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. 8h" data-i18n-placeholder="task.weekHoursPlaceholder" data-day="4">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right"><span class="week-minutes">0</span> <span data-i18n="task.weekMinutes">Min.</span></div>
                                 </div>
                             </div>
                             
@@ -1190,7 +1190,7 @@
                             <div class="border-t border-slate-200 dark:border-slate-700 pt-3">
                                 <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
                                     <div class="flex items-center gap-2">
-                                        <span class="font-medium text-slate-600 dark:text-slate-300">Wochensumme (Mo–Fr):</span>
+                                        <span class="font-medium text-slate-600 dark:text-slate-300" data-i18n="task.weekSum">Wochensumme (Mo–Fr):</span>
                                         <select id="week-target-hours" class="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1 text-slate-800 dark:text-white text-xs">
                                             <option value="20">20h</option>
                                             <option value="30">30h</option>
@@ -1199,9 +1199,9 @@
                                             <option value="37.5">37,5h</option>
                                             <option value="40" selected>40h</option>
                                         </select>
-                                        <button type="button" onclick="fillWeekWithTarget()" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Woche auffüllen</button>
-                                        <button type="button" onclick="clearWeek()" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Leeren</button>
-                                        <button type="button" onclick="addWeekTimeEntries()" class="rounded-md border border-emerald-300 dark:border-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800">Hinzufügen</button>
+                                        <button type="button" onclick="fillWeekWithTarget()" data-i18n="task.weekFill" class="rounded-md border border-blue-300 dark:border-blue-600 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800">Woche auffüllen</button>
+                                        <button type="button" onclick="clearWeek()" data-i18n="task.weekClear" class="rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">Leeren</button>
+                                        <button type="button" onclick="addWeekTimeEntries()" data-i18n="common.add" class="rounded-md border border-emerald-300 dark:border-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800">Hinzufügen</button>
                                     </div>
                                     <div class="text-slate-700 dark:text-slate-300">
                                         <span id="week-total-display">0h</span> / <span id="week-target-display">40h</span> (<span id="week-diff-display">-40h</span>)
@@ -1243,7 +1243,7 @@
                             <label class="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
                                 <i class="fa-solid fa-hourglass-end text-amber-600 mr-2"></i><span data-i18n="task.estimatedHours">Geschätzter Aufwand (Stunden)</span>
                             </label>
-                            <input type="text" id="task-estimated-hours" placeholder="z. B. 4h, 0,5d oder 1d 2h" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="task-estimated-hours" placeholder="z. B. 4h, 0,5d oder 1d 2h" data-i18n-placeholder="task.hoursPlaceholder" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="task.estimateHint">Realistischer Aufwand für die Fertigstellung dieser Task</p>
                         </div>
 
@@ -1251,7 +1251,7 @@
                             <label class="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
                                 <i class="fa-solid fa-file-contract text-emerald-600 mr-2"></i><span data-i18n="task.budgetHours">Zeitbudget laut Auftrag</span>
                             </label>
-                            <input type="text" id="task-budget-hours" placeholder="z. B. 16h, 2d oder 2d 4h" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="task-budget-hours" placeholder="z. B. 16h, 2d oder 2d 4h" data-i18n-placeholder="task.budgetHoursPlaceholder" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="task.budgetHint">Beauftragtes Zeitbudget – Eingaben in d (1d = 8h) oder h werden automatisch in Stunden umgerechnet</p>
                         </div>
                         
@@ -1363,40 +1363,80 @@
                     <!-- Estimate Tab (Deliverables only) -->
                     <section id="hierarchy-panel-estimate" role="tabpanel" aria-labelledby="hierarchy-tab-estimate" class="hidden">
                         <fieldset id="estimate-fields" class="space-y-4">
-                            <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
-                                <label class="block text-sm"><span data-i18n="hierarchy.estimate">Initiale Schätzung (h)</span><input name="initialEstimateHours" type="number" min="0" max="1000000000" step="any" class="hierarchy-input"></label>
-                                <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="hierarchy.estimateHelp">Realistischer Aufwand für die Fertigstellung dieses Lieferobjekts</p>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                                    <i class="fa-solid fa-hourglass-end text-amber-600 mr-2"></i><span data-i18n="hierarchy.estimate">Initiale Schätzung (h)</span>
+                                </label>
+                                <input type="text" name="initialEstimateHours" maxlength="30" placeholder="z. B. 4h, 0,5d oder 1d 2h" data-i18n-placeholder="task.hoursPlaceholder" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="hierarchy.estimateHelp">Realistischer Aufwand für die Fertigstellung dieses Lieferobjekts</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                                    <i class="fa-solid fa-file-contract text-emerald-600 mr-2"></i><span data-i18n="hierarchy.budget">Zeitbudget</span>
+                                </label>
+                                <input type="text" name="budgetHours" maxlength="30" placeholder="z. B. 16h, 2d oder 2d 4h" data-i18n-placeholder="task.budgetHoursPlaceholder" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="task.budgetHint">Beauftragtes Zeitbudget – Eingaben in d (1d = 8h) oder h werden automatisch in Stunden umgerechnet</p>
                             </div>
                             <!-- Übersicht Box -->
-                            <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                                <h3 class="font-semibold text-sm mb-3 text-slate-900 dark:text-white" data-i18n="hierarchy.overview">Übersicht</h3>
-                                <div class="space-y-2 text-sm">
+                            <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                                <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-3" data-i18n="hierarchy.overview">Übersicht</h3>
+                                <div class="space-y-2 text-xs">
                                     <div class="flex justify-between">
                                         <span class="text-slate-600 dark:text-slate-400" data-i18n="hierarchy.budget">Zeitbudget</span>
-                                        <span id="overview-budget" class="text-slate-900 dark:text-white font-medium">0h</span>
+                                        <span id="overview-budget" class="font-semibold text-slate-900 dark:text-white">0h</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-600 dark:text-slate-400" data-i18n="hierarchy.estimated">Geschätzt</span>
-                                        <span id="overview-estimated" class="text-slate-900 dark:text-white font-medium">0h</span>
+                                        <span id="overview-estimated" class="font-semibold text-slate-900 dark:text-white">0h</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-slate-600 dark:text-slate-400" data-i18n="hierarchy.actual">Erfasst</span>
-                                        <span id="overview-actual" class="text-slate-900 dark:text-white font-medium">0h</span>
+                                        <span class="text-slate-600 dark:text-slate-400" data-i18n="hierarchy.actual">Ist (aus Tasks)</span>
+                                        <span id="overview-actual" class="font-semibold text-slate-900 dark:text-white">0h</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-600 dark:text-slate-400" data-i18n="hierarchy.remaining">Verbleibend</span>
-                                        <span id="overview-remaining" class="text-slate-900 dark:text-white font-medium">0h</span>
+                                        <span id="overview-remaining" class="font-semibold text-slate-900 dark:text-white">0h</span>
                                     </div>
-                                    <div class="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-                                        <span class="text-slate-600 dark:text-slate-400" data-i18n="hierarchy.utilization">Auslastung</span>
-                                        <span id="overview-utilization" class="text-slate-900 dark:text-white font-medium">0%</span>
+                                    <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-2">
+                                        <div id="hierarchy-estimate-chart" class="relative space-y-1.5">
+                                            <!-- Budget marker line across all bars -->
+                                            <div id="hierarchy-chart-budget-marker" class="absolute top-0 bottom-0 w-0.5 bg-sky-400/80 z-10 hidden pointer-events-none" style="left: 0%;"></div>
+
+                                            <div>
+                                                <div class="flex justify-between mb-0.5">
+                                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.chartEstimate">Schätzung</span>
+                                                    <span id="hierarchy-chart-estimate-label" class="font-semibold text-slate-900 dark:text-white">0h</span>
+                                                </div>
+                                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                    <div id="hierarchy-chart-estimate-bar" class="h-full bg-amber-500 transition-all" style="width: 0%;"></div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div class="flex justify-between mb-0.5">
+                                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.chartBudget">Beauftragtes Budget</span>
+                                                    <span id="hierarchy-chart-budget-label" class="font-semibold text-slate-900 dark:text-white">0h</span>
+                                                </div>
+                                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                    <div id="hierarchy-chart-budget-bar" class="h-full bg-sky-500 transition-all" style="width: 0%;"></div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div class="flex justify-between mb-0.5">
+                                                    <span class="text-slate-600 dark:text-slate-400" data-i18n="task.chartActual">Tatsächliche Arbeitszeit</span>
+                                                    <span id="hierarchy-chart-actual-label" class="font-semibold text-slate-900 dark:text-white">0h</span>
+                                                </div>
+                                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                                                    <div id="hierarchy-chart-actual-bar" class="h-full bg-emerald-500 transition-all" style="width: 0%;"></div>
+                                                    <div id="hierarchy-chart-overrun-bar" class="h-full bg-red-500 transition-all flex items-center justify-center overflow-hidden" style="width: 0%;">
+                                                        <span id="hierarchy-chart-overrun-label" class="text-[9px] leading-none font-semibold text-white whitespace-nowrap px-1"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <!-- Budget und Ist inputs -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="block text-sm"><span data-i18n="hierarchy.budget">Zeitbudget (h)</span><input name="budgetHours" type="number" min="0" max="1000000000" step="any" class="hierarchy-input"></label>
-                                <label class="block text-sm"><span data-i18n="hierarchy.actualManual">Ist (h), manuell</span><input name="actualHours" type="number" min="0" max="1000000000" step="any" class="hierarchy-input"></label>
                             </div>
                             <button id="save-estimate" type="submit" data-i18n="common.save" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Speichern</button>
                         </fieldset>
@@ -5474,6 +5514,7 @@
             const panel = document.getElementById('task-details-panel');
             panel.classList.remove('hidden');
             panel.classList.add('flex');
+            updateTimeNowButtons();
             if (window.viewTabs?.current() === 'list') {
                 document.getElementById('hierarchy-task-panel-slot').classList.remove('hidden');
                 document.getElementById('hierarchy-entity-editor').classList.add('hidden');
@@ -6240,7 +6281,7 @@
                 // Set Von to current rounded time
                 startInput.value = roundedTime;
                 if (startBtn) {
-                    startBtn.textContent = `jetzt ${roundedTime}`;
+                    startBtn.textContent = `${window.i18n.text('task.timeNow', 'jetzt')} ${roundedTime}`;
                 }
                 // Clear durationOverride so it auto-calculates
                 resetDurationToAuto();
@@ -6249,7 +6290,7 @@
                 // Set Bis to current rounded time
                 endInput.value = roundedTime;
                 if (endBtn) {
-                    endBtn.textContent = `jetzt ${roundedTime}`;
+                    endBtn.textContent = `${window.i18n.text('task.timeNow', 'jetzt')} ${roundedTime}`;
                 }
                 // Clear durationOverride so it auto-calculates
                 resetDurationToAuto();
@@ -6266,7 +6307,7 @@
             // Set Von to current rounded time
             startInput.value = roundedTime;
             if (startBtn) {
-                startBtn.textContent = `jetzt ${roundedTime}`;
+                startBtn.textContent = `${window.i18n.text('task.timeNow', 'jetzt')} ${roundedTime}`;
             }
             
             resetDurationToAuto();
@@ -6279,8 +6320,8 @@
             const startBtn = document.getElementById('time-now-start');
             const endBtn = document.getElementById('time-now-end');
             
-            if (startBtn) startBtn.textContent = `jetzt ${roundedTime}`;
-            if (endBtn) endBtn.textContent = `jetzt ${roundedTime}`;
+            if (startBtn) startBtn.textContent = `${window.i18n.text('task.timeNow', 'jetzt')} ${roundedTime}`;
+            if (endBtn) endBtn.textContent = `${window.i18n.text('task.timeNow', 'jetzt')} ${roundedTime}`;
         }
 
         // Quick add minutes to Von time, then auto-calculate Bis
@@ -6411,21 +6452,22 @@
                     const data = await resp.json();
                     const entries = data.entries || [];
                     
+                    const tt = (key, fallback) => window.i18n.text(key, fallback);
                     const listContainer = document.getElementById('task-time-entries-list');
                     if (entries.length === 0) {
-                        listContainer.innerHTML = '<p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="task.noTimeEntries">Noch keine Zeiteinträge</p>';
+                        listContainer.innerHTML = `<p class="text-xs text-slate-500 dark:text-slate-400">${tt('task.noTimeEntries', 'Noch keine Zeiteinträge')}</p>`;
                     } else {
                         listContainer.innerHTML = `
                             <div class="overflow-x-auto">
                                 <table class="w-full text-xs border-collapse">
                                     <thead>
                                         <tr class="border-b border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800">
-                                            <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">Datum</th>
-                                            <th class="text-right px-2 py-1.5 font-semibold text-slate-900 dark:text-white">Dauer</th>
-                                            <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">Benutzer</th>
-                                            <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">Kommentar</th>
-                                            <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">Abrechenbar</th>
-                                            <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">Aktion</th>
+                                            <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.date', 'Datum')}</th>
+                                            <th class="text-right px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeDuration', 'Dauer')}</th>
+                                            <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeUser', 'Benutzer')}</th>
+                                            <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeComment', 'Kommentar')}</th>
+                                            <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.billable', 'Abrechenbar')}</th>
+                                            <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeAction', 'Aktion')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -6509,6 +6551,10 @@
             if (hours == null || isNaN(hours) || hours <= 0) return '';
             return String(Math.round(hours * 100) / 100).replace('.', ',') + 'h';
         }
+
+        // Shared with hierarchy.js (classic script) for the deliverable estimate form
+        window.parseHoursInput = parseHoursInput;
+        window.formatHoursValue = formatHoursValue;
 
         // Normalize an hour input field in place and return the parsed hours (0 when empty)
         function normalizeHoursField(input) {
@@ -6599,6 +6645,12 @@
             return `${day}.${month}.${year}`;
         }
 
+        // Short weekday labels (Mon-Fri) in the active UI language
+        function weekDayShorts() {
+            return [['task.dayMon', 'Mo'], ['task.dayTue', 'Di'], ['task.dayWed', 'Mi'], ['task.dayThu', 'Do'], ['task.dayFri', 'Fr']]
+                .map(([key, fallback]) => window.i18n.text(key, fallback));
+        }
+
         function updateWeekDisplay() {
             const monday = getMonday(weekState.currentWeekStartDate);
             const friday = new Date(monday);
@@ -6607,11 +6659,11 @@
             const { week } = getWeekInfo(monday);
             const dateRange = `${formatDate(monday)} – ${formatDate(friday)}`;
             
-            document.getElementById('week-label').textContent = `KW ${week}`;
+            document.getElementById('week-label').textContent = window.i18n.text('task.weekLabel', 'KW {week}', { week });
             document.getElementById('week-dates').textContent = dateRange;
             
             // Update day headers and dates
-            const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+            const dayNames = weekDayShorts();
             for (let i = 0; i < 5; i++) {
                 const dayDate = new Date(monday);
                 dayDate.setDate(dayDate.getDate() + i);
@@ -6790,7 +6842,7 @@
             if (!taskId) return alert('Erst Task auswählen');
             
             const monday = getMonday(weekState.currentWeekStartDate);
-            const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+            const dayNames = weekDayShorts();
             
             // Check for conflicts first
             const conflicts = {};
@@ -6872,7 +6924,7 @@
                     startTime: startTime.toISOString(),
                     endTime: endTime.toISOString(),
                     durationHours: durationHours,
-                    comment: `Woche KW ${getWeekInfo(dayDate).week} - ${dayNames[i]}`,
+                    comment: `${window.i18n.text('task.weekLabel', 'KW {week}', { week: getWeekInfo(dayDate).week })} - ${dayNames[i]}`,
                     isBillable: true
                 };
                 
