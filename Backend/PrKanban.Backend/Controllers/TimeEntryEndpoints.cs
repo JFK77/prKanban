@@ -50,12 +50,29 @@ public static class TimeEntryEndpoints
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound);
 
+        group.MapPut("{timeEntryId}/lock", SetTimeEntryLock)
+            .WithName("SetTimeEntryLock")
+            .WithSummary("Lock or unlock a time entry")
+            .WithDescription("Locked entries cannot be edited or deleted until they are unlocked.")
+            .Produces<TimeEntryResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         group.MapDelete("{timeEntryId}", DeleteTimeEntry)
             .WithName("DeleteTimeEntry")
             .WithSummary("Delete a time entry")
             .WithDescription("Remove a time entry from a task.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
+
+        app.MapPost("/api/time-entries/lock-period", LockPeriod)
+            .WithTags("Time Entries")
+            .RequireAuthorization()
+            .WithName("LockTimeEntryPeriod")
+            .WithSummary("Lock all time entries of a billing period")
+            .WithDescription("Locks every unlocked time entry of the given tasks whose start time lies within the period.")
+            .Produces<LockPeriodResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest);
     }
 
     private static async System.Threading.Tasks.Task<Results<Ok<TimeEntryListResponse>, NotFound>> GetTimeEntries(
@@ -103,7 +120,7 @@ public static class TimeEntryEndpoints
         }
     }
 
-    private static async System.Threading.Tasks.Task<Results<Ok<TimeEntryResponse>, BadRequest, NotFound>> UpdateTimeEntry(
+    private static async System.Threading.Tasks.Task<Results<Ok<TimeEntryResponse>, BadRequest, NotFound, Conflict>> UpdateTimeEntry(
         string taskId,
         string timeEntryId,
         UpdateTimeEntryRequest request,
@@ -119,13 +136,17 @@ public static class TimeEntryEndpoints
         {
             return TypedResults.NotFound();
         }
+        catch (InvalidOperationException)
+        {
+            return TypedResults.Conflict();
+        }
         catch (ArgumentException)
         {
             return TypedResults.BadRequest();
         }
     }
 
-    private static async System.Threading.Tasks.Task<Results<NoContent, NotFound>> DeleteTimeEntry(
+    private static async System.Threading.Tasks.Task<Results<NoContent, NotFound, Conflict>> DeleteTimeEntry(
         string taskId,
         string timeEntryId,
         ITimeEntryService service,
@@ -140,5 +161,38 @@ public static class TimeEntryEndpoints
         {
             return TypedResults.NotFound();
         }
+        catch (InvalidOperationException)
+        {
+            return TypedResults.Conflict();
+        }
+    }
+
+    private static async System.Threading.Tasks.Task<Results<Ok<TimeEntryResponse>, NotFound>> SetTimeEntryLock(
+        string taskId,
+        string timeEntryId,
+        SetTimeEntryLockRequest request,
+        ITimeEntryService service,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var entry = await service.SetLockedAsync(taskId, timeEntryId, request.Locked, cancellationToken);
+            return TypedResults.Ok(entry);
+        }
+        catch (KeyNotFoundException)
+        {
+            return TypedResults.NotFound();
+        }
+    }
+
+    private static async System.Threading.Tasks.Task<Results<Ok<LockPeriodResponse>, BadRequest>> LockPeriod(
+        LockPeriodRequest request,
+        ITimeEntryService service,
+        CancellationToken cancellationToken)
+    {
+        if (request.TaskIds is not { Length: > 0 and <= 10000 } || request.From > request.To)
+            return TypedResults.BadRequest();
+        var count = await service.LockPeriodAsync(request, cancellationToken);
+        return TypedResults.Ok(new LockPeriodResponse(count));
     }
 }

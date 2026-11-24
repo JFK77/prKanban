@@ -75,6 +75,9 @@ public sealed record TimeEntryResponse(
     double DurationHours,
     string? Comment,
     bool IsBillable,
+    bool Locked,
+    DateTimeOffset? LockedAt,
+    string? LockedPeriod,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);
 
@@ -83,3 +86,38 @@ public sealed record TimeEntryResponse(
 /// </summary>
 public sealed record TimeEntryListResponse(
     IReadOnlyList<TimeEntryResponse> Entries);
+
+/// <summary>
+/// Payload for locking or unlocking a single time entry
+/// </summary>
+public sealed record SetTimeEntryLockRequest
+{
+    /// <summary>Desired lock state</summary>
+    public required bool Locked { get; init; }
+}
+
+/// <summary>
+/// Payload for locking all time entries of a billing period
+/// </summary>
+public sealed record LockPeriodRequest
+{
+    /// <summary>Tasks whose entries should be locked</summary>
+    public required string[] TaskIds { get; init; }
+
+    /// <summary>Period start (inclusive, UTC)</summary>
+    public required DateTimeOffset From { get; init; }
+
+    /// <summary>Period end (inclusive, UTC)</summary>
+    public required DateTimeOffset To { get; init; }
+
+    /// <summary>Optional user filter (recorder user id)</summary>
+    public string? UserId { get; init; }
+
+    /// <summary>Human-readable period label stored on the locked entries</summary>
+    public string? LockedPeriod { get; init; }
+}
+
+/// <summary>
+/// Result of a period lock operation
+/// </summary>
+public sealed record LockPeriodResponse(int LockedCount);

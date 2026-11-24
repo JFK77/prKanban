@@ -1689,7 +1689,7 @@
 
     <script type="module">
         import { calculateKanbanKpis, renderTaskDistribution, renderFlowChart } from './kanban-kpis.js?v=6';
-        import { aggregateBudgetKpis, renderBudgetKpis as renderBudgetKpisView, openBillingReportModal, formatHours as formatBudgetHours, formatPercent as formatBudgetPercent } from './budget-kpis.js?v=2';
+        import { aggregateBudgetKpis, renderBudgetKpis as renderBudgetKpisView, openBillingReportModal } from './budget-kpis.js?v=4';
         import { groupTasksForTable, filterTasksForTable, compareTasksForTable, tableExportRows, executeTableBulk, projectStatusTargets, partitionTasksByProject, hierarchyBulkTargets } from './task-table.js?v=9';
         const t = window.i18n.text;
         // API Configuration
@@ -5008,20 +5008,6 @@
             return entriesByTask;
         }
 
-        function budgetFilterSummary() {
-            const all = t('board.allCustomers', 'Alle Kunden');
-            const join = values => values.length ? values.join(', ') : t('kpi.filterAll', 'Alle');
-            return [
-                [t('hierarchy.customer', 'Kunde'), document.getElementById('board-customer-selected-label')?.textContent?.trim() || all],
-                [t('hierarchy.project', 'Projekt'), document.getElementById('project-board-selected-label')?.textContent?.trim() || t('projectBoard.allProjects', 'Alle Projekte')],
-                [t('board.archive', 'Archiv'), document.getElementById('filter-archived')?.checked ? t('common.yes', 'Ja') : t('common.no', 'Nein')],
-                [t('board.owner', 'Zugewiesen an'), join(selectedFilterOwners)],
-                [t('board.taskType', 'Task Typ'), join(selectedFilterTypes)],
-                [t('board.tags', 'Tags'), join(selectedFilterTags)],
-                [t('kpi.billableOnly', 'Nur abrechenbare Stunden'), budgetBillableOnly ? t('common.yes', 'Ja') : t('common.no', 'Nein')]
-            ];
-        }
-
         async function renderBudgetKpisPanel(filteredTasks) {
             const root = document.getElementById('budget-kpis');
             if (!root) return;
@@ -5065,14 +5051,17 @@
                 context.statusText = '';
                 context.onOpenReport = () => openBillingReportModal({
                     t,
-                    filters: budgetFilterSummary(),
-                    totals: [
-                        [t('kpi.budgetShort', 'Budget'), formatBudgetHours(model.totals.budget > 0 ? model.totals.budget : null)],
-                        [t('kpi.actualShort', 'Ist'), formatBudgetHours(model.totals.actual)],
-                        [t('kpi.billable', 'Abrechenbar'), formatBudgetHours(model.totals.billableActual)],
-                        [t('kpi.nonBillable', 'Nicht abrechenbar'), formatBudgetHours(model.totals.nonBillableActual)],
-                        [t('kpi.budgetBurn', 'Budget Burn'), formatBudgetPercent(model.totals.burn)]
-                    ]
+                    currentUser: window.currentUser?.email || '',
+                    hierarchy,
+                    tasks: tasks.filter(task => !task.isArchived),
+                    fetchEntries: fetchBudgetTimeEntries,
+                    clearEntryCache: () => budgetTimeEntryCache.clear(),
+                    defaults: {
+                        customerId: activeCustomerId || '',
+                        projectId: activeProjectBoardId || '',
+                        includeNonBillable: !budgetBillableOnly
+                    },
+                    onLocksChanged: () => renderBudgetKpisPanel(getFilteredTasks())
                 });
                 renderBudgetKpisView(root, model, context);
             } catch (error) {
@@ -5665,6 +5654,7 @@
         window.addTimeEntry = addTimeEntry;
         window.loadTimeEntries = loadTimeEntries;
         window.deleteTimeEntry = deleteTimeEntry;
+        window.toggleTimeEntryLock = toggleTimeEntryLock;
         window.updateEstimateDisplay = updateEstimateDisplay;
 
         window.closeAddTaskModal = function() {
@@ -6576,6 +6566,7 @@
                                             <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeUser', 'Benutzer')}</th>
                                             <th class="text-left px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeComment', 'Kommentar')}</th>
                                             <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.billable', 'Abrechenbar')}</th>
+                                            <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('kpi.lockedColumn', 'Gesperrt')}</th>
                                             <th class="text-center px-2 py-1.5 font-semibold text-slate-900 dark:text-white">${tt('task.timeAction', 'Aktion')}</th>
                                         </tr>
                                     </thead>
@@ -6592,9 +6583,17 @@
                                                     </span>
                                                 </td>
                                                 <td class="px-2 py-1.5 text-center">
-                                                    <button type="button" onclick="deleteTimeEntry('${entry.id}')" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200 transition-colors">
-                                                        <i class="fa-solid fa-trash-alt text-sm"></i>
+                                                    <button type="button" onclick="toggleTimeEntryLock('${entry.id}', ${entry.locked ? 'false' : 'true'})"
+                                                        class="transition-colors ${entry.locked ? 'text-amber-500 hover:text-amber-600' : 'text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400'}"
+                                                        title="${entry.locked ? `${tt('task.entryLocked', 'Gesperrt')}${entry.lockedPeriod ? ` (${entry.lockedPeriod})` : ''} – ${tt('task.clickToUnlock', 'Klicken zum Entsperren')}` : tt('task.clickToLock', 'Klicken zum Sperren')}"
+                                                        aria-label="${entry.locked ? tt('task.clickToUnlock', 'Klicken zum Entsperren') : tt('task.clickToLock', 'Klicken zum Sperren')}">
+                                                        <i class="fa-solid ${entry.locked ? 'fa-lock' : 'fa-lock-open'} text-sm"></i>
                                                     </button>
+                                                </td>
+                                                <td class="px-2 py-1.5 text-center">
+                                                    ${entry.locked
+                                                        ? `<button type="button" disabled class="cursor-not-allowed text-slate-300 dark:text-slate-600" title="${tt('task.lockedNoDelete', 'Gesperrte Einträge können nicht gelöscht werden.')}"><i class="fa-solid fa-trash-alt text-sm"></i></button>`
+                                                        : `<button type="button" onclick="deleteTimeEntry('${entry.id}')" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200 transition-colors"><i class="fa-solid fa-trash-alt text-sm"></i></button>`}
                                                 </td>
                                             </tr>
                                         `).join('')}
@@ -6616,7 +6615,7 @@
         }
 
         async function deleteTimeEntry(entryId) {
-            if (!confirm('Zeiteintrag wirklich löschen?')) return;
+            if (!confirm(window.i18n.text('task.deleteEntryConfirm', 'Zeiteintrag wirklich löschen?'))) return;
             const taskId = document.getElementById('modal-task-id').value;
             
             try {
@@ -6625,9 +6624,29 @@
                 });
                 if (resp.ok) {
                     await loadTimeEntries();
+                } else if (resp.status === 409) {
+                    alert(window.i18n.text('task.lockedNoDelete', 'Gesperrte Einträge können nicht gelöscht werden.'));
                 } else {
-                    alert('Fehler beim Löschen');
+                    alert(window.i18n.text('task.deleteFailed', 'Fehler beim Löschen'));
                 }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Toggle the billing lock of a single time entry (locked entries block edits/deletes)
+        async function toggleTimeEntryLock(entryId, locked) {
+            if (!locked && !confirm(window.i18n.text('task.unlockConfirm', 'Diesen Zeiteintrag entsperren? Danach kann er wieder bearbeitet und gelöscht werden.')))
+                return;
+            const taskId = document.getElementById('modal-task-id').value;
+            try {
+                const resp = await fetch(`/api/tasks/${taskId}/time-entries/${entryId}/lock`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ locked })
+                });
+                if (resp.ok) await loadTimeEntries();
+                else alert(window.i18n.text('task.lockToggleFailed', 'Sperrstatus konnte nicht geändert werden.'));
             } catch (err) {
                 console.error(err);
             }

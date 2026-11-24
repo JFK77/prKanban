@@ -666,28 +666,165 @@ export function renderBudgetKpis(root, model, context) {
     root.append(coverage);
 }
 
+// ---------------------------------------------------------------------------
+// Billing Report Assistant
+// ---------------------------------------------------------------------------
+
+const LOGO_STORAGE_KEY = 'billing_report_logo';
+const CREATOR_STORAGE_KEY = 'billing_report_creator';
+
+function parseDateInput(value) {
+    const time = Date.parse(`${value}T00:00:00Z`);
+    return Number.isFinite(time) ? time : NaN;
+}
+
+function formatDateDE(time) {
+    const date = new Date(time);
+    return `${String(date.getUTCDate()).padStart(2, '0')}.${String(date.getUTCMonth() + 1).padStart(2, '0')}.${date.getUTCFullYear()}`;
+}
+
+function isoDate(time) {
+    return new Date(time).toISOString().slice(0, 10);
+}
+
 /**
- * Placeholder drawer/modal for the upcoming Billing Report Assistant.
- * Receives the active filters and aggregated totals so the follow-up
- * iteration (pre-flight checks, AI summary, export) can build on it.
+ * Resolves the assistant scope and filters time entries accordingly.
+ * Pure and defensive: invalid ranges and missing data yield empty results.
+ * Returns { rows, invalidRange, scopedTasks, selectedDeliverables, users }.
  */
-export function openBillingReportModal({ t, filters, totals }) {
+export function collectReportData({ hierarchy, tasks, entriesByTask }, state) {
+    const projects = (hierarchy.projects || []).filter(project => !state.customerId || project.customerId === state.customerId);
+    const projectIds = new Set(projects.map(project => project.id));
+    const deliverables = (hierarchy.deliverables || [])
+        .filter(item => projectIds.has(item.projectId))
+        .filter(item => !state.projectId || item.projectId === state.projectId);
+    const selectedDeliverables = state.deliverableIds.size
+        ? deliverables.filter(item => state.deliverableIds.has(item.id))
+        : deliverables;
+    const selectedIds = new Set(selectedDeliverables.map(item => item.id));
+    const scopedTasks = (tasks || []).filter(task => task.deliverableId && selectedIds.has(task.deliverableId));
+
+    const from = state.from ? parseDateInput(state.from) : NaN;
+    const to = state.to ? parseDateInput(state.to) + 86399999 : NaN;
+    const invalidRange = Number.isFinite(from) && Number.isFinite(to) && from > to;
+
+    const rows = [];
+    const users = new Set();
+    if (!invalidRange) {
+        for (const task of scopedTasks) {
+            for (const entry of entriesByTask?.get(task.id) || []) {
+                const time = utcTime(entry.startTime);
+                if (!Number.isFinite(time)) continue;
+                if (entry.userEmail) users.add(entry.userEmail);
+                if (Number.isFinite(from) && time < from) continue;
+                if (Number.isFinite(to) && time > to) continue;
+                if (state.userEmail && entry.userEmail !== state.userEmail) continue;
+                if (!state.includeNonBillable && !entry.isBillable) continue;
+                rows.push({ entry, task, time });
+            }
+        }
+    }
+    rows.sort((a, b) => a.time - b.time || String(a.entry.id).localeCompare(String(b.entry.id)));
+
+    const budget = selectedDeliverables.reduce((sum, item) => sum + toNumber(item.budgetHours), 0);
+    const billable = rows.reduce((sum, row) => sum + (row.entry.isBillable ? toNumber(row.entry.durationHours) : 0), 0);
+    const nonBillable = rows.reduce((sum, row) => sum + (!row.entry.isBillable ? toNumber(row.entry.durationHours) : 0), 0);
+    const actual = billable + nonBillable;
+
+    return {
+        rows, invalidRange, scopedTasks, selectedDeliverables,
+        users: [...users].sort(),
+        summary: { budget, actual, billable, nonBillable, burn: ratio(actual, budget > 0 ? budget : 0) }
+    };
+}
+
+function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) return resolve();
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.append(script);
+    });
+}
+
+async function ensureJsPdf() {
+    if (!window.jspdf?.jsPDF)
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    if (!window.jspdf.jsPDF.API.autoTable)
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+    return window.jspdf.jsPDF;
+}
+
+function loadImageDimensions(dataUrl) {
+    return new Promise(resolve => {
+        const image = new Image();
+        image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+        image.onerror = () => resolve(null);
+        image.src = dataUrl;
+    });
+}
+
+function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+/**
+ * Billing Report Assistant modal: scope, period and display controls with a
+ * live summary + entry preview, period locking and Excel/PDF export.
+ *
+ * context: {
+ *   t, currentUser, hierarchy: {customers, projects, deliverables}, tasks,
+ *   fetchEntries(tasks) => Promise<Map>, clearEntryCache(), onLocksChanged(),
+ *   defaults: { customerId, projectId, includeNonBillable }
+ * }
+ */
+export function openBillingReportModal(context) {
+    const { t, hierarchy, tasks, defaults = {} } = context;
     document.getElementById('billing-report-modal')?.remove();
+
+    const today = new Date();
+    const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    const state = {
+        customerId: defaults.customerId || '',
+        projectId: defaults.projectId || '',
+        deliverableIds: new Set(),
+        from: monthStart,
+        to: today.toISOString().slice(0, 10),
+        userEmail: '',
+        includeNonBillable: defaults.includeNonBillable !== false,
+        showComments: true,
+        showUsers: true,
+        creator: localStorage.getItem(CREATOR_STORAGE_KEY) || context.currentUser || '',
+        logo: localStorage.getItem(LOGO_STORAGE_KEY) || ''
+    };
+    let entriesByTask = new Map();
+    let data = collectReportData({ hierarchy, tasks, entriesByTask }, state);
+    let loading = true;
+
     const overlay = document.createElement('div');
     overlay.id = 'billing-report-modal';
     overlay.className = 'fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4';
     overlay.addEventListener('click', event => { if (event.target === overlay) overlay.remove(); });
 
     const modal = document.createElement('div');
-    modal.className = 'w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900';
+    modal.className = 'flex max-h-[92vh] w-full max-w-5xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
 
+    // --- header ---
     const header = document.createElement('div');
-    header.className = 'flex items-start justify-between gap-3';
+    header.className = 'flex items-start justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-700';
     const title = document.createElement('h3');
     title.className = 'text-lg font-bold text-slate-900 dark:text-white';
-    title.textContent = t('kpi.billingAssistant', 'Abrechnungsreport-Assistent');
+    title.innerHTML = '<i class="fa-solid fa-file-invoice mr-2 text-blue-600" aria-hidden="true"></i>';
+    title.append(document.createTextNode(t('kpi.billingAssistant', 'Abrechnungsreport-Assistent')));
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'rounded p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white';
@@ -696,64 +833,573 @@ export function openBillingReportModal({ t, filters, totals }) {
     close.addEventListener('click', () => overlay.remove());
     header.append(title, close);
 
-    const intro = document.createElement('p');
-    intro.className = 'mt-2 text-sm text-slate-600 dark:text-slate-300';
-    intro.textContent = t('kpi.billingAssistantIntro', 'Erstellt demnächst Abrechnungsreports auf Basis der aktiven Filter. Vorab-Prüfungen, KI-Zusammenfassung und Export folgen.');
+    // --- body (scrollable) ---
+    const body = document.createElement('div');
+    body.className = 'min-h-0 flex-1 space-y-4 overflow-y-auto p-5';
 
-    const filterBox = document.createElement('div');
-    filterBox.className = 'mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-700 dark:bg-slate-800';
-    const filterTitle = document.createElement('h4');
-    filterTitle.className = 'mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-    filterTitle.textContent = t('kpi.activeFilters', 'Aktive Filter');
-    filterBox.append(filterTitle);
-    for (const [label, value] of filters) {
-        const row = document.createElement('div');
-        row.className = 'flex justify-between gap-3 py-0.5 text-slate-700 dark:text-slate-200';
-        const key = document.createElement('span');
-        key.className = 'text-slate-500 dark:text-slate-400';
-        key.textContent = label;
-        const val = document.createElement('span');
-        val.className = 'text-right font-medium';
-        val.textContent = value;
-        row.append(key, val);
-        filterBox.append(row);
-    }
+    const selectClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
+    const labelClass = 'block text-xs font-semibold text-slate-600 dark:text-slate-300';
+    const field = (labelText, control) => {
+        const wrap = document.createElement('div');
+        const label = document.createElement('label');
+        label.className = labelClass + ' mb-1';
+        label.textContent = labelText;
+        wrap.append(label, control);
+        return wrap;
+    };
+    const checkboxField = (labelText, checked, onChange) => {
+        const label = document.createElement('label');
+        label.className = 'inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-200';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = checked;
+        input.className = 'rounded border-slate-300 text-blue-600 focus:ring-blue-500';
+        input.addEventListener('change', () => onChange(input.checked));
+        label.append(input, document.createTextNode(labelText));
+        return label;
+    };
 
-    const totalsBox = filterBox.cloneNode(false);
-    totalsBox.className = filterBox.className + ' mt-3';
-    const totalsTitle = filterTitle.cloneNode(false);
-    totalsTitle.className = filterTitle.className;
-    totalsTitle.textContent = t('kpi.reportScope', 'Report-Umfang');
-    totalsBox.append(totalsTitle);
-    for (const [label, value] of totals) {
-        const row = document.createElement('div');
-        row.className = 'flex justify-between gap-3 py-0.5 text-slate-700 dark:text-slate-200';
-        const key = document.createElement('span');
-        key.className = 'text-slate-500 dark:text-slate-400';
-        key.textContent = label;
-        const val = document.createElement('span');
-        val.className = 'text-right font-medium tabular-nums';
-        val.textContent = value;
-        row.append(key, val);
-        totalsBox.append(row);
-    }
+    // scope controls
+    const scopeGrid = document.createElement('div');
+    scopeGrid.className = 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3';
 
-    const roadmap = document.createElement('ul');
-    roadmap.className = 'mt-4 space-y-1 text-xs text-slate-500 dark:text-slate-400';
-    for (const item of [
-        t('kpi.assistantStepChecks', 'Vorab-Prüfungen (fehlende Kommentare, nicht klassifizierte Einträge)'),
-        t('kpi.assistantStepSummary', 'KI-Zusammenfassung der erbrachten Leistungen'),
-        t('kpi.assistantStepExport', 'Export als PDF/Excel')
-    ]) {
-        const li = document.createElement('li');
-        li.innerHTML = '<i class="fa-regular fa-circle mr-2 text-slate-400" aria-hidden="true"></i>';
-        li.append(document.createTextNode(item));
-        roadmap.append(li);
-    }
+    const customerSelect = document.createElement('select');
+    customerSelect.className = selectClass;
+    const projectSelect = document.createElement('select');
+    projectSelect.className = selectClass;
+    const deliverableBox = document.createElement('div');
+    deliverableBox.className = 'max-h-28 space-y-1 overflow-y-auto rounded-lg border border-slate-300 bg-white p-2 text-sm dark:border-slate-700 dark:bg-slate-800';
+    const fromInput = document.createElement('input');
+    fromInput.type = 'date';
+    fromInput.className = selectClass;
+    fromInput.value = state.from;
+    const toInput = document.createElement('input');
+    toInput.type = 'date';
+    toInput.className = selectClass;
+    toInput.value = state.to;
+    const userSelect = document.createElement('select');
+    userSelect.className = selectClass;
 
-    modal.append(header, intro, filterBox, totalsBox, roadmap);
+    scopeGrid.append(
+        field(t('hierarchy.customer', 'Kunde'), customerSelect),
+        field(t('hierarchy.project', 'Projekt'), projectSelect),
+        field(t('hierarchy.deliverables', 'Lieferobjekte'), deliverableBox),
+        field(t('kpi.reportFrom', 'Von'), fromInput),
+        field(t('kpi.reportTo', 'Bis'), toInput),
+        field(t('kpi.reportUser', 'Benutzer'), userSelect)
+    );
+
+    // display toggles + settings
+    const toggleRow = document.createElement('div');
+    toggleRow.className = 'flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50';
+    toggleRow.append(
+        checkboxField(t('kpi.includeNonBillable', 'Non-Billable einbeziehen'), state.includeNonBillable, value => { state.includeNonBillable = value; refresh(); }),
+        checkboxField(t('kpi.showComments', 'Kommentare anzeigen'), state.showComments, value => { state.showComments = value; refresh(); }),
+        checkboxField(t('kpi.showUserNames', 'Benutzernamen anzeigen'), state.showUsers, value => { state.showUsers = value; refresh(); })
+    );
+
+    const settingsGrid = document.createElement('div');
+    settingsGrid.className = 'grid gap-3 sm:grid-cols-2';
+    const creatorInput = document.createElement('input');
+    creatorInput.type = 'text';
+    creatorInput.className = selectClass;
+    creatorInput.value = state.creator;
+    creatorInput.addEventListener('change', () => {
+        state.creator = creatorInput.value.trim();
+        localStorage.setItem(CREATOR_STORAGE_KEY, state.creator);
+    });
+    const logoWrap = document.createElement('div');
+    logoWrap.className = 'flex items-center gap-3';
+    const logoPreview = document.createElement('img');
+    logoPreview.className = 'h-9 max-w-[8rem] rounded border border-slate-200 object-contain p-1 dark:border-slate-700';
+    logoPreview.alt = t('kpi.companyLogo', 'Firmenlogo');
+    const logoInput = document.createElement('input');
+    logoInput.type = 'file';
+    logoInput.accept = 'image/png,image/jpeg';
+    logoInput.className = 'text-xs text-slate-500 dark:text-slate-400';
+    const logoRemove = document.createElement('button');
+    logoRemove.type = 'button';
+    logoRemove.className = 'text-xs text-red-600 hover:underline dark:text-red-400';
+    logoRemove.textContent = t('common.remove', 'Entfernen');
+    const refreshLogo = () => {
+        logoPreview.classList.toggle('hidden', !state.logo);
+        logoRemove.classList.toggle('hidden', !state.logo);
+        if (state.logo) logoPreview.src = state.logo;
+    };
+    logoInput.addEventListener('change', () => {
+        const file = logoInput.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            state.logo = String(reader.result);
+            try { localStorage.setItem(LOGO_STORAGE_KEY, state.logo); } catch { /* quota exceeded: keep in-memory */ }
+            refreshLogo();
+        };
+        reader.readAsDataURL(file);
+    });
+    logoRemove.addEventListener('click', () => {
+        state.logo = '';
+        localStorage.removeItem(LOGO_STORAGE_KEY);
+        logoInput.value = '';
+        refreshLogo();
+    });
+    logoWrap.append(logoInput, logoPreview, logoRemove);
+    refreshLogo();
+    settingsGrid.append(
+        field(t('kpi.reportCreator', 'Ersteller des Reports'), creatorInput),
+        field(t('kpi.companyLogo', 'Firmenlogo (PDF, oben rechts)'), logoWrap)
+    );
+
+    // summary cards
+    const summaryGrid = document.createElement('div');
+    summaryGrid.className = 'grid gap-3 sm:grid-cols-3 lg:grid-cols-5';
+
+    // preview table
+    const previewWrap = document.createElement('div');
+    previewWrap.className = 'rounded-lg border border-slate-200 dark:border-slate-700';
+    const previewScroll = document.createElement('div');
+    previewScroll.className = 'max-h-64 overflow-y-auto';
+    previewWrap.append(previewScroll);
+
+    const statusLine = document.createElement('p');
+    statusLine.className = 'text-xs text-slate-500 dark:text-slate-400';
+    statusLine.setAttribute('role', 'status');
+
+    body.append(scopeGrid, toggleRow, settingsGrid, summaryGrid, previewWrap, statusLine);
+
+    // --- footer actions ---
+    const footer = document.createElement('div');
+    footer.className = 'flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 p-4 dark:border-slate-700';
+    const lockButton = document.createElement('button');
+    lockButton.type = 'button';
+    lockButton.className = 'rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50';
+    lockButton.innerHTML = '<i class="fa-solid fa-lock mr-2" aria-hidden="true"></i>';
+    lockButton.append(document.createTextNode(t('kpi.lockPeriod', 'Zeiten in der Periode sperren')));
+    const excelButton = document.createElement('button');
+    excelButton.type = 'button';
+    excelButton.className = 'rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50';
+    excelButton.innerHTML = '<i class="fa-solid fa-file-excel mr-2" aria-hidden="true"></i>';
+    excelButton.append(document.createTextNode(t('kpi.exportExcel', 'Export nach Excel')));
+    const pdfButton = document.createElement('button');
+    pdfButton.type = 'button';
+    pdfButton.className = 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50';
+    pdfButton.innerHTML = '<i class="fa-solid fa-file-pdf mr-2" aria-hidden="true"></i>';
+    pdfButton.append(document.createTextNode(t('kpi.exportPdf', 'Export als PDF')));
+    footer.append(lockButton, excelButton, pdfButton);
+
+    modal.append(header, body, footer);
     overlay.append(modal);
     document.body.append(overlay);
+
+    // --- helpers bound to current state ---
+    const customerName = () => (hierarchy.customers || []).find(item => item.id === state.customerId)?.name
+        || t('board.allCustomers', 'Alle Kunden');
+    const customerDebitor = () => (hierarchy.customers || []).find(item => item.id === state.customerId)?.debitorNo || '';
+    const projectName = () => (hierarchy.projects || []).find(item => item.id === state.projectId)?.name
+        || t('projectBoard.allProjects', 'Alle Projekte');
+    const deliverableLabel = () => state.deliverableIds.size
+        ? data.selectedDeliverables.map(item => item.name).join(', ')
+        : t('kpi.allDeliverables', 'Alle Lieferobjekte');
+    const periodLabel = () => `${state.from ? formatDateDE(parseDateInput(state.from)) : '—'} – ${state.to ? formatDateDE(parseDateInput(state.to)) : '—'}`;
+
+    function summaryPairs() {
+        return [
+            [t('kpi.budgetShort', 'Budget'), formatHours(data.summary.budget > 0 ? data.summary.budget : null)],
+            [t('kpi.actualShort', 'Ist'), formatHours(data.summary.actual)],
+            [t('kpi.billable', 'Abrechenbar'), formatHours(data.summary.billable)],
+            [t('kpi.nonBillable', 'Nicht abrechenbar'), formatHours(data.summary.nonBillable)],
+            [t('kpi.budgetBurn', 'Budget Burn'), formatPercent(data.summary.burn)]
+        ];
+    }
+
+    function metadataPairs() {
+        const pairs = [
+            [t('hierarchy.customer', 'Kunde'), customerName()],
+            [t('hierarchy.project', 'Projekt'), projectName()],
+            [t('hierarchy.deliverables', 'Lieferobjekte'), deliverableLabel()],
+            [t('kpi.reportPeriod', 'Zeitraum'), periodLabel()],
+            [t('kpi.reportUser', 'Benutzer'), state.userEmail || t('kpi.filterAll', 'Alle')],
+            [t('kpi.reportDate', 'Datum'), formatDateDE(Date.now())],
+            [t('kpi.reportCreator', 'Ersteller des Reports'), state.creator || '—']
+        ];
+        if (customerDebitor()) pairs.splice(1, 0, [t('hierarchy.debitorNo', 'Debitorennummer'), customerDebitor()]);
+        return pairs;
+    }
+
+    function entryHeaders() {
+        const headers = [t('task.date', 'Datum'), t('hierarchy.deliverable', 'Lieferobjekt'), t('task.title', 'Task'),
+            t('task.timeDuration', 'Dauer'), t('kpi.billable', 'Abrechenbar'), t('kpi.lockedColumn', 'Gesperrt')];
+        if (state.showUsers) headers.push(t('task.timeUser', 'Benutzer'));
+        if (state.showComments) headers.push(t('task.timeComment', 'Kommentar'));
+        return headers;
+    }
+
+    function entryRows() {
+        return data.rows.map(({ entry, task, time }) => {
+            const row = [formatDateDE(time), task.deliverableName || '', `${task.taskNumber || ''} ${task.title}`.trim(),
+                formatHours(toNumber(entry.durationHours)),
+                entry.isBillable ? t('common.yes', 'Ja') : t('common.no', 'Nein'),
+                entry.locked ? t('common.yes', 'Ja') : t('common.no', 'Nein')];
+            if (state.showUsers) row.push(entry.userEmail || '—');
+            if (state.showComments) row.push(entry.comment || '—');
+            return row;
+        });
+    }
+
+    function renderCustomerOptions() {
+        customerSelect.replaceChildren(new Option(t('board.allCustomers', 'Alle Kunden'), ''));
+        for (const customer of hierarchy.customers || [])
+            customerSelect.add(new Option(customer.name, customer.id));
+        customerSelect.value = state.customerId;
+    }
+
+    function renderProjectOptions() {
+        projectSelect.replaceChildren(new Option(t('projectBoard.allProjects', 'Alle Projekte'), ''));
+        for (const project of (hierarchy.projects || []).filter(item => !state.customerId || item.customerId === state.customerId))
+            projectSelect.add(new Option(project.name, project.id));
+        projectSelect.value = [...projectSelect.options].some(option => option.value === state.projectId) ? state.projectId : '';
+        state.projectId = projectSelect.value;
+    }
+
+    function renderDeliverableOptions() {
+        const projects = new Set((hierarchy.projects || [])
+            .filter(item => !state.customerId || item.customerId === state.customerId)
+            .filter(item => !state.projectId || item.id === state.projectId)
+            .map(item => item.id));
+        const options = (hierarchy.deliverables || []).filter(item => projects.has(item.projectId));
+        for (const id of [...state.deliverableIds])
+            if (!options.some(item => item.id === id)) state.deliverableIds.delete(id);
+        deliverableBox.replaceChildren();
+        if (!options.length) {
+            const empty = document.createElement('p');
+            empty.className = 'text-xs text-slate-400';
+            empty.textContent = '—';
+            deliverableBox.append(empty);
+            return;
+        }
+        deliverableBox.append(checkboxField(t('kpi.allDeliverables', 'Alle Lieferobjekte'), state.deliverableIds.size === 0, checked => {
+            if (checked) state.deliverableIds.clear();
+            renderDeliverableOptions();
+            refresh();
+        }));
+        for (const item of options) {
+            deliverableBox.append(checkboxField(item.name, state.deliverableIds.has(item.id), checked => {
+                if (checked) state.deliverableIds.add(item.id);
+                else state.deliverableIds.delete(item.id);
+                renderDeliverableOptions();
+                refresh();
+            }));
+        }
+    }
+
+    function renderUserOptions() {
+        const current = state.userEmail;
+        userSelect.replaceChildren(new Option(t('kpi.allUsers', 'Alle Benutzer'), ''));
+        for (const email of data.users) userSelect.add(new Option(email, email));
+        userSelect.value = data.users.includes(current) ? current : '';
+        state.userEmail = userSelect.value;
+    }
+
+    function renderSummary() {
+        summaryGrid.replaceChildren();
+        for (const [label, value] of summaryPairs()) {
+            const card = document.createElement('div');
+            card.className = 'rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50';
+            const name = document.createElement('p');
+            name.className = 'text-xs text-slate-500 dark:text-slate-400';
+            name.textContent = label;
+            const figure = document.createElement('p');
+            figure.className = 'mt-1 text-lg font-bold tabular-nums text-slate-900 dark:text-white';
+            figure.textContent = value;
+            card.append(name, figure);
+            summaryGrid.append(card);
+        }
+    }
+
+    function renderPreview() {
+        previewScroll.replaceChildren();
+        if (data.invalidRange) {
+            const warning = document.createElement('p');
+            warning.className = 'p-4 text-sm text-amber-700 dark:text-amber-300';
+            warning.textContent = t('kpi.invalidRange', 'Ungültiger Zeitraum: "Von" liegt nach "Bis".');
+            previewScroll.append(warning);
+            return;
+        }
+        if (loading) {
+            const info = document.createElement('p');
+            info.className = 'p-4 text-sm text-slate-500 dark:text-slate-400';
+            info.textContent = t('kpi.loading', 'Aufgaben werden geladen …');
+            previewScroll.append(info);
+            return;
+        }
+        if (!data.rows.length) {
+            const info = document.createElement('p');
+            info.className = 'p-4 text-sm text-slate-500 dark:text-slate-400';
+            info.textContent = t('kpi.noEntriesInScope', 'Keine Zeiteinträge im gewählten Umfang.');
+            previewScroll.append(info);
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'w-full border-collapse text-xs';
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        headRow.className = 'sticky top-0 border-b border-slate-300 bg-slate-100 text-left dark:border-slate-600 dark:bg-slate-800';
+        for (const heading of entryHeaders()) {
+            const th = document.createElement('th');
+            th.className = 'px-2 py-1.5 font-semibold text-slate-900 dark:text-white';
+            th.textContent = heading;
+            headRow.append(th);
+        }
+        thead.append(headRow);
+        const tbody = document.createElement('tbody');
+        for (const { entry, task, time } of data.rows) {
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-slate-200 dark:border-slate-700';
+            const cells = [formatDateDE(time), task.deliverableName || '', `${task.taskNumber || ''} ${task.title}`.trim(),
+                formatHours(toNumber(entry.durationHours))];
+            for (const value of cells) {
+                const td = document.createElement('td');
+                td.className = 'px-2 py-1.5 text-slate-700 dark:text-slate-300';
+                td.textContent = value;
+                tr.append(td);
+            }
+            const billableCell = document.createElement('td');
+            billableCell.className = 'px-2 py-1.5';
+            const badge = document.createElement('span');
+            badge.className = `inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${entry.isBillable
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`;
+            badge.textContent = entry.isBillable ? t('kpi.billable', 'Abrechenbar') : t('kpi.nonBillable', 'Nicht abrechenbar');
+            billableCell.append(badge);
+            tr.append(billableCell);
+            const lockCell = document.createElement('td');
+            lockCell.className = 'px-2 py-1.5 text-center';
+            lockCell.innerHTML = entry.locked
+                ? '<i class="fa-solid fa-lock text-amber-500" aria-hidden="true"></i>'
+                : '<i class="fa-solid fa-lock-open text-slate-300 dark:text-slate-600" aria-hidden="true"></i>';
+            lockCell.title = entry.locked ? (entry.lockedPeriod || t('kpi.lockedColumn', 'Gesperrt')) : '';
+            tr.append(lockCell);
+            if (state.showUsers) {
+                const td = document.createElement('td');
+                td.className = 'max-w-[9rem] truncate px-2 py-1.5 text-slate-600 dark:text-slate-400';
+                td.textContent = entry.userEmail || '—';
+                td.title = entry.userEmail || '';
+                tr.append(td);
+            }
+            if (state.showComments) {
+                const td = document.createElement('td');
+                td.className = 'max-w-[12rem] truncate px-2 py-1.5 text-slate-600 dark:text-slate-400';
+                td.textContent = entry.comment || '—';
+                td.title = entry.comment || '';
+                tr.append(td);
+            }
+            tbody.append(tr);
+        }
+        table.append(thead, tbody);
+        previewScroll.append(table);
+    }
+
+    function refresh() {
+        data = collectReportData({ hierarchy, tasks, entriesByTask }, state);
+        renderUserOptions();
+        renderSummary();
+        renderPreview();
+        const exportable = !loading && !data.invalidRange && data.rows.length > 0;
+        lockButton.disabled = !exportable;
+        excelButton.disabled = !exportable;
+        pdfButton.disabled = !exportable;
+        if (!data.invalidRange)
+            statusLine.textContent = loading ? '' : t('kpi.previewCount', '{count} Zeiteinträge im gewählten Umfang.', { count: data.rows.length });
+    }
+
+    async function reloadEntries() {
+        loading = true;
+        refresh();
+        try {
+            const scope = collectReportData({ hierarchy, tasks, entriesByTask: new Map() }, state);
+            entriesByTask = await context.fetchEntries(scope.scopedTasks);
+        } catch (error) {
+            console.error('Billing assistant entries failed:', error);
+            statusLine.textContent = t('kpi.loadFailed', 'Kennzahlen nicht verfügbar: Aufgaben konnten nicht geladen werden.');
+        }
+        loading = false;
+        refresh();
+    }
+
+    customerSelect.addEventListener('change', () => {
+        state.customerId = customerSelect.value;
+        state.deliverableIds.clear();
+        renderProjectOptions();
+        renderDeliverableOptions();
+        reloadEntries();
+    });
+    projectSelect.addEventListener('change', () => {
+        state.projectId = projectSelect.value;
+        state.deliverableIds.clear();
+        renderDeliverableOptions();
+        reloadEntries();
+    });
+    fromInput.addEventListener('change', () => { state.from = fromInput.value; refresh(); });
+    toInput.addEventListener('change', () => { state.to = toInput.value; refresh(); });
+    userSelect.addEventListener('change', () => { state.userEmail = userSelect.value; refresh(); });
+
+    lockButton.addEventListener('click', async () => {
+        const count = data.rows.filter(row => !row.entry.locked).length;
+        if (!count) {
+            statusLine.textContent = t('kpi.nothingToLock', 'Alle Zeiteinträge im Umfang sind bereits gesperrt.');
+            return;
+        }
+        if (!window.confirm(t('kpi.lockConfirm', '{count} Zeiteinträge im Zeitraum {period} sperren? Gesperrte Einträge können nicht mehr bearbeitet oder gelöscht werden.', { count, period: periodLabel() })))
+            return;
+        lockButton.disabled = true;
+        try {
+            const scope = collectReportData({ hierarchy, tasks, entriesByTask }, state);
+            const userId = state.userEmail
+                ? data.rows.find(row => row.entry.userEmail === state.userEmail)?.entry.userId || null
+                : null;
+            const response = await fetch('/api/time-entries/lock-period', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskIds: scope.scopedTasks.map(task => task.id),
+                    from: `${state.from}T00:00:00Z`,
+                    to: `${state.to}T23:59:59Z`,
+                    userId,
+                    lockedPeriod: periodLabel()
+                })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+            context.clearEntryCache?.();
+            await reloadEntries();
+            context.onLocksChanged?.();
+            statusLine.textContent = t('kpi.lockSuccess', '{count} Zeiteinträge gesperrt.', { count: result.lockedCount });
+        } catch (error) {
+            console.error('Lock period failed:', error);
+            statusLine.textContent = t('kpi.lockFailed', 'Sperren fehlgeschlagen.');
+        }
+        lockButton.disabled = false;
+    });
+
+    excelButton.addEventListener('click', async () => {
+        excelButton.disabled = true;
+        try {
+            const response = await fetch('/api/v1/billing-report/export', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: t('kpi.billingReport', 'Abrechnungsreport'),
+                    metadata: metadataPairs(),
+                    summary: summaryPairs(),
+                    headers: entryHeaders(),
+                    rows: entryRows()
+                })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            downloadBlob(await response.blob(), `abrechnungsreport_${state.from}_${state.to}.xlsx`);
+        } catch (error) {
+            console.error('Excel export failed:', error);
+            statusLine.textContent = t('kpi.exportFailed', 'Export fehlgeschlagen.');
+        }
+        excelButton.disabled = false;
+    });
+
+    pdfButton.addEventListener('click', async () => {
+        pdfButton.disabled = true;
+        try {
+            const JsPdf = await ensureJsPdf();
+            const doc = new JsPdf({ unit: 'mm', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 14;
+
+            // header: logo top-right with graceful fallback
+            if (state.logo) {
+                const dims = await loadImageDimensions(state.logo);
+                if (dims && dims.width > 0) {
+                    const width = 35;
+                    const height = Math.min(25, width * dims.height / dims.width);
+                    try { doc.addImage(state.logo, 'PNG', pageWidth - margin - width, margin, width, height); } catch { /* unsupported image */ }
+                }
+            }
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text(t('kpi.billingReport', 'Abrechnungsreport'), margin, margin + 6);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            let y = margin + 16;
+            for (const [label, value] of metadataPairs()) {
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${label}:`, margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(String(value), margin + 48, y);
+                y += 5.5;
+            }
+
+            // page 1: executive summary with totals only
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(t('kpi.executiveSummary', 'Kurzfassung'), margin, y + 6);
+            doc.autoTable({
+                startY: y + 9,
+                margin: { left: margin, right: margin },
+                head: [[t('kpi.metric', 'Kennzahl'), t('kpi.value', 'Wert')]],
+                body: summaryPairs(),
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [30, 41, 59] }
+            });
+            const perDeliverable = data.selectedDeliverables.map(item => {
+                const rows = data.rows.filter(row => row.task.deliverableId === item.id);
+                const hours = rows.reduce((sum, row) => sum + toNumber(row.entry.durationHours), 0);
+                const billable = rows.reduce((sum, row) => sum + (row.entry.isBillable ? toNumber(row.entry.durationHours) : 0), 0);
+                return [item.name, formatHours(toNumber(item.budgetHours) > 0 ? toNumber(item.budgetHours) : null), formatHours(hours), formatHours(billable)];
+            }).filter(row => row[2] !== '0h');
+            if (perDeliverable.length) {
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 6,
+                    margin: { left: margin, right: margin },
+                    head: [[t('hierarchy.deliverable', 'Lieferobjekt'), t('kpi.budgetShort', 'Budget'), t('kpi.actualShort', 'Ist'), t('kpi.billable', 'Abrechenbar')]],
+                    body: perDeliverable,
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [30, 41, 59] }
+                });
+            }
+
+            // details from page 2 onwards
+            doc.addPage();
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(t('kpi.entryDetails', 'Zeiteinträge im Detail'), margin, margin + 4);
+            doc.autoTable({
+                startY: margin + 8,
+                margin: { left: margin, right: margin },
+                head: [entryHeaders()],
+                body: entryRows(),
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [30, 41, 59] }
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let page = 1; page <= pageCount; page++) {
+                doc.setPage(page);
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`${page} / ${pageCount}`, pageWidth - margin, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
+            }
+            doc.save(`abrechnungsreport_${state.from}_${state.to}.pdf`);
+        } catch (error) {
+            console.error('PDF export failed:', error);
+            statusLine.textContent = t('kpi.exportFailed', 'Export fehlgeschlagen.');
+        }
+        pdfButton.disabled = false;
+    });
+
+    renderCustomerOptions();
+    renderProjectOptions();
+    renderDeliverableOptions();
+    refresh();
+    reloadEntries();
     close.focus();
 }
 

@@ -31,4 +31,14 @@ public interface ITimeEntryService
     /// Delete a time entry
     /// </summary>
     Task DeleteAsync(string taskId, string timeEntryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lock or unlock a single time entry
+    /// </summary>
+    Task<TimeEntryResponse> SetLockedAsync(string taskId, string timeEntryId, bool locked, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lock all time entries of the given tasks within a billing period
+    /// </summary>
+    Task<int> LockPeriodAsync(LockPeriodRequest request, CancellationToken cancellationToken = default);
 }

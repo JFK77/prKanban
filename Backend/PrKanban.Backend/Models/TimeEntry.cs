@@ -43,6 +43,21 @@ public class TimeEntry
     /// Whether this time is billable or not (default: true)
     /// </summary>
     public bool IsBillable { get; set; } = true;
+
+    /// <summary>
+    /// Whether this entry is locked for billing (blocks edits and deletes until unlocked)
+    /// </summary>
+    public bool Locked { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when this entry was locked
+    /// </summary>
+    public DateTime? LockedAt { get; set; }
+
+    /// <summary>
+    /// Label of the billing period that locked this entry (e.g. "2026-11-01 – 2026-11-30")
+    /// </summary>
+    public string? LockedPeriod { get; set; }
     
     /// <summary>
     /// UTC timestamp when this entry was created

@@ -96,6 +96,9 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
         if (entry is null)
             throw new KeyNotFoundException($"Time entry {timeEntryId} not found for task {taskId}");
 
+        if (entry.Locked)
+            throw new InvalidOperationException($"Time entry {timeEntryId} is locked");
+
         if (request.StartTime.HasValue)
             entry.StartTime = request.StartTime.Value.UtcDateTime;
 
@@ -135,8 +138,57 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
         if (entry is null)
             throw new KeyNotFoundException($"Time entry {timeEntryId} not found for task {taskId}");
 
+        if (entry.Locked)
+            throw new InvalidOperationException($"Time entry {timeEntryId} is locked");
+
         context.TimeEntries.Remove(entry);
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async System.Threading.Tasks.Task<TimeEntryResponse> SetLockedAsync(string taskId, string timeEntryId, bool locked, CancellationToken cancellationToken = default)
+    {
+        var entry = await context.TimeEntries
+            .FirstOrDefaultAsync(e => e.TaskId == taskId && e.Id == timeEntryId, cancellationToken);
+
+        if (entry is null)
+            throw new KeyNotFoundException($"Time entry {timeEntryId} not found for task {taskId}");
+
+        entry.Locked = locked;
+        entry.LockedAt = locked ? DateTime.UtcNow : null;
+        if (!locked)
+            entry.LockedPeriod = null;
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == entry.UserId, cancellationToken);
+
+        return MapToResponse(entry, user?.Email);
+    }
+
+    public async System.Threading.Tasks.Task<int> LockPeriodAsync(LockPeriodRequest request, CancellationToken cancellationToken = default)
+    {
+        var from = request.From.UtcDateTime;
+        var to = request.To.UtcDateTime;
+        var taskIds = request.TaskIds.Distinct().ToList();
+
+        var query = context.TimeEntries
+            .Where(e => taskIds.Contains(e.TaskId) && !e.Locked && e.StartTime >= from && e.StartTime <= to);
+        if (!string.IsNullOrEmpty(request.UserId))
+            query = query.Where(e => e.UserId == request.UserId);
+
+        var entries = await query.ToListAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+        foreach (var entry in entries)
+        {
+            entry.Locked = true;
+            entry.LockedAt = now;
+            entry.LockedPeriod = request.LockedPeriod;
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        return entries.Count;
     }
 
     private static TimeEntryResponse MapToResponse(TimeEntry entry, string? userEmail = null)
@@ -151,6 +203,9 @@ public sealed class TimeEntryService(PrKanbanContext context) : ITimeEntryServic
             entry.DurationHours,
             entry.Comment,
             entry.IsBillable,
+            entry.Locked,
+            entry.LockedAt.HasValue ? new DateTimeOffset(entry.LockedAt.Value, TimeSpan.Zero) : null,
+            entry.LockedPeriod,
             new DateTimeOffset(entry.CreatedAt, TimeSpan.Zero),
             new DateTimeOffset(entry.UpdatedAt, TimeSpan.Zero)
         );

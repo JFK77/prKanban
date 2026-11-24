@@ -713,6 +713,15 @@ namespace PrKanban.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("Locked")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LockedPeriod")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("TEXT");
 
