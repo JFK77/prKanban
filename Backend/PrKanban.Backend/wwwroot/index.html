@@ -1457,7 +1457,7 @@
             <div id="kanban-kpis" aria-live="polite" class="mt-4 space-y-5"></div>
         </section>
         <section id="budget-kpis-panel" role="tabpanel" aria-labelledby="tab-budget-kpis" class="hidden">
-            <p data-i18n="views.dashboardLater" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Das Dashboard wird später ergänzt.</p>
+            <div id="budget-kpis" aria-live="polite" class="mt-4 space-y-5"></div>
         </section>
     </section>
     <!-- Footer -->
@@ -1689,6 +1689,7 @@
 
     <script type="module">
         import { calculateKanbanKpis, renderTaskDistribution, renderFlowChart } from './kanban-kpis.js?v=5';
+        import { aggregateBudgetKpis, renderBudgetKpis as renderBudgetKpisView, openBillingReportModal, formatHours as formatBudgetHours, formatPercent as formatBudgetPercent } from './budget-kpis.js?v=1';
         import { groupTasksForTable, filterTasksForTable, compareTasksForTable, tableExportRows, executeTableBulk, projectStatusTargets, partitionTasksByProject, hierarchyBulkTargets } from './task-table.js?v=9';
         const t = window.i18n.text;
         // API Configuration
@@ -3448,6 +3449,7 @@
             }
             if (currentView === 'dashboard') {
                 renderKanbanKpis(filteredTasks);
+                renderBudgetKpisPanel(filteredTasks);
                 return;
             }
             if (activeProjectBoardId) {
@@ -4973,6 +4975,113 @@
             },
             isCollapsed: id => collapsedSwimlanes.has(id)
         });
+
+        // --- BUDGET KPIS TAB ---
+        let budgetBillableOnly = false;
+        let budgetRenderToken = 0;
+        let hierarchyCache = null;                 // { time, data }
+        const budgetTimeEntryCache = new Map();    // taskId -> { time, entries }
+        const BUDGET_CACHE_TTL = 60000;
+
+        async function fetchHierarchySnapshot() {
+            if (hierarchyCache && Date.now() - hierarchyCache.time < BUDGET_CACHE_TTL) return hierarchyCache.data;
+            const response = await fetch('/api/v1/hierarchy', { credentials: 'same-origin' });
+            if (!response.ok) throw new Error(`Hierarchy load failed (HTTP ${response.status})`);
+            const data = await response.json();
+            hierarchyCache = { time: Date.now(), data };
+            return data;
+        }
+
+        async function fetchBudgetTimeEntries(tasksInScope) {
+            const entriesByTask = new Map();
+            await Promise.all(tasksInScope.map(async task => {
+                const cached = budgetTimeEntryCache.get(task.id);
+                if (cached && Date.now() - cached.time < BUDGET_CACHE_TTL) {
+                    entriesByTask.set(task.id, cached.entries);
+                    return;
+                }
+                const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}/time-entries`, { credentials: 'same-origin' });
+                const entries = response.ok ? (await response.json()).entries || [] : [];
+                budgetTimeEntryCache.set(task.id, { time: Date.now(), entries });
+                entriesByTask.set(task.id, entries);
+            }));
+            return entriesByTask;
+        }
+
+        function budgetFilterSummary() {
+            const all = t('board.allCustomers', 'Alle Kunden');
+            const join = values => values.length ? values.join(', ') : t('kpi.filterAll', 'Alle');
+            return [
+                [t('hierarchy.customer', 'Kunde'), document.getElementById('board-customer-selected-label')?.textContent?.trim() || all],
+                [t('hierarchy.project', 'Projekt'), document.getElementById('project-board-selected-label')?.textContent?.trim() || t('projectBoard.allProjects', 'Alle Projekte')],
+                [t('board.archive', 'Archiv'), document.getElementById('filter-archived')?.checked ? t('common.yes', 'Ja') : t('common.no', 'Nein')],
+                [t('board.owner', 'Zugewiesen an'), join(selectedFilterOwners)],
+                [t('board.taskType', 'Task Typ'), join(selectedFilterTypes)],
+                [t('board.tags', 'Tags'), join(selectedFilterTags)],
+                [t('kpi.billableOnly', 'Nur abrechenbare Stunden'), budgetBillableOnly ? t('common.yes', 'Ja') : t('common.no', 'Nein')]
+            ];
+        }
+
+        async function renderBudgetKpisPanel(filteredTasks) {
+            const root = document.getElementById('budget-kpis');
+            if (!root) return;
+            const token = ++budgetRenderToken;
+            let statusText = '';
+            if (!window.currentUser || taskDataStatus === 'signedOut')
+                statusText = t('kpi.signIn', 'Bitte anmelden, um die Kennzahlen zu sehen.');
+            else if (taskDataStatus === 'loading')
+                statusText = t('kpi.loading', 'Aufgaben werden geladen …');
+            else if (taskDataStatus === 'error')
+                statusText = t('kpi.loadFailed', 'Kennzahlen nicht verfügbar: Aufgaben konnten nicht geladen werden.');
+            const context = {
+                t,
+                openTask: openKpiTask,
+                billableOnly: budgetBillableOnly,
+                onBillableToggle: value => {
+                    budgetBillableOnly = value;
+                    renderBudgetKpisPanel(getFilteredTasks());
+                },
+                onOpenReport: null,
+                statusText
+            };
+            if (statusText) {
+                renderBudgetKpisView(root, null, context);
+                return;
+            }
+            context.statusText = t('kpi.loading', 'Aufgaben werden geladen …');
+            renderBudgetKpisView(root, null, context);
+            try {
+                const [hierarchy, entriesByTask] = await Promise.all([
+                    fetchHierarchySnapshot(),
+                    fetchBudgetTimeEntries(filteredTasks)
+                ]);
+                if (token !== budgetRenderToken) return;
+                const model = aggregateBudgetKpis({
+                    tasks: filteredTasks,
+                    deliverables: hierarchy.deliverables || [],
+                    entriesByTask,
+                    billableOnly: budgetBillableOnly
+                });
+                context.statusText = '';
+                context.onOpenReport = () => openBillingReportModal({
+                    t,
+                    filters: budgetFilterSummary(),
+                    totals: [
+                        [t('kpi.budgetShort', 'Budget'), formatBudgetHours(model.totals.budget > 0 ? model.totals.budget : null)],
+                        [t('kpi.actualShort', 'Ist'), formatBudgetHours(model.totals.actual)],
+                        [t('kpi.billable', 'Abrechenbar'), formatBudgetHours(model.totals.billableActual)],
+                        [t('kpi.nonBillable', 'Nicht abrechenbar'), formatBudgetHours(model.totals.nonBillableActual)],
+                        [t('kpi.budgetBurn', 'Budget Burn'), formatBudgetPercent(model.totals.burn)]
+                    ]
+                });
+                renderBudgetKpisView(root, model, context);
+            } catch (error) {
+                console.error('Budget KPIs failed:', error);
+                if (token !== budgetRenderToken) return;
+                context.statusText = t('kpi.loadFailed', 'Kennzahlen nicht verfügbar: Aufgaben konnten nicht geladen werden.');
+                renderBudgetKpisView(root, null, context);
+            }
+        }
 
         // --- EVENT HANDLERS & MODAL LOGIC ---
         // Note: Functions called by `onclick` are attached to `window`
