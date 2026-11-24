@@ -203,12 +203,16 @@ function addTitle(node, text) {
     node.append(title);
 }
 
-function chartFrame(label, interactive = false) {
+function chartFrame(label, interactive = false, axes = null) {
     const svg = svgElement('svg', {
-        viewBox: '0 0 360 200', role: interactive ? 'group' : 'img', 'aria-label': label,
+        viewBox: `0 0 360 ${axes ? 214 : 200}`, role: interactive ? 'group' : 'img', 'aria-label': label,
         class: 'mt-3 w-full text-slate-600 dark:text-slate-300'
     });
     svg.append(svgElement('path', { d: 'M 35 12 V 170 H 350', fill: 'none', stroke: 'currentColor', 'stroke-width': 1 }));
+    if (axes) {
+        addText(svg, 192, 206, axes.x, { 'text-anchor': 'middle', 'font-weight': 600 });
+        addText(svg, 0, 0, axes.y, { 'text-anchor': 'middle', 'font-weight': 600, transform: 'translate(10 91) rotate(-90)' });
+    }
     return svg;
 }
 
@@ -412,7 +416,8 @@ function renderCumulativeBurn(model, t) {
     const maxTime = Math.max(points[points.length - 1].time, minTime + 86400000);
     const x = time => 35 + (time - minTime) / (maxTime - minTime) * 315;
     const y = value => 170 - value / maxValue * 150;
-    const svg = chartFrame(t('kpi.cumulativeBurn', 'Kumulierter Budgetverbrauch'));
+    const svg = chartFrame(t('kpi.cumulativeBurn', 'Kumulierter Budgetverbrauch'), false,
+        { x: t('kpi.axisDate', 'Datum'), y: t('kpi.axisHours', 'Stunden (h)') });
 
     for (const [reference, color, label] of [[budget, '#0ea5e9', t('kpi.budgetShort', 'Budget')], [estimate, '#f59e0b', t('kpi.estimateShort', 'Schätzung')]]) {
         if (!(reference > 0)) continue;
@@ -446,7 +451,8 @@ function renderWeeklyBurn(model, t) {
         return wrapper;
     }
     const max = Math.max(...weeks.map(week => week.billable + week.nonBillable), 1);
-    const svg = chartFrame(t('kpi.weeklyBurn', 'Wöchentliche Burn Rate'));
+    const svg = chartFrame(t('kpi.weeklyBurn', 'Wöchentliche Burn Rate'), false,
+        { x: t('kpi.axisWeek', 'Kalenderwoche'), y: t('kpi.axisHours', 'Stunden (h)') });
     const slot = 315 / weeks.length;
     const barWidth = Math.min(28, slot * 0.6);
     weeks.forEach((week, index) => {
@@ -529,7 +535,8 @@ function renderEstimateScatter(model, t, openTask) {
     const max = Math.max(...model.scatter.map(point => Math.max(point.estimate, point.actual)), 1);
     const x = value => 35 + value / max * 315;
     const y = value => 170 - value / max * 150;
-    const svg = chartFrame(t('kpi.estimateScatter', 'Schätzung vs. Ist'), true);
+    const svg = chartFrame(t('kpi.estimateScatter', 'Schätzung vs. Ist'), true,
+        { x: t('kpi.axisEstimate', 'Schätzung (h)'), y: t('kpi.axisActual', 'Ist (h)') });
     svg.append(svgElement('line', { x1: x(0), y1: y(0), x2: x(max), y2: y(max), stroke: '#ef4444', 'stroke-dasharray': '4 3' }));
     addText(svg, 348, y(max) + 12, t('kpi.parityLine', 'Ist = Schätzung'), { 'text-anchor': 'end', fill: '#ef4444' });
     for (const point of model.scatter) {

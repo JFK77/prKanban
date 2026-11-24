@@ -92,12 +92,16 @@ function addTitle(node, text) {
     node.append(title);
 }
 
-function chartFrame(label, interactive = false) {
+function chartFrame(label, interactive = false, axes = null) {
     const svg = svgElement('svg', {
-        viewBox: '0 0 360 200', role: interactive ? 'group' : 'img', 'aria-label': label,
+        viewBox: `0 0 360 ${axes ? 214 : 200}`, role: interactive ? 'group' : 'img', 'aria-label': label,
         class: 'mt-3 w-full text-slate-600 dark:text-slate-300'
     });
     svg.append(svgElement('path', { d: 'M 35 12 V 170 H 350', fill: 'none', stroke: 'currentColor', 'stroke-width': 1 }));
+    if (axes) {
+        addText(svg, 192, 206, axes.x, { 'text-anchor': 'middle', 'font-weight': 600 });
+        addText(svg, 0, 0, axes.y, { 'text-anchor': 'middle', 'font-weight': 600, transform: 'translate(10 91) rotate(-90)' });
+    }
     return svg;
 }
 
@@ -157,7 +161,8 @@ export function renderFlowChart(kind, data, t, getColumnLabel, openTask) {
     if (kind === 'cfd') {
         const max = Math.max(0, ...data.daily.map(day => Object.values(day.counts).reduce((a, b) => a + b, 0)));
         if (!max) return empty();
-        const svg = chartFrame(t('kpi.cfd', 'Cumulative Flow Diagram'));
+        const svg = chartFrame(t('kpi.cfd', 'Cumulative Flow Diagram'), false,
+            { x: t('kpi.axisDate', 'Datum'), y: t('kpi.axisTasks', 'Aufgaben') });
         const x = index => 35 + index * 315 / (data.daily.length - 1);
         const y = value => 170 - value / max * 150;
         let lower = data.daily.map(() => 0);
@@ -228,7 +233,10 @@ export function renderFlowChart(kind, data, t, getColumnLabel, openTask) {
     }
     const items = data.completions.filter(item => item.cycle !== null);
     if (!items.length) return empty();
-    const svg = chartFrame(kind === 'control' ? t('kpi.controlChart', 'Control Chart') : t('kpi.scatterplot', 'Cycle Time Scatterplot'), true);
+    const svg = chartFrame(kind === 'control' ? t('kpi.controlChart', 'Control Chart') : t('kpi.scatterplot', 'Cycle Time Scatterplot'), true, {
+        x: kind === 'control' ? t('kpi.axisCompletions', 'Abschlüsse (Reihenfolge)') : t('kpi.axisDate', 'Datum'),
+        y: t('kpi.axisCycleTime', 'Cycle Time (Tage)')
+    });
     const max = Math.max(1, ...items.map(item => item.cycle));
     const x = (item, index) => kind === 'control'
         ? 35 + (items.length === 1 ? 157.5 : index * 315 / (items.length - 1))
