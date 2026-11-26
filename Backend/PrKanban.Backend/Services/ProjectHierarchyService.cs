@@ -9,7 +9,20 @@ public sealed class ProjectHierarchyService(PrKanbanContext db, IProjectBoardSer
 {
     private static CustomerResponse Map(Customer x) => new(x.Id, x.Name, x.Details?.DebitorNo, x.Details?.CrmUrl);
     private static ProjectResponse Map(Project x) => new(x.Id, x.Name, x.CustomerId, x.Details?.ShortKey, x.Details?.CrmLink, x.Details?.CrmUrl, x.Details?.InternalOrderNumber, x.Details?.CustomerOrderNumber, x.Details?.DefaultAssignee);
-    private static DeliverableResponse Map(Deliverable x) => new(x.Id, x.Name, x.ProjectId, x.BudgetHours, x.Details?.InitialEstimateHours ?? 0, x.Details?.ActualHours ?? 0);
+    private static DeliverableResponse Map(Deliverable x, double taskEstimateHours)
+    {
+        var automatic = x.Details?.IsEstimateAutomatic ?? true;
+        return new(x.Id, x.Name, x.ProjectId, x.BudgetHours,
+            automatic ? taskEstimateHours : x.Details!.InitialEstimateHours,
+            x.Details?.ActualHours ?? 0, automatic, taskEstimateHours);
+    }
+
+    private Task<Dictionary<string, double>> TaskEstimatesAsync(CancellationToken ct) =>
+        db.Tasks.AsNoTracking()
+            .Where(x => x.DeliverableAssignment != null)
+            .GroupBy(x => x.DeliverableAssignment!.DeliverableId)
+            .Select(group => new { DeliverableId = group.Key, Total = group.Sum(x => x.EstimatedHours ?? 0) })
+            .ToDictionaryAsync(x => x.DeliverableId, x => x.Total, ct);
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     public async Task<HierarchyResponse> GetAsync(CancellationToken ct)
@@ -19,10 +32,12 @@ public sealed class ProjectHierarchyService(PrKanbanContext db, IProjectBoardSer
         var customers = await db.Customers.AsNoTracking().Include(x => x.Details).ToListAsync(ct);
         var projects = await db.Projects.AsNoTracking().Include(x => x.Details).ToListAsync(ct);
         var deliverables = await db.Deliverables.AsNoTracking().Include(x => x.Details).ToListAsync(ct);
+        var estimates = await TaskEstimatesAsync(ct);
         return new(
             customers.OrderBy(x => Position(positions, "customers", x.Id)).ThenBy(x => x.Name).ThenBy(x => x.Id).Select(Map).ToList(),
             projects.OrderBy(x => Position(positions, "projects", x.Id)).ThenBy(x => x.Name).ThenBy(x => x.Id).Select(Map).ToList(),
-            deliverables.OrderBy(x => Position(positions, "deliverables", x.Id)).ThenBy(x => x.Name).ThenBy(x => x.Id).Select(Map).ToList());
+            deliverables.OrderBy(x => Position(positions, "deliverables", x.Id)).ThenBy(x => x.Name).ThenBy(x => x.Id)
+                .Select(x => Map(x, estimates.GetValueOrDefault(x.Id))).ToList());
     }
 
     public async Task<CustomerResponse?> SaveCustomerAsync(string? id, CustomerRequest request, CancellationToken ct)
@@ -112,7 +127,8 @@ public sealed class ProjectHierarchyService(PrKanbanContext db, IProjectBoardSer
         entity.ProjectId = request.ProjectId;
         entity.BudgetHours = request.BudgetHours;
         entity.Details ??= new DeliverableDetails { DeliverableId = entity.Id };
-        entity.Details.InitialEstimateHours = request.InitialEstimateHours;
+        entity.Details.IsEstimateAutomatic = request.InitialEstimateHours is null;
+        entity.Details.InitialEstimateHours = request.InitialEstimateHours ?? 0;
         entity.Details.ActualHours = request.ActualHours;
         if (id is null)
         {
@@ -133,7 +149,10 @@ public sealed class ProjectHierarchyService(PrKanbanContext db, IProjectBoardSer
             position.SortOrder = await NextPositionAsync("deliverables", request.ProjectId, ct);
         }
         await db.SaveChangesAsync(ct);
-        return Map(entity);
+        var taskEstimateHours = await db.Tasks.AsNoTracking()
+            .Where(x => x.DeliverableAssignment != null && x.DeliverableAssignment.DeliverableId == entity.Id)
+            .SumAsync(x => x.EstimatedHours ?? 0, ct);
+        return Map(entity, taskEstimateHours);
     }
 
     public async Task<bool> MoveAsync(string kind, string id, string? parentId, int index, CancellationToken ct)

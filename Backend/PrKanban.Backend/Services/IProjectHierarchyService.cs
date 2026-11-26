@@ -9,7 +9,7 @@ public sealed record CustomerResponse(string Id, string Name, string? DebitorNo,
 /// <summary>A project belonging to a customer.</summary>
 public sealed record ProjectResponse(string Id, string Name, string CustomerId, string? ShortKey, string? CrmLink, string? CrmUrl, string? InternalOrderNumber, string? CustomerOrderNumber, string? DefaultAssignee);
 /// <summary>A deliverable and its budget in hours.</summary>
-public sealed record DeliverableResponse(string Id, string Name, string ProjectId, double BudgetHours, double InitialEstimateHours, double ActualHours);
+public sealed record DeliverableResponse(string Id, string Name, string ProjectId, double BudgetHours, double InitialEstimateHours, double ActualHours, bool IsEstimateAutomatic, double TaskEstimateHours);
 /// <summary>A customer name.</summary>
 public sealed record CustomerRequest
 {
@@ -35,7 +35,7 @@ public sealed record DeliverableRequest
     [Required, MaxLength(200)] public required string Name { get; init; }
     [Required] public required string ProjectId { get; init; }
     [Range(0, 1000000000)] public required double BudgetHours { get; init; }
-    [Range(0, 1000000000)] public double InitialEstimateHours { get; init; }
+    [Range(0, 1000000000)] public double? InitialEstimateHours { get; init; }
     [Range(0, 1000000000)] public double ActualHours { get; init; }
 }
 

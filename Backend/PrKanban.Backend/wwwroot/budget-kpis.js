@@ -230,7 +230,12 @@ function formatHours(value) {
 }
 
 function formatPercent(value) {
-    return value === null ? '—' : `${Math.round(value * 100)}%`;
+    if (value === null || !Number.isFinite(value)) return '—';
+    let percent = Math.round(value * 1000) / 10;
+    // Never display a rounded 100% / 0% when the true value differs (e.g. 99.76% must not appear as 100%).
+    if (percent === 100 && value < 1) percent = 99.9;
+    else if (percent === 0 && value > 0) percent = 0.1;
+    return `${percent.toLocaleString('de-DE', { maximumFractionDigits: 1 })}%`;
 }
 
 function heroCard(title, value, valueClass, explanation, note) {

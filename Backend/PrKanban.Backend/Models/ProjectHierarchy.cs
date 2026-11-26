@@ -51,6 +51,7 @@ public sealed class DeliverableDetails
 {
     public string DeliverableId { get; set; } = "";
     public double InitialEstimateHours { get; set; }
+    public bool IsEstimateAutomatic { get; set; } = true;
     public double ActualHours { get; set; }
 }
 

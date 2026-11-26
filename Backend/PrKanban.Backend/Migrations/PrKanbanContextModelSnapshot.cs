@@ -337,6 +337,9 @@ namespace PrKanban.Migrations
                     b.Property<double>("InitialEstimateHours")
                         .HasColumnType("REAL");
 
+                    b.Property<bool>("IsEstimateAutomatic")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("DeliverableId");
 
                     b.ToTable("DeliverableDetails", t =>

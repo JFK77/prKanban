@@ -18,6 +18,8 @@ let activation = 0;
 let selectedItemKey = null;
 let taskPanelReturnItemKey = null;
 let draggedItem = null;
+let deliverableTaskEstimateHours = 0;
+let deliverableEstimateAutomatic = true;
 
 function message(text, error = false) {
     status.textContent = text;
@@ -507,10 +509,13 @@ function select(kind, item = null, parentId = '') {
         form.elements[name].value = item?.[name] || '';
     form.elements.shortKey.required = kind === 'projects';
     form.elements.shortKey.readOnly = !!item?.shortKey;
-    for (const name of ['initialEstimateHours','budgetHours']) {
-        form.elements[name].value = window.formatHoursValue?.(item?.[name]) ?? (item?.[name] || '');
-        form.elements[name].required = false;
-    }
+    deliverableTaskEstimateHours = item?.taskEstimateHours ?? 0;
+    deliverableEstimateAutomatic = item?.isEstimateAutomatic ?? true;
+    form.elements.initialEstimateHours.value = kind === 'deliverables'
+        ? (window.formatHoursValue?.(item?.initialEstimateHours ?? 0) || '0h') : '';
+    form.elements.initialEstimateHours.required = false;
+    form.elements.budgetHours.value = window.formatHoursValue?.(item?.budgetHours) ?? (item?.budgetHours || '');
+    form.elements.budgetHours.required = false;
     deliverableStoredActualHours = item?.actualHours ?? 0;
     deliverableActualHours = 0;
     if (kind === 'deliverables' && item?.id) loadDeliverableActualHours(item.id);
@@ -518,15 +523,24 @@ function select(kind, item = null, parentId = '') {
     if (admin) form.elements.name.focus();
 }
 
-form.addEventListener('input', () => { 
-    dirty = true; 
+form.addEventListener('input', event => {
+    dirty = true;
+    if (event.target === form.elements.initialEstimateHours)
+        deliverableEstimateAutomatic = !event.target.value.trim();
     updateEstimateOverview();
 });
 // Normalize flexible hour entries (e.g. "2d", "1d 2h") to hours when leaving the field
 for (const name of ['initialEstimateHours','budgetHours']) {
     form.elements[name].addEventListener('change', () => {
+        if (name === 'initialEstimateHours' && !form.elements[name].value.trim()) {
+            deliverableEstimateAutomatic = true;
+            form.elements[name].value = window.formatHoursValue?.(deliverableTaskEstimateHours) || '0h';
+            updateEstimateOverview();
+            return;
+        }
         const hours = window.parseHoursInput?.(form.elements[name].value);
-        form.elements[name].value = window.formatHoursValue?.(hours) ?? '';
+        if (hours !== null && hours !== undefined)
+            form.elements[name].value = window.formatHoursValue?.(hours) || (name === 'initialEstimateHours' ? '0h' : '');
         updateEstimateOverview();
     });
 }
@@ -618,7 +632,8 @@ function updateEstimateOverview() {
     const parse = value => window.parseHoursInput?.(value) || 0;
     const fmt = value => window.formatHoursValue?.(value) || '0h';
     const budgetHours = parse(form.elements.budgetHours?.value);
-    const estimateHours = parse(form.elements.initialEstimateHours?.value);
+    const estimateHours = !form.elements.initialEstimateHours.value.trim()
+        ? deliverableTaskEstimateHours : parse(form.elements.initialEstimateHours.value);
     const actualHours = deliverableActualHours;
 
     const remaining = Math.max(0, budgetHours - actualHours);
@@ -674,8 +689,16 @@ form.addEventListener('submit', async event => {
     }
     if (kind === 'deliverables') {
         body.projectId = form.elements.parent.value;
-        for (const name of ['initialEstimateHours','budgetHours'])
-            body[name] = window.parseHoursInput?.(form.elements[name].value) || 0;
+        const estimateInput = form.elements.initialEstimateHours;
+        const estimate = window.parseHoursInput?.(estimateInput.value);
+        if (!deliverableEstimateAutomatic && estimate == null) {
+            estimateInput.setCustomValidity(t('hierarchy.invalidEstimate', 'Bitte eine gültige Schätzung eingeben.'));
+            estimateInput.reportValidity();
+            estimateInput.setCustomValidity('');
+            return;
+        }
+        body.initialEstimateHours = deliverableEstimateAutomatic || !estimateInput.value.trim() ? null : estimate;
+        body.budgetHours = window.parseHoursInput?.(form.elements.budgetHours.value) || 0;
         body.actualHours = deliverableStoredActualHours;
     }
     const submit = document.getElementById('save');
@@ -766,9 +789,20 @@ function reset() {
 async function refreshTasks() {
     const requestId = activation;
     try {
-        const nextTasks = await loadTreeTasks();
+        const [nextData, nextTasks] = await Promise.all([request('hierarchy'), loadTreeTasks()]);
         if (requestId !== activation || !hierarchyLoaded) return false;
+        data = nextData;
         treeTasks = nextTasks;
+        if (editing?.kind === 'deliverables') {
+            const deliverable = data.deliverables.find(item => item.id === editing.id);
+            if (deliverable) {
+                deliverableTaskEstimateHours = deliverable.taskEstimateHours;
+                if (deliverableEstimateAutomatic) {
+                    form.elements.initialEstimateHours.value = window.formatHoursValue?.(deliverableTaskEstimateHours) || '0h';
+                    updateEstimateOverview();
+                }
+            }
+        }
         renderTree();
         return true;
     } catch (error) {
